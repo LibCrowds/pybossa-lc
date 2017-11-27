@@ -22,7 +22,7 @@ var/
 *.egg
 
 # Coverage
-.coverage
+.coverage/
 
 # Installer logs
 pip-log.txt
@@ -33,3 +33,6 @@ pip-delete-this-directory.txt
 
 # Flask profiler
 flask_profiler.sql
+
+# PYBOSSA
+pybossa/
