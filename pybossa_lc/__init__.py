@@ -17,3 +17,9 @@ class PyBossaLC(Plugin):
     def setup(self):
         """Setup plugin."""
         print('setup plugin')
+        self.setup_blueprints()
+
+    def setup_blueprints(self):
+        """Setup blueprints."""
+        from .api.analysis import BLUEPRINT as analysis_bp
+        app.register_blueprint(analysis_bp, url_prefix='/libcrowds/analysis')
