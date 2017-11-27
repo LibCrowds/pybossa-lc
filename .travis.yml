@@ -1,0 +1,31 @@
+sudo: required
+dist: trusty
+language: python
+python:
+  - "2.7"
+env:
+  - PYBOSSA_SETTINGS='../settings_test.py' PYBOSSA_REDIS_CACHE_DISABLED='1'
+services:
+  - redis-server
+addons:
+  postgresql: "9.5"
+before_install:
+  - sudo apt-get update -y && sudo apt-get install -y swig libffi-dev
+install:
+  - python setup.py install
+  - bin/setup_pybossa.sh
+  - pip install pycodestyle
+before_script:
+  - redis-server pybossa/contrib/redis/sentinel.conf --sentinel
+  - psql -c "create user rtester with createdb login password 'rtester'" -U postgres
+  - psql -c "create database pybossa_test owner rtester encoding 'UTF-8' lc_collate 'en_US.UTF-8' lc_ctype 'en_US.UTF-8' template template0;" -U postgres
+  - pycodestyle
+script:
+  - cd pybossa
+  - alembic -c alembictest.ini stamp head
+  - alembic -c alembictest.ini upgrade head
+  - cd ..
+  - nosetests tests/
+after_success:
+  - pip install coveralls
+  - coveralls

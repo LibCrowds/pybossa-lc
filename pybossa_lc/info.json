@@ -1,0 +1,9 @@
+{
+  "identifier": "pybossa_lc",
+  "name": "pybossa-lc",
+  "author": "Alexander Mendes",
+  "website": "https://github.com/LibCrowds/pybossa-lc",
+  "license": "MIT",
+  "description": "A PYBOSSA plugin for managing LibCrowds projects.",
+  "version": "0.1.0"
+}
