@@ -4,10 +4,8 @@
 import time
 import datetime
 import itertools
-import enki
 from libcrowds_analyst.analysis import helpers
 from pybossa.core import project_repo
-from pybossa.auth import ensure_authorized_to
 
 
 MERGE_RATIO = 0.5
@@ -62,13 +60,9 @@ def update_selector(anno, rect):
     anno['modified'] = datetime.datetime.now().isoformat()
 
 
-def analyse_selections(api_key, endpoint, project_id, result_id, path, doi,
-                       project_short_name, throttle, **kwargs):
-    """Analyse In the Spotlight selection results."""
-    e = enki.Enki(api_key, endpoint, project_short_name, all=1)
-    result = enki.pbclient.find_results(project_id, id=result_id, limit=1,
-                                        all=1)[0]
-    df = helpers.get_task_run_df(e, result.task_id)
+def analyse(result):
+    """Analyse a LibCrowds Viewer result."""
+    df = helpers.get_task_run_df(result.task_id)
 
     # Flatten annotations into a single list
     anno_list = df['info'].tolist()
@@ -78,12 +72,12 @@ def analyse_selections(api_key, endpoint, project_id, result_id, path, doi,
     clusters = []
     comments = []
 
-    # Cluster similar regions
     for anno in anno_list:
         if anno['motivation'] == 'commenting':
             comments.append(anno)
             continue
 
+        # Cluster regions
         elif anno['motivation'] == 'tagging':
             r1 = get_rect_from_selection(anno)
             matched = False
@@ -103,21 +97,13 @@ def analyse_selections(api_key, endpoint, project_id, result_id, path, doi,
             raise ValueError('Unhandled motivation')
 
     result.info['annotations'] = clusters + comments
-    enki.pbclient.update_result(result)
-    time.sleep(throttle)
+    result_repo.save(result)
 
 
-def analyse_all_selections(**kwargs):
+def analyse_all(results):
     """Analyse all results."""
-    ensure_authorized_to('update', project)
-    project = project_repo.get_by_shortname(kwargs['project_short_name'])
-    results = results_repo.filter_by(project_id=project.id)
-    results = object_loader.load(enki.pbclient.find_results,
-                                 project_id=e.project.id, all=1)
     for result in results:
-        kwargs['project_id'] = e.project.id
-        kwargs['result_id'] = result.id
-        analyse_selections(**kwargs.copy())
+        analyse(result)
 
     helpers.send_mail({
         'recipients': kwargs['mail_recipients'],

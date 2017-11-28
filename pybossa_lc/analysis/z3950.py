@@ -2,8 +2,7 @@
 """Z39.50 analysis module."""
 
 import time
-import enki
-from . import helpers
+from pybossa_lc.analysis import helpers
 
 
 MATCH_PERCENTAGE = 60

@@ -3,8 +3,6 @@
 
 import math
 import numpy
-from flask.ext.mail import Message
-from libcrowds_analyst.core import mail
 
 
 def init_result_info(doi, path, defaults=None):
@@ -46,15 +44,7 @@ def has_n_matches(task_run_df, n_task_runs, match_percentage):
     return True
 
 
-def get_task_run_df(enki, task_id):
+def get_task_run_df(task_id):
     """Return a dataframe containing all task run info for a task."""
-    enki.get_tasks(task_id=task_id)
-    enki.get_task_runs()
-    task = enki.tasks[0]
-    return enki.task_runs_df[task.id]
-
-
-def send_mail(message_dict):
-    """Send email."""
-    message = Message(**message_dict)
-    mail.send(message)
+    task_runs = task_repo.filter_task_runs_by(task_id)
+    return pandas.DataFrame(task_runs)
