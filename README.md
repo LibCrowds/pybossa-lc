@@ -13,17 +13,12 @@ of usage, including descriptions of how the analysis functions work, see the
 
 ``` bash
 # clone
-git clone https://github.com/LibCrowds/pybossa-lc /path/to/pybossa/pybossa/plugins
-
-# activate PYBOSSA virtual environement
-source /path/to/pybossa/pybossa/env/bin/activate
-
-# install the plugin
-cd /path/to/pybossa/pybossa/plugins/pybossa-lc
-python setup.py install
-cd ..
+cd /path/to/pybossa/pybossa/plugins
+git clone https://github.com/LibCrowds/pybossa-lc
 cp -r pybossa-lc/pybossa_lc pybossa_lc
 ```
+
+The plugin will be available after you restart the server.
 
 ## Testing
 

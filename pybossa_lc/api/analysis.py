@@ -4,10 +4,11 @@
 import json
 from rq import Queue
 from flask import Blueprint, request, current_app, abort, make_response
-from pybossa_lc.analysis import z3950, libcrowds_viewer
 from pybossa.core import sentinel
 from pybossa.core import project_repo, result_repo
 from pybossa.auth import ensure_authorized_to
+
+from ..analysis import z3950, libcrowds_viewer
 
 
 BLUEPRINT = Blueprint('analysis', __name__)

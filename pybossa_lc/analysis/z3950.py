@@ -2,8 +2,9 @@
 """Z39.50 analysis module."""
 
 import time
-from pybossa_lc.analysis import helpers
 from pybossa.core import result_repo
+
+from . import helpers
 
 
 MATCH_PERCENTAGE = 60

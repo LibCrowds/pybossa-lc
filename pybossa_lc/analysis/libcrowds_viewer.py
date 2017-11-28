@@ -4,8 +4,9 @@
 import time
 import datetime
 import itertools
-from libcrowds_analyst.analysis import helpers
 from pybossa.core import project_repo, result_repo
+
+from . import helpers
 
 
 MERGE_RATIO = 0.5
