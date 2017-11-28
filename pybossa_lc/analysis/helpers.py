@@ -3,15 +3,14 @@
 
 import math
 import numpy
+import pandas
+from rq import Queue
+from pybossa.core import task_repo
+from pybossa.core import sentinel
+from pybossa.jobs import send_mail
 
 
-def init_result_info(doi, path, defaults=None):
-    """Initialise result info."""
-    info = defaults or {}
-    info['analysis_complete'] = True
-    info['analysis_doi'] = doi
-    info['analysis_path'] = path
-    return info
+MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
 
 def drop_keys(task_run_df, keys):
@@ -48,3 +47,8 @@ def get_task_run_df(task_id):
     """Return a dataframe containing all task run info for a task."""
     task_runs = task_repo.filter_task_runs_by(task_id)
     return pandas.DataFrame(task_runs)
+
+
+def send_email(msg):
+    """Add email to PYBOSSA mail queue."""
+    MAIL_QUEUE.enqueue(send_mail, msg)

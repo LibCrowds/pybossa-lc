@@ -29,11 +29,11 @@ def respond(msg, short_name):
     return
 
 
-def queue_job(job, timeout, arg):
+def queue_job(job, timeout, args):
     """Add an analysis job to the queue."""
     redis_conn = sentinel.master
     queue = Queue('low', connection=redis_conn)
-    queue.enqueue(job, timeout=timeout, args=(arg))
+    queue.enqueue(job, timeout=timeout, args=args)
 
 
 def analyse_all(short_name, func):
@@ -48,7 +48,7 @@ def analyse_all(short_name, func):
     ensure_authorized_to('update', project)
 
     results = result_repo.filter_by(project_id=project.id)
-    queue_job(func, 12 * HOUR, results)
+    queue_job(func, 12 * HOUR, (project, results))
     return respond(project.short_name, 'All results added to job queue')
 
 
@@ -70,7 +70,7 @@ def analyse(analysis_func, analysis_all_func):
     if not result.info:
         ensure_authorized_to('update', result)
 
-    queue_job(analysis_func, 10 * MINUTE, result)
+    queue_job(analysis_func, 10 * MINUTE, (result))
     return respond(payload['project_short_name'], 'Results added to job queue')
 
 

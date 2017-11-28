@@ -5,7 +5,7 @@ import time
 import datetime
 import itertools
 from libcrowds_analyst.analysis import helpers
-from pybossa.core import project_repo
+from pybossa.core import project_repo, result_repo
 
 
 MERGE_RATIO = 0.5
@@ -67,8 +67,7 @@ def analyse(result):
     # Flatten annotations into a single list
     anno_list = df['info'].tolist()
     anno_list = list(itertools.chain.from_iterable(anno_list))
-    defaults = {'annotations': []}
-    result.info = helpers.init_result_info(doi, path, defaults)
+    result.info = dict(annotations=[])
     clusters = []
     comments = []
 
@@ -100,15 +99,15 @@ def analyse(result):
     result_repo.save(result)
 
 
-def analyse_all(results):
+def analyse_all(project, results):
     """Analyse all results."""
     for result in results:
         analyse(result)
 
-    helpers.send_mail({
-        'recipients': kwargs['mail_recipients'],
+    helpers.send_email({
+        'recipients': project.owner.email_addr,
         'subject': 'Analysis complete',
         'body': '''
             All {0} results for {1} have been analysed.
-            '''.format(len(results), e.project.name)
+            '''.format(len(results), project.name)
     })
