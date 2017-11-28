@@ -30,10 +30,12 @@ source env/bin/activate
 # setup an instance of PYBOSSA
 bin/setup_pybossa.sh
 
+# install test requirements
+pip install -r test_requirements
+
 # test
 nosetests test/
 
 # lint
-pip install pycodestyle
 pycodestyle
 ```

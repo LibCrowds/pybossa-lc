@@ -12,9 +12,8 @@ addons:
 before_install:
   - sudo apt-get update -y && sudo apt-get install -y swig libffi-dev
 install:
-  - python setup.py install
   - bin/setup_pybossa.sh
-  - pip install pycodestyle
+  - pip install -r test_requirements.txt
 before_script:
   - redis-server pybossa/contrib/redis/sentinel.conf --sentinel
   - psql -c "create user rtester with createdb login password 'rtester'" -U postgres
