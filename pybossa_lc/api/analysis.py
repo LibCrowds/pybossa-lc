@@ -6,6 +6,8 @@ from rq import Queue
 from flask import Blueprint, request, current_app, abort, make_response
 from pybossa_lc.analysis import z3950, libcrowds_viewer
 from pybossa.core import sentinel
+from pybossa.core import project_repo, result_repo
+from pybossa.auth import ensure_authorized_to
 
 
 BLUEPRINT = Blueprint('analysis', __name__)
@@ -27,32 +29,50 @@ def respond(msg, short_name):
     return
 
 
+def queue_job(job, timeout, arg):
+    """Add an analysis job to the queue."""
+    redis_conn = sentinel.master
+    queue = Queue('low', connection=redis_conn)
+    queue.enqueue(job, timeout=timeout, args=(arg))
+
+
+def analyse_all(short_name, func):
+    """Queue analysis of all results.
+
+    Requires the current user to be authorised to update the project.
+    """
+    project = project_repo.get_by_shortname(short_name)
+    if not project:
+        abort(404)
+
+    ensure_authorized_to('update', project)
+
+    results = result_repo.filter_by(project_id=project.id)
+    queue_job(func, 12*HOUR, results)
+    return respond(project.short_name, 'All results added to job queue')
+
+
+
 def analyse(analysis_func, analysis_all_func):
     """Queue analysis for a result or set of results."""
     payload = request.json or {}
 
-    # Set job type
-    job = analysis_func
-    msg = 'Result added to job queue'
     if request.args.get('project_short_name') and request.args.get('all'):
-        payload['project_short_name'] = request.args.get('project_short_name')
-        job = analysis_all_func
-        msg = 'All results added to job queue'
+        short_name = request.args.get('project_short_name')
+        return analyse_all(short_name, analysis_all_func)
 
-    # Check webhook event
     elif payload.get('event') != 'task_completed':
         err_msg = 'This is not a task_completed event'
         abort(400, err_msg)
 
-    # Check auth
-    ensure_authorized_to('update', project)
+    result = result_repo.get(payload['result_id'])
 
-    # Queue the job
-    redis_conn = sentinel.master
-    queue = Queue('low', connection=redis_conn)
-    queue.enqueue(job, timeout=10*MINUTE, **payload)
+    # If the result isn't empty, check if the current user is authorized
+    if not result.info:
+        ensure_authorized_to('update', result)
 
-    return respond(payload['project_short_name'], msg)
+    queue_job(analysis_func, 10*MINUTE, result)
+    return respond(payload['project_short_name'], 'Results added to job queue')
 
 
 @BLUEPRINT.route('z3950', methods=['GET', 'POST'])
