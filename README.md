@@ -1,5 +1,7 @@
 # pybossa-lc
 
+[![Build Status](https://travis-ci.org/LibCrowds/pybossa-lc.svg?branch=master)](https://travis-ci.org/LibCrowds/pybossa-lc)
+
 > A PYBOSSA plugin for managing LibCrowds projects.
 
 The plugin is designed to work in conjunction with the
