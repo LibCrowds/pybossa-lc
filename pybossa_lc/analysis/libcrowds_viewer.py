@@ -61,8 +61,9 @@ def update_selector(anno, rect):
     anno['modified'] = datetime.datetime.now().isoformat()
 
 
-def analyse(result):
+def analyse(result_id):
     """Analyse a LibCrowds Viewer result."""
+    result = result_repo.get(result_id)
     df = helpers.get_task_run_df(result.task_id)
 
     # Flatten annotations into a single list
@@ -100,8 +101,10 @@ def analyse(result):
     result_repo.save(result)
 
 
-def analyse_all(project, results):
+def analyse_all(project_id):
     """Analyse all results."""
+    project = project_repo.get(project_id)
+    results = result_repo.filter_by(project_id=project_id)
     for result in results:
         analyse(result)
 

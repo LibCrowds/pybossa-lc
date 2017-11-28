@@ -4,7 +4,7 @@
 import json
 from rq import Queue
 from flask import Blueprint, request, current_app, abort, make_response
-from pybossa.core import sentinel
+from pybossa.core import sentinel, csrf
 from pybossa.core import project_repo, result_repo
 from pybossa.auth import ensure_authorized_to
 
@@ -30,11 +30,11 @@ def respond(msg, short_name):
     return response
 
 
-def queue_job(job, timeout, args):
+def queue_job(job, timeout, **kwags):
     """Add an analysis job to the queue."""
     redis_conn = sentinel.master
     queue = Queue('low', connection=redis_conn)
-    queue.enqueue(job, timeout=timeout, args=args)
+    queue.enqueue(job, timeout=timeout, **kwargs)
 
 
 def analyse_all(short_name, func):
@@ -49,7 +49,7 @@ def analyse_all(short_name, func):
     ensure_authorized_to('update', project)
 
     results = result_repo.filter_by(project_id=project.id)
-    queue_job(func, 12 * HOUR, (project, results))
+    queue_job(func, 12 * HOUR, { 'project_id': project.id })
     return respond(project.short_name, 'All results added to job queue')
 
 
@@ -69,12 +69,13 @@ def analyse(analysis_func, analysis_all_func):
 
     # If the result isn't empty, check if the current user is authorized
     if not result.info:
-        ensure_authorized_to('update', result)
+        ensure_authorized_to('update', result,)
 
-    queue_job(analysis_func, 10 * MINUTE, (result))
+    queue_job(analysis_func, 10 * MINUTE, { 'result_id': result.id })
     return respond(payload['project_short_name'], 'Results added to job queue')
 
 
+@csrf.exempt
 @BLUEPRINT.route('/z3950', methods=['GET', 'POST'])
 def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
@@ -83,6 +84,7 @@ def z3950_analysis():
     return analyse(z3950.analyse, z3950.analyse_all)
 
 
+@csrf.exempt
 @BLUEPRINT.route('/libcrowds-viewer', methods=['GET', 'POST'])
 def libcrowds_viewer_analysis():
     """Endpoint for LibCrowds Viewer webhooks."""
