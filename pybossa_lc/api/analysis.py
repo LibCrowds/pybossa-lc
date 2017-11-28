@@ -12,7 +12,7 @@ from pybossa.auth import ensure_authorized_to
 
 BLUEPRINT = Blueprint('analysis', __name__)
 MINUTE = 60
-HOUR = 60*MINUTE
+HOUR = 60 * MINUTE
 
 
 def respond(msg, short_name):
@@ -48,9 +48,8 @@ def analyse_all(short_name, func):
     ensure_authorized_to('update', project)
 
     results = result_repo.filter_by(project_id=project.id)
-    queue_job(func, 12*HOUR, results)
+    queue_job(func, 12 * HOUR, results)
     return respond(project.short_name, 'All results added to job queue')
-
 
 
 def analyse(analysis_func, analysis_all_func):
@@ -71,7 +70,7 @@ def analyse(analysis_func, analysis_all_func):
     if not result.info:
         ensure_authorized_to('update', result)
 
-    queue_job(analysis_func, 10*MINUTE, result)
+    queue_job(analysis_func, 10 * MINUTE, result)
     return respond(payload['project_short_name'], 'Results added to job queue')
 
 
