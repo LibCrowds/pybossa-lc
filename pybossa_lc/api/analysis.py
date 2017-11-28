@@ -16,21 +16,17 @@ MINUTE = 60
 HOUR = 60 * MINUTE
 
 
-def respond(msg, short_name):
+def respond(msg, **kwargs):
     """Return a basic 200 response."""
-    response = make_response(
-        json.dumps({
-            "message": msg,
-            "project": short_name,
-            "status": 200,
-        })
-    )
+    data = dict(message=msg, status=200)
+    data.update(kwargs)
+    response = make_response(json.dumps(data))
     response.mimetype = 'application/json'
     response.status_code = 200
     return response
 
 
-def queue_job(job, timeout, **kwags):
+def queue_job(job, timeout, **kwargs):
     """Add an analysis job to the queue."""
     redis_conn = sentinel.master
     queue = Queue('low', connection=redis_conn)
@@ -49,15 +45,16 @@ def analyse_all(short_name, func):
     ensure_authorized_to('update', project)
 
     results = result_repo.filter_by(project_id=project.id)
-    queue_job(func, 12 * HOUR, { 'project_id': project.id })
-    return respond(project.short_name, 'All results added to job queue')
+    queue_job(func, 12 * HOUR, project_id=project.id)
+    return respond('All results added to job queue', n_results=len(results),
+                   project_short_name=project.short_name)
 
 
 def analyse(analysis_func, analysis_all_func):
     """Queue analysis for a result or set of results."""
     payload = request.json or {}
 
-    if request.args.get('project_short_name') and request.args.get('all'):
+    if payload.get('all'):
         short_name = request.args.get('project_short_name')
         return analyse_all(short_name, analysis_all_func)
 
@@ -69,10 +66,11 @@ def analyse(analysis_func, analysis_all_func):
 
     # If the result isn't empty, check if the current user is authorized
     if not result.info:
-        ensure_authorized_to('update', result,)
+        ensure_authorized_to('update', result)
 
-    queue_job(analysis_func, 10 * MINUTE, { 'result_id': result.id })
-    return respond(payload['project_short_name'], 'Results added to job queue')
+    queue_job(analysis_func, 10 * MINUTE, result_id=result.id)
+    return respond('Result added to job queue', result_id=result.id,
+                   project_short_name=payload['project_short_name'])
 
 
 @csrf.exempt
@@ -80,7 +78,7 @@ def analyse(analysis_func, analysis_all_func):
 def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
     if request.method == 'GET':
-        return respond(None, 'The Z39.50 endpoint is listening...')
+        return respond('The Z39.50 endpoint is listening...')
     return analyse(z3950.analyse, z3950.analyse_all)
 
 
@@ -89,5 +87,5 @@ def z3950_analysis():
 def libcrowds_viewer_analysis():
     """Endpoint for LibCrowds Viewer webhooks."""
     if request.method == 'GET':
-        return respond(None, 'The LibCrowds Viewer endpoint is listening...')
+        return respond('The LibCrowds Viewer endpoint is listening...')
     return analyse(libcrowds_viewer.analyse, libcrowds_viewer.analyse_all)
