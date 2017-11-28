@@ -55,7 +55,7 @@ def analyse(analysis_func, analysis_all_func):
     payload = request.json or {}
 
     if payload.get('all'):
-        short_name = request.args.get('project_short_name')
+        short_name = payload.get('project_short_name')
         return analyse_all(short_name, analysis_all_func)
 
     elif payload.get('event') != 'task_completed':
