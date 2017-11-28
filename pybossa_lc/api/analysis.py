@@ -27,7 +27,7 @@ def respond(msg, short_name):
     )
     response.mimetype = 'application/json'
     response.status_code = 200
-    return
+    return response
 
 
 def queue_job(job, timeout, args):
@@ -75,7 +75,7 @@ def analyse(analysis_func, analysis_all_func):
     return respond(payload['project_short_name'], 'Results added to job queue')
 
 
-@BLUEPRINT.route('z3950', methods=['GET', 'POST'])
+@BLUEPRINT.route('/z3950', methods=['GET', 'POST'])
 def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
     if request.method == 'GET':
@@ -83,7 +83,7 @@ def z3950_analysis():
     return analyse(z3950.analyse, z3950.analyse_all)
 
 
-@BLUEPRINT.route('libcrowds-viewer', methods=['GET', 'POST'])
+@BLUEPRINT.route('/libcrowds-viewer', methods=['GET', 'POST'])
 def libcrowds_viewer_analysis():
     """Endpoint for LibCrowds Viewer webhooks."""
     if request.method == 'GET':
