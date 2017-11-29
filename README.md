@@ -31,7 +31,7 @@ source env/bin/activate
 bin/setup_pybossa.sh
 
 # install test requirements
-pip install -r test_requirements
+pip install -r test_requirements.txt
 
 # test
 nosetests test/
