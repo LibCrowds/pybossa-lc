@@ -22,20 +22,26 @@ The plugin will be available after you restart the server.
 
 ## Testing
 
+This plugin relies on core functions PYBOSSA, therefore the easiest way to test
+it is use the PYBOSSA testing environment.
+
 ``` bash
-# activate a virtual environment
-virtualenv env
-source env/bin/activate
+# clone PYBOSSA
+git clone --recursive https://github.com/Scifabric/pybossa.git
 
-# setup an instance of PYBOSSA
-bin/setup_pybossa.sh
+# start the environment
+cd pybossa
+vagrant up
 
-# install test requirements
-pip install -r test_requirements.txt
+# enter the environment
+vagrant ssh
+
+# clonse pybossa-lc
+git clone https://github.com/LibCrowds/pybossa-lc
+
+# change directory
+cd pybossa-lc
 
 # test
 nosetests test/
-
-# lint
-pycodestyle
 ```
