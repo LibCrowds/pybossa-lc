@@ -8,7 +8,7 @@ import pybossa_lc as plugin
 sys.path.append(os.path.abspath("./pybossa/test"))
 
 
-PYBOSSA_TEST_SETTINGS='pybossa/settings_test.py'
+PYBOSSA_TEST_SETTINGS = 'pybossa/settings_test.py'
 
 
 def setUpPackage():
