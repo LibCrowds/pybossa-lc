@@ -43,12 +43,28 @@ def has_n_matches(task_run_df, n_task_runs, match_percentage):
     return True
 
 
-def get_task_run_df(task_id):
-    """Return a dataframe containing all task run info for a task."""
-    task_runs = task_repo.filter_task_runs_by(task_id)
-    return pandas.DataFrame(task_runs)
-
-
 def send_email(msg):
     """Add email to PYBOSSA mail queue."""
     MAIL_QUEUE.enqueue(send_mail, msg)
+
+
+def get_task_run_df(task_id):
+    """Load an Array of task runs into a dataframe."""
+    task_runs = task_repo.filter_task_runs_by(task_id)
+    data = [explode_info(tr) for tr in task_runs]
+    index = [tr.__dict__['id'] for tr in task_runs]
+    return pandas.DataFrame(data, index)
+
+
+def explode_info(item):
+    """Explode first level item info keys."""
+    item_data = item.__dict__
+    protected = item_data.keys()
+    if type(item.info) == dict:
+        keys = item_data['info'].keys()
+        for k in keys:
+            if k in protected:
+                item_data["_" + k] = item_data['info'][k]
+            else:
+                item_data[k] = item_data['info'][k]
+    return item_data
