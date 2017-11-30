@@ -6,7 +6,7 @@ import pandas
 from factories import TaskFactory, TaskRunFactory
 from default import Test, with_context
 
-from pybossa_lc.analysis import helpers, dataframer
+from pybossa_lc.analysis import helpers
 
 
 class TestAnalysisHelpers(Test):
@@ -17,9 +17,11 @@ class TestAnalysisHelpers(Test):
     @with_context
     def test_key_dropped(self):
         """Test the correct keys are dropped."""
-        info = dict(foo=None, bar=None)
-        taskrun = TaskRunFactory.create(info=info)
-        df = dataframer.create_data_frame([taskrun])
+        data = [{
+          'foo': None,
+          'bar': None
+        }]
+        df = pandas.DataFrame(data, range(len(data)))
         excluded = ['foo']
         df = helpers.drop_keys(df, excluded)
         assert 'foo' not in df.keys(), "foo should be dropped"
@@ -28,35 +30,46 @@ class TestAnalysisHelpers(Test):
     @with_context
     def test_empty_rows_dropped(self):
         """Test empty rows are dropped."""
-        taskrun1 = TaskRunFactory.create(info={ 'foo': 'bar' })
-        taskrun2 = TaskRunFactory.create(info={ 'foo': None })
-        df = dataframer.create_data_frame([ taskrun1, taskrun2 ])['foo']
+        data = [{
+          'foo': 'bar'
+        },
+        {
+          'foo': None
+        }]
+        df = pandas.DataFrame(data, range(len(data)))
         df = helpers.drop_empty_rows(df)
-        assert list(df) == ['bar'], "empty row should be dropped"
+        assert df['foo'].tolist() == ['bar'], "empty row should be dropped"
 
     @with_context
     def test_partial_rows_not_dropped(self):
         """Test partial rows are not dropped."""
-        info = dict(foo=None, bar='baz')
-        taskrun = TaskRunFactory.create(info=info)
-        df = dataframer.create_data_frame([ taskrun ])
+        data = [{
+          'foo': 'bar',
+          'baz': None
+        }]
+        df = pandas.DataFrame(data, range(len(data)))
         df = helpers.drop_empty_rows(df)
-        assert df['info'].iloc[0] == info, "partial rows should not be dropped"
+        expected = {'foo': {0: 'bar'}, 'baz': {0: None}}
+        assert df.to_dict() == expected, "partial rows should not be dropped"
 
     @with_context
     def test_match_fails_when_percentage_not_met(self):
         """Test False is returned when match percentage not met."""
-        taskrun1 = TaskRunFactory.create(info={ 'foo': 'bar' })
-        taskrun2 = TaskRunFactory.create(info={ 'foo': None })
-        df = dataframer.create_data_frame([ taskrun1, taskrun2 ])
+        data = [{
+          'foo': 'bar',
+          'baz': None
+        }]
+        df = pandas.DataFrame(data, range(len(data)))
         has_matches = helpers.has_n_matches(df, 2, 100)
         assert not has_matches
 
     @with_context
     def test_match_fails_when_nan_cols(self):
         """Test False is returned when NaN columns."""
-        taskrun = TaskRunFactory.create(info={ 'foo': None })
-        df = dataframer.create_data_frame([ taskrun ])
+        data = [{
+          'foo': None
+        }]
+        df = pandas.DataFrame(data, range(len(data)))
         df = df.replace('', numpy.nan)
         has_matches = helpers.has_n_matches(df, 2, 100)
         assert not has_matches
@@ -64,9 +77,12 @@ class TestAnalysisHelpers(Test):
     @with_context
     def test_match_succeeds_when_percentage_met(self):
         """Test True returned when match percentage met."""
-        taskrun1 = TaskRunFactory.create(info={ 'foo': 'bar' })
-        taskrun2 = TaskRunFactory.create(info={ 'foo': 'bar' })
-        df = dataframer.create_data_frame([ taskrun1, taskrun2 ])
-        print df
+        data = [{
+          'foo': 'bar'
+        },
+        {
+          'foo': 'bar'
+        }]
+        df = pandas.DataFrame(data, range(len(data)))
         has_matches = helpers.has_n_matches(df, 2, 100)
         assert has_matches
