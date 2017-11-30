@@ -6,24 +6,23 @@ import pandas
 from factories import TaskFactory, TaskRunFactory
 from default import Test, with_context
 
-from pybossa_lc.analysis import helpers
+from pybossa_lc.analysis import helpers, dataframer
 
 
 class TestAnalysisHelpers(Test):
 
-    def setUp(self):
+    def setup(self):
         super(TestAnalysisHelpers, self).setUp()
-        with self.flask_app.app_context():
-            self.create()
 
+    @with_context
     def test_drop_keys(self):
         """Test the correct keys are dropped."""
-        taskrun = TaskRunFactory.create(n=42, comment='hello')
-        excluded = ['n']
-        df = pandas.DataFrame(taskrun)
-        print df
+        info = dict(foo=None, bar=None)
+        taskrun = TaskRunFactory.create(info=info)
+        df = dataframer.create_data_frame([taskrun])
+        excluded = ['foo']
         df = helpers.drop_keys(df, excluded)
-        assert df.keys() == ['comment']
+        assert df.keys() == ['bar'], "foo should be dropped"
 
     # def test_keys_excluded(self, create_task_run_df):
     #     """Test excluded keys are not returned."""
