@@ -15,71 +15,58 @@ class TestAnalysisHelpers(Test):
         super(TestAnalysisHelpers, self).setUp()
 
     @with_context
-    def test_drop_keys(self):
+    def test_key_dropped(self):
         """Test the correct keys are dropped."""
         info = dict(foo=None, bar=None)
         taskrun = TaskRunFactory.create(info=info)
         df = dataframer.create_data_frame([taskrun])
         excluded = ['foo']
         df = helpers.drop_keys(df, excluded)
-        assert df.keys() == ['bar'], "foo should be dropped"
+        assert 'foo' not in df.keys(), "foo should be dropped"
+        assert 'bar' in df.keys(), "bar should not be dropped"
 
-    # def test_keys_excluded(self, create_task_run_df):
-    #     """Test excluded keys are not returned."""
-    #     tr_info = [
-    #         {'n': '42'},
-    #         {'comment': 'hello'}
-    #     ]
-    #     excluded = ['comment']
-    #     df = create_task_run_df(tr_info)
-    #     df = helpers.drop_keys(df, excluded)
-    #     assert df.keys() == ['n']
+    @with_context
+    def test_empty_rows_dropped(self):
+        """Test empty rows are dropped."""
+        taskrun1 = TaskRunFactory.create(info={ 'foo': 'bar' })
+        taskrun2 = TaskRunFactory.create(info={ 'foo': None })
+        df = dataframer.create_data_frame([ taskrun1, taskrun2 ])['foo']
+        df = helpers.drop_empty_rows(df)
+        assert list(df) == ['bar'], "empty row should be dropped"
 
-    # def test_empty_rows_dropped(self, create_task_run_df):
-    #     """Test empty rows are dropped."""
-    #     tr_info = [
-    #         {'n': '42'},
-    #         {'n': ''}
-    #     ]
-    #     df = create_task_run_df(tr_info)[['n']]
-    #     df = helpers.drop_empty_rows(df)
-    #     assert len(df) == 1 and df['n'][0] == '42'
+    @with_context
+    def test_partial_rows_not_dropped(self):
+        """Test partial rows are not dropped."""
+        info = dict(foo=None, bar='baz')
+        taskrun = TaskRunFactory.create(info=info)
+        df = dataframer.create_data_frame([ taskrun ])
+        df = helpers.drop_empty_rows(df)
+        assert df['info'].iloc[0] == info, "partial rows should not be dropped"
 
-    # def test_partial_rows_not_dropped(self, create_task_run_df):
-    #     """Test partial rows are not dropped."""
-    #     tr_info = [
-    #         {'n': '42', 'comment': ''}
-    #     ]
-    #     df = create_task_run_df(tr_info)
-    #     df = helpers.drop_empty_rows(df)
-    #     assert tr_info == df['info'].tolist()
+    @with_context
+    def test_match_fails_when_percentage_not_met(self):
+        """Test False is returned when match percentage not met."""
+        taskrun1 = TaskRunFactory.create(info={ 'foo': 'bar' })
+        taskrun2 = TaskRunFactory.create(info={ 'foo': None })
+        df = dataframer.create_data_frame([ taskrun1, taskrun2 ])
+        has_matches = helpers.has_n_matches(df, 2, 100)
+        assert not has_matches
 
-    # def test_match_fails_when_percentage_not_met(self, create_task_run_df):
-    #     """Test False is returned when match percentage not met."""
-    #     tr_info = [
-    #         {'n': '42'},
-    #         {'n': ''}
-    #     ]
-    #     df = create_task_run_df(tr_info)[['n']]
-    #     has_matches = helpers.has_n_matches(df, 2, 100)
-    #     assert not has_matches
+    @with_context
+    def test_match_fails_when_nan_cols(self):
+        """Test False is returned when NaN columns."""
+        taskrun = TaskRunFactory.create(info={ 'foo': None })
+        df = dataframer.create_data_frame([ taskrun ])
+        df = df.replace('', numpy.nan)
+        has_matches = helpers.has_n_matches(df, 2, 100)
+        assert not has_matches
 
-    # def test_match_fails_when_nan_cols(self, create_task_run_df):
-    #     """Test False is returned when NaN columns."""
-    #     tr_info = [
-    #         {'n': '', 'comment': ''}
-    #     ]
-    #     df = create_task_run_df(tr_info)[['n', 'comment']]
-    #     df = df.replace('', numpy.nan)
-    #     has_matches = helpers.has_n_matches(df, 2, 100)
-    #     assert not has_matches
-
-    # def test_match_succeeds_when_percentage_met(self, create_task_run_df):
-    #     """Test True returned when match percentage met."""
-    #     tr_info = [
-    #         {'n': '42'},
-    #         {'n': '42'}
-    #     ]
-    #     df = create_task_run_df(tr_info)[['n']]
-    #     has_matches = helpers.has_n_matches(df, 2, 100)
-    #     assert has_matches
+    @with_context
+    def test_match_succeeds_when_percentage_met(self):
+        """Test True returned when match percentage met."""
+        taskrun1 = TaskRunFactory.create(info={ 'foo': 'bar' })
+        taskrun2 = TaskRunFactory.create(info={ 'foo': 'bar' })
+        df = dataframer.create_data_frame([ taskrun1, taskrun2 ])
+        print df
+        has_matches = helpers.has_n_matches(df, 2, 100)
+        assert has_matches

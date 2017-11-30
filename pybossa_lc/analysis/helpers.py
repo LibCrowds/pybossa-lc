@@ -17,7 +17,7 @@ def drop_keys(task_run_df, keys):
     """Drop keys from the info fields of a task run dataframe."""
     keyset = set()
     for i in range(len(task_run_df)):
-        for k in task_run_df.iloc[i]['info'].keys():
+        for k in task_run_df.iloc[i].keys():
             keyset.add(k)
     keys = [k for k in keyset if k not in keys]
     return task_run_df[keys]
