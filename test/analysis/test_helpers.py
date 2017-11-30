@@ -61,7 +61,7 @@ class TestAnalysisHelpers(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         has_matches = helpers.has_n_matches(df, 2, 100)
-        assert not has_matches
+        assert not has_matches, "the check for matches should fail"
 
     @with_context
     def test_match_fails_when_nan_cols(self):
@@ -72,7 +72,7 @@ class TestAnalysisHelpers(Test):
         df = pandas.DataFrame(data, range(len(data)))
         df = df.replace('', numpy.nan)
         has_matches = helpers.has_n_matches(df, 2, 100)
-        assert not has_matches
+        assert not has_matches, "the check for matches should fail"
 
     @with_context
     def test_match_succeeds_when_percentage_met(self):
@@ -85,4 +85,13 @@ class TestAnalysisHelpers(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         has_matches = helpers.has_n_matches(df, 2, 100)
-        assert has_matches
+        assert has_matches, "the check for matches should pass"
+
+    @with_context
+    def test_dataframe_built_correctly(self):
+        """Test the task run dataframe is built correctly."""
+        info = { 'foo': 'bar' }
+        taskrun = TaskRunFactory.create(info=info)
+        df = helpers.get_task_run_df(taskrun.task_id)
+        assert df['foo'].tolist() == [info['foo']], "tr info key should match"
+        assert df['info'].tolist() == [info], "info should equal task run info"
