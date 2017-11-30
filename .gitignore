@@ -36,3 +36,6 @@ flask_profiler.sql
 
 # PYBOSSA
 pybossa/
+
+# Coverage
+.coverage
