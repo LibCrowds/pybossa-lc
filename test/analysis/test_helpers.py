@@ -18,8 +18,8 @@ class TestAnalysisHelpers(Test):
     def test_key_dropped(self):
         """Test the correct keys are dropped."""
         data = [{
-          'foo': None,
-          'bar': None
+            'foo': None,
+            'bar': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
         excluded = ['foo']
@@ -31,10 +31,9 @@ class TestAnalysisHelpers(Test):
     def test_empty_rows_dropped(self):
         """Test empty rows are dropped."""
         data = [{
-          'foo': 'bar'
-        },
-        {
-          'foo': None
+            'foo': 'bar'
+        }, {
+            'foo': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
         df = helpers.drop_empty_rows(df)
@@ -44,8 +43,8 @@ class TestAnalysisHelpers(Test):
     def test_partial_rows_not_dropped(self):
         """Test partial rows are not dropped."""
         data = [{
-          'foo': 'bar',
-          'baz': None
+            'foo': 'bar',
+            'baz': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
         df = helpers.drop_empty_rows(df)
@@ -56,8 +55,8 @@ class TestAnalysisHelpers(Test):
     def test_match_fails_when_percentage_not_met(self):
         """Test False is returned when match percentage not met."""
         data = [{
-          'foo': 'bar',
-          'baz': None
+            'foo': 'bar',
+            'baz': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
         has_matches = helpers.has_n_matches(df, 2, 100)
@@ -67,7 +66,7 @@ class TestAnalysisHelpers(Test):
     def test_match_fails_when_nan_cols(self):
         """Test False is returned when NaN columns."""
         data = [{
-          'foo': None
+            'foo': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
         df = df.replace('', numpy.nan)
@@ -78,10 +77,9 @@ class TestAnalysisHelpers(Test):
     def test_match_succeeds_when_percentage_met(self):
         """Test True returned when match percentage met."""
         data = [{
-          'foo': 'bar'
-        },
-        {
-          'foo': 'bar'
+            'foo': 'bar'
+        }, {
+            'foo': 'bar'
         }]
         df = pandas.DataFrame(data, range(len(data)))
         has_matches = helpers.has_n_matches(df, 2, 100)
@@ -90,7 +88,7 @@ class TestAnalysisHelpers(Test):
     @with_context
     def test_dataframe_built_correctly(self):
         """Test the task run dataframe is built correctly."""
-        info = { 'foo': 'bar' }
+        info = {'foo': 'bar'}
         taskrun = TaskRunFactory.create(info=info)
         df = helpers.get_task_run_df(taskrun.task_id)
         assert df['foo'].tolist() == [info['foo']], "tr info key should match"

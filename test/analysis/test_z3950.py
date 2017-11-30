@@ -21,9 +21,9 @@ class TestZ3950Analysis(Test):
         """Test that an empty result is updated correctly."""
         task = TaskFactory.create(n_answers=1)
         TaskRunFactory.create(task=task, info={
-          'control_number': '',
-          'reference': '',
-          'comments': ''
+            'control_number': '',
+            'reference': '',
+            'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         z3950.analyse(result.id)
@@ -39,9 +39,9 @@ class TestZ3950Analysis(Test):
         """Test that the old Convert-a-Card keys are converted."""
         task = TaskFactory.create(n_answers=1)
         TaskRunFactory.create(task=task, info={
-          'oclc': '',
-          'shelfmark': '',
-          'comments': ''
+            'oclc': '',
+            'shelfmark': '',
+            'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         z3950.analyse(result.id)
@@ -56,9 +56,9 @@ class TestZ3950Analysis(Test):
         """Test that results with comments are updated correctly."""
         task = TaskFactory.create(n_answers=1)
         TaskRunFactory.create(task=task, info={
-          'control_number': '',
-          'reference': '',
-          'comments': 'Some comment'
+            'control_number': '',
+            'reference': '',
+            'comments': 'Some comment'
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         z3950.analyse(result.id)
@@ -74,19 +74,19 @@ class TestZ3950Analysis(Test):
         """Test that results with matching answers are updated correctly."""
         task = TaskFactory.create(n_answers=3)
         TaskRunFactory.create(task=task, info={
-          'control_number': '123',
-          'reference': 'abc',
-          'comments': ''
+            'control_number': '123',
+            'reference': 'abc',
+            'comments': ''
         })
         TaskRunFactory.create(task=task, info={
-          'control_number': '123',
-          'reference': 'def',
-          'comments': ''
+            'control_number': '123',
+            'reference': 'def',
+            'comments': ''
         })
         TaskRunFactory.create(task=task, info={
-          'control_number': '456',
-          'reference': 'abc',
-          'comments': ''
+            'control_number': '456',
+            'reference': 'abc',
+            'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         z3950.analyse(result.id)
@@ -99,22 +99,22 @@ class TestZ3950Analysis(Test):
 
     @with_context
     def test_results_with_non_matching_answers(self):
-        """Test that results with non-matching answers are updated correctly."""
+        """Test results with non-matching answers are updated correctly."""
         task = TaskFactory.create(n_answers=3)
         TaskRunFactory.create(task=task, info={
-          'control_number': '123',
-          'reference': 'abc',
-          'comments': ''
+            'control_number': '123',
+            'reference': 'abc',
+            'comments': ''
         })
         TaskRunFactory.create(task=task, info={
-          'control_number': '456',
-          'reference': 'abc',
-          'comments': ''
+            'control_number': '456',
+            'reference': 'abc',
+            'comments': ''
         })
         TaskRunFactory.create(task=task, info={
-          'control_number': '789',
-          'reference': 'abc',
-          'comments': ''
+            'control_number': '789',
+            'reference': 'abc',
+            'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         z3950.analyse(result.id)
