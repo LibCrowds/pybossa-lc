@@ -16,7 +16,6 @@ class PyBossaLC(Plugin):
 
     def setup(self):
         """Setup plugin."""
-        print('setup plugin')
         self.setup_blueprints()
 
     def setup_blueprints(self):

@@ -50,7 +50,7 @@ def send_email(msg):
 
 def get_task_run_df(task_id):
     """Load an Array of task runs into a dataframe."""
-    task_runs = task_repo.filter_task_runs_by(task_id)
+    task_runs = task_repo.filter_task_runs_by(task_id=task_id)
     data = [explode_info(tr) for tr in task_runs]
     index = [tr.__dict__['id'] for tr in task_runs]
     return pandas.DataFrame(data, index)
