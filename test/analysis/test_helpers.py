@@ -93,3 +93,12 @@ class TestAnalysisHelpers(Test):
         df = helpers.get_task_run_df(taskrun.task_id)
         assert df['foo'].tolist() == [info['foo']], "tr info key should match"
         assert df['info'].tolist() == [info], "info should equal task run info"
+
+    @with_context
+    def test_protected_keys_prefixed_when_exploded(self):
+        """"""
+        info = {'foo': 'bar', 'info': 'baz'}
+        taskrun = TaskRunFactory.create(info=info)
+        df = helpers.get_task_run_df(taskrun.task_id)
+        msg = "info key should be transformed to _info"
+        assert df['_info'].tolist() == [info['info']], msg
