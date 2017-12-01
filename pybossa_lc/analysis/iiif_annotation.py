@@ -4,10 +4,14 @@
 import datetime
 import itertools
 from pybossa.core import project_repo, result_repo
+from pybossa.core import sentinel
+from pybossa.jobs import send_mail
+from rq import Queue
 
 from . import helpers
 
 
+MAIL_QUEUE = Queue('email', connection=sentinel.master)
 MERGE_RATIO = 0.5
 
 
@@ -107,10 +111,11 @@ def analyse_all(project_id):
     for result in results:
         analyse(result)
 
-    helpers.send_email({
+    msg = {
         'recipients': project.owner.email_addr,
         'subject': 'Analysis complete',
         'body': u'''
             All {0} results for {1} have been analysed.
             '''.format(len(results), project.name)
-    })
+    }
+    MAIL_QUEUE.enqueue(send_mail, msg)

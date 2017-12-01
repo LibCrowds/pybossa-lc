@@ -6,11 +6,6 @@ import numpy
 import pandas
 from rq import Queue
 from pybossa.core import task_repo
-from pybossa.core import sentinel
-from pybossa.jobs import send_mail
-
-
-MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
 
 def drop_keys(task_run_df, keys):
@@ -41,11 +36,6 @@ def has_n_matches(task_run_df, n_task_runs, match_percentage):
         if task_run_df[k].value_counts().max() < required_matches:
             return False
     return True
-
-
-def send_email(msg):
-    """Add email to PYBOSSA mail queue."""
-    MAIL_QUEUE.enqueue(send_mail, msg)
 
 
 def get_task_run_df(task_id):
