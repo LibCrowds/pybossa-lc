@@ -8,7 +8,7 @@ from pybossa.core import sentinel, csrf
 from pybossa.core import project_repo, result_repo
 from pybossa.auth import ensure_authorized_to
 
-from ..analysis import z3950, libcrowds_viewer
+from ..analysis import z3950, iiif_annotation
 
 
 BLUEPRINT = Blueprint('analysis', __name__)
@@ -83,9 +83,9 @@ def z3950_analysis():
 
 
 @csrf.exempt
-@BLUEPRINT.route('/libcrowds-viewer', methods=['GET', 'POST'])
-def libcrowds_viewer_analysis():
+@BLUEPRINT.route('/iiif_annotation', methods=['GET', 'POST'])
+def iiif_annotation_analysis():
     """Endpoint for LibCrowds Viewer webhooks."""
     if request.method == 'GET':
         return respond('The LibCrowds Viewer endpoint is listening...')
-    return analyse(libcrowds_viewer.analyse, libcrowds_viewer.analyse_all)
+    return analyse(iiif_annotation.analyse, iiif_annotation.analyse_all)
