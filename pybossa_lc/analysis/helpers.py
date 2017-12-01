@@ -86,8 +86,9 @@ def analyse_all(analysis_func, project_id):
 def analyse_empty(analysis_func, project_id):
     """Analyse all empty results for a project."""
     project = project_repo.get(project_id)
-    results = result_repo.filter_by(project_id=project_id, info=None)
-    for result in results:
+    results = result_repo.filter_by(project_id=project_id)
+    empty_results = [r for r in results if not r.info]
+    for result in empty_results:
         analysis_func(result)
 
     msg = {
