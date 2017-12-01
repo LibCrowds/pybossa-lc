@@ -4,7 +4,7 @@
 import json
 from mock import patch, call
 from helper import web
-from default import with_context, db, FakeResponse
+from default import with_context, db
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
 from pybossa.repositories import ResultRepository
 
@@ -14,7 +14,6 @@ from pybossa_lc.analysis import z3950, iiif_annotation
 
 class TestAnalysisApi(web.Helper):
 
-    @with_context
     def setUp(self):
         super(TestAnalysisApi, self).setUp()
         self.result_repo = ResultRepository(db)
