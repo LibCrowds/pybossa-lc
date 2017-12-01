@@ -15,5 +15,5 @@ BLUEPRINT = Blueprint('results', __name__)
 @BLUEPRINT.route('/empty')
 def empty():
     """List any projects with unanalysed results."""
-    data = results_cache.empty_results
+    data = results_cache.empty_results()
     return Response(json.dumps(data), 200, mimetype='application/json')
