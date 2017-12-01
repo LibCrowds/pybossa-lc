@@ -97,7 +97,7 @@ def analyse(result_id):
             raise ValueError('Unhandled motivation')
 
     result.info['annotations'] = clusters + comments
-    result_repo.save(result)
+    result_repo.update(result)
 
 
 def analyse_all(project_id):
@@ -110,7 +110,7 @@ def analyse_all(project_id):
     helpers.send_email({
         'recipients': project.owner.email_addr,
         'subject': 'Analysis complete',
-        'body': '''
+        'body': u'''
             All {0} results for {1} have been analysed.
             '''.format(len(results), project.name)
     })
