@@ -4,6 +4,7 @@ language: python
 python:
   - "2.7"
 env:
+  - PYBOSSA_PATH='./pybossa'
   - PYBOSSA_SETTINGS='../settings_test.py' PYBOSSA_REDIS_CACHE_DISABLED='1'
 services:
   - redis-server
@@ -11,8 +12,13 @@ addons:
   postgresql: "9.5"
 before_install:
   - sudo apt-get update -y && sudo apt-get install -y swig libffi-dev
+  - pip install -U pip
 install:
-  - bin/setup_pybossa.sh
+  - git clone --recursive https://github.com/PyBossa/pybossa.git
+  - cd pybossa
+  - pip install -r requirements.txt
+  - cd ..
+  - pip install --editable pybossa
   - pip install -r test_requirements.txt
 before_script:
   - redis-server pybossa/contrib/redis/sentinel.conf --sentinel

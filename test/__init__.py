@@ -4,11 +4,11 @@ import sys
 import os
 import pybossa_lc as plugin
 
+
 # Use the PyBossa test suite
-sys.path.append(os.path.abspath("../test"))
-
-
-PYBOSSA_TEST_SETTINGS = '../settings_test.py'
+PB_PATH = os.environ.get('PYBOSSA_PATH', '..')
+sys.path.append(os.path.abspath(os.path.join(PB_PATH, 'test')))
+PYBOSSA_TEST_SETTINGS = os.path.join(PB_PATH, 'settings_test.py')
 
 
 def setUpPackage():
