@@ -139,3 +139,18 @@ class TestZ3950Analysis(Test):
         calls = [call(r) for r in results]
         z3950.analyse_all(project.id)
         assert mock_analyse.has_calls(calls, any_order=True)
+
+    @with_context
+    @patch('pybossa_lc.analysis.z3950.analyse', return_value=True)
+    def test_empty_results_analysed(self, mock_analyse):
+        """Test results with non-matching answers are updated correctly."""
+        project = ProjectFactory.create()
+        task1 = TaskFactory.create(project=project, n_answers=1)
+        task2 = TaskFactory.create(project=project, n_answers=1)
+        TaskRunFactory.create(task=task1)
+        TaskRunFactory.create(task=task2)
+        results = self.result_repo.filter_by(project_id=project.id)
+        results[0].info = dict(foo='bar')
+        self.result_repo.update(results[0])
+        z3950.analyse_empty(project.id)
+        mock_analyse.assert_called_once_with(results[1])

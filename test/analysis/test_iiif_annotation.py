@@ -158,6 +158,21 @@ class TestIIIFAnnotationAnalysis(Test):
         assert mock_analyse.has_calls(calls, any_order=True)
 
     @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.analyse', return_value=True)
+    def test_empty_results_analysed(self, mock_analyse):
+        """Test results with non-matching answers are updated correctly."""
+        project = ProjectFactory.create()
+        task1 = TaskFactory.create(project=project, n_answers=1)
+        task2 = TaskFactory.create(project=project, n_answers=1)
+        TaskRunFactory.create(task=task1)
+        TaskRunFactory.create(task=task2)
+        results = self.result_repo.filter_by(project_id=project.id)
+        results[0].info = dict(foo='bar')
+        self.result_repo.update(results[0])
+        iiif_annotation.analyse_empty(project.id)
+        mock_analyse.assert_called_once_with(results[1])
+
+    @with_context
     @freeze_time("19-11-1984")
     def test_comments_appended(self):
         """Test that comment annotations are appended."""
