@@ -69,7 +69,7 @@ def analyse_all(project_id):
     helpers.send_email({
         'recipients': project.owner.email_addr,
         'subject': 'Analysis complete',
-        'body': '''
+        'body': u'''
             All {0} results for {1} have been analysed.
             '''.format(len(results), project.name)
     })
