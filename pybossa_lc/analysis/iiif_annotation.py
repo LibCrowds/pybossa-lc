@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 """IIIF Annotation analysis module."""
 
-import time
 import datetime
 import itertools
 from pybossa.core import project_repo, result_repo
