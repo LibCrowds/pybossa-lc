@@ -22,6 +22,7 @@ class TestResultsCache(Test):
         TaskRunFactory.create(task=task)
         data = results_cache.empty_results()
         assert data == [{
+            'name': project.name,
             'short_name': project.short_name,
             'n_empty_results': 1
         }]
