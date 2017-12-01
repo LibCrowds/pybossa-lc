@@ -11,7 +11,7 @@ from pybossa_lc.analysis import helpers
 
 class TestAnalysisHelpers(Test):
 
-    def setup(self):
+    def setUp(self):
         super(TestAnalysisHelpers, self).setUp()
 
     @with_context
@@ -96,7 +96,7 @@ class TestAnalysisHelpers(Test):
 
     @with_context
     def test_protected_keys_prefixed_when_exploded(self):
-        """"""
+        """Test that protected info keys are prefixed."""
         info = {'foo': 'bar', 'info': 'baz'}
         taskrun = TaskRunFactory.create(info=info)
         df = helpers.get_task_run_df(taskrun.task_id)

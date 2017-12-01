@@ -43,34 +43,34 @@ def analyse_all(short_name, func):
         abort(404)
 
     ensure_authorized_to('update', project)
-
     results = result_repo.filter_by(project_id=project.id)
     queue_job(func, 12 * HOUR, project_id=project.id)
     return respond('All results added to job queue', n_results=len(results),
                    project_short_name=project.short_name)
 
-
-def analyse(analysis_func, analysis_all_func):
-    """Queue analysis for a result or set of results."""
-    payload = request.json or {}
-
-    if payload.get('all'):
-        short_name = payload.get('project_short_name')
-        return analyse_all(short_name, analysis_all_func)
-
-    elif payload.get('event') != 'task_completed':
+def analyse_single(payload, func):
+    """Queue a single result for analysis."""
+    if payload.get('event') != 'task_completed':
         err_msg = 'This is not a task_completed event'
         abort(400, err_msg)
 
     result = result_repo.get(payload['result_id'])
-
-    # If the result isn't empty, check if the current user is authorized
-    if not result.info:
+    if result.info:
         ensure_authorized_to('update', result)
 
-    queue_job(analysis_func, 10 * MINUTE, result_id=result.id)
+    queue_job(func, 10 * MINUTE, result_id=result.id)
     return respond('Result added to job queue', result_id=result.id,
                    project_short_name=payload['project_short_name'])
+
+
+def analyse(analysis_func, analysis_all_func):
+    """Queue analysis for a result or set of results."""
+    payload = request.json or {}
+    if payload.get('all'):
+        print 'analysing all'
+        short_name = payload.get('project_short_name')
+        return analyse_all(short_name, analysis_all_func)
+    return analyse_single(payload, analysis_func)
 
 
 @csrf.exempt
@@ -83,7 +83,7 @@ def z3950_analysis():
 
 
 @csrf.exempt
-@BLUEPRINT.route('/iiif_annotation', methods=['GET', 'POST'])
+@BLUEPRINT.route('/iiif-annotation', methods=['GET', 'POST'])
 def iiif_annotation_analysis():
     """Endpoint for IIIF Annotation webhooks."""
     if request.method == 'GET':

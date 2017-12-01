@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-"""Test analysis helpers."""
+"""Test Z39.50 analysis."""
 
 import numpy
 import pandas
@@ -13,7 +13,7 @@ from pybossa_lc.analysis import z3950
 
 class TestZ3950Analysis(Test):
 
-    def setup(self):
+    def setUp(self):
         super(TestZ3950Analysis, self).setUp()
         self.result_repo = ResultRepository(db)
 

@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-"""Test analysis helpers."""
+"""Test IIIF Annotation analysis."""
 
 import numpy
 import pandas
@@ -14,7 +14,7 @@ from pybossa_lc.analysis import iiif_annotation
 
 class TestIIIFAnnotationAnalysis(Test):
 
-    def setup(self):
+    def setUp(self):
         super(TestIIIFAnnotationAnalysis, self).setUp()
         self.result_repo = ResultRepository(db)
 
