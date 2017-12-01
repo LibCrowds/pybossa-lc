@@ -85,7 +85,7 @@ def z3950_analysis():
 @csrf.exempt
 @BLUEPRINT.route('/iiif_annotation', methods=['GET', 'POST'])
 def iiif_annotation_analysis():
-    """Endpoint for LibCrowds Viewer webhooks."""
+    """Endpoint for IIIF Annotation webhooks."""
     if request.method == 'GET':
-        return respond('The LibCrowds Viewer endpoint is listening...')
+        return respond('The IIIF Annotation endpoint is listening...')
     return analyse(iiif_annotation.analyse, iiif_annotation.analyse_all)

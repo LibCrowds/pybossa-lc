@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-"""LibCrowds Viewer analysis module."""
+"""IIIF Annotation analysis module."""
 
 import time
 import datetime
@@ -54,7 +54,7 @@ def merge_rects(r1, r2):
 
 
 def update_selector(anno, rect):
-    """Update amedia frag selector."""
+    """Update a media frag selector."""
     frag = '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'], rect['w'],
                                           rect['h'])
     anno['target']['selector']['value'] = frag
@@ -62,7 +62,7 @@ def update_selector(anno, rect):
 
 
 def analyse(result_id):
-    """Analyse a LibCrowds Viewer result."""
+    """Analyse a IIIF Annotation result."""
     result = result_repo.get(result_id)
     df = helpers.get_task_run_df(result.task_id)
 
