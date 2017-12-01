@@ -43,9 +43,8 @@ def analyse_all(short_name, func):
         abort(404)
 
     ensure_authorized_to('update', project)
-    results = result_repo.filter_by(project_id=project.id)
     queue_job(func, 12 * HOUR, project_id=project.id)
-    return respond('All {} results added to job queue'.format(len(results)),
+    return respond('All results added to job queue',
                    project_short_name=project.short_name)
 
 
@@ -59,9 +58,8 @@ def analyse_empty(short_name, func):
         abort(404)
 
     ensure_authorized_to('update', project)
-    results = result_repo.filter_by(project_id=project.id, info=None)
     queue_job(func, 12 * HOUR, project_id=project.id)
-    return respond('{} empty results added to job queue'.format(len(results)),
+    return respond('Empty results added to job queue',
                    project_short_name=project.short_name)
 
 
