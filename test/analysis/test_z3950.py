@@ -3,7 +3,8 @@
 
 import numpy
 import pandas
-from factories import TaskFactory, TaskRunFactory
+from mock import patch, call
+from factories import TaskFactory, TaskRunFactory, ProjectFactory
 from default import Test, with_context, db
 from pybossa.repositories import ResultRepository
 
@@ -124,3 +125,17 @@ class TestZ3950Analysis(Test):
             'reference': '',
             'comments': ''
         }, "info should be empty values for all keys"
+
+    @with_context
+    @patch('pybossa_lc.analysis.z3950.analyse', return_value=True)
+    def test_all_results_analysed(self, mock_analyse):
+        """Test results with non-matching answers are updated correctly."""
+        project = ProjectFactory.create()
+        task1 = TaskFactory.create(project=project, n_answers=1)
+        task2 = TaskFactory.create(project=project, n_answers=1)
+        TaskRunFactory.create(task=task1)
+        TaskRunFactory.create(task=task2)
+        results = self.result_repo.filter_by(project_id=project.id)
+        calls = [call(r) for r in results]
+        z3950.analyse_all(project.id)
+        assert mock_analyse.has_calls(calls, any_order=True)
