@@ -48,6 +48,7 @@ def analyse_all(short_name, func):
     return respond('All results added to job queue', n_results=len(results),
                    project_short_name=project.short_name)
 
+
 def analyse_single(payload, func):
     """Queue a single result for analysis."""
     if payload.get('event') != 'task_completed':

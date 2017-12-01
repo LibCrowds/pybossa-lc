@@ -34,18 +34,18 @@ class TestAnalysisApi(web.Helper):
         TaskRunFactory.create(task=task)
         result = self.result_repo.filter_by(project_id=project.id)[0]
         payload = {
-          'event': 'task_completed',
-          'project_short_name': project.short_name,
-          'project_id': project.id,
-          'result_id': result.id,
-          'task_id': task.id
+            'event': 'task_completed',
+            'project_short_name': project.short_name,
+            'project_id': project.id,
+            'result_id': result.id,
+            'task_id': task.id
         }
         self.app_post_json(endpoint, data=payload)
         payload['all'] = 1
         self.app_post_json(endpoint, data=payload)
         calls = [
-          call(z3950.analyse, timeout=600, result_id=result.id),
-          call(z3950.analyse, timeout=600, project_id=project.id)
+            call(z3950.analyse, timeout=600, result_id=result.id),
+            call(z3950.analyse, timeout=600, project_id=project.id)
         ]
         mock_enqueue.has_calls(calls)
 
@@ -64,18 +64,18 @@ class TestAnalysisApi(web.Helper):
         TaskRunFactory.create(task=task)
         result = self.result_repo.filter_by(project_id=project.id)[0]
         payload = {
-          'event': 'task_completed',
-          'project_short_name': project.short_name,
-          'project_id': project.id,
-          'result_id': result.id,
-          'task_id': task.id
+            'event': 'task_completed',
+            'project_short_name': project.short_name,
+            'project_id': project.id,
+            'result_id': result.id,
+            'task_id': task.id
         }
         self.app_post_json(endpoint, data=payload)
         payload['all'] = 1
         self.app_post_json(endpoint, data=payload)
         calls = [
-          call(iiif_annotation.analyse, timeout=600, result_id=result.id),
-          call(iiif_annotation.analyse, timeout=600, project_id=project.id)
+            call(iiif_annotation.analyse, timeout=600, result_id=result.id),
+            call(iiif_annotation.analyse, timeout=600, project_id=project.id)
         ]
         mock_enqueue.has_calls(calls)
 
