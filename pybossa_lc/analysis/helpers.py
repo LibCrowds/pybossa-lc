@@ -5,7 +5,13 @@ import math
 import numpy
 import pandas
 from rq import Queue
-from pybossa.core import task_repo
+from pybossa.core import task_repo, project_repo, result_repo
+from pybossa.core import sentinel
+from pybossa.jobs import send_mail
+from rq import Queue
+
+
+MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
 
 def drop_keys(task_run_df, keys):
@@ -58,3 +64,37 @@ def explode_info(item):
             else:
                 item_data[k] = item_data['info'][k]
     return item_data
+
+
+def analyse_all(analysis_func, project_id):
+    """Analyse all results for a project."""
+    project = project_repo.get(project_id)
+    results = result_repo.filter_by(project_id=project_id)
+    for result in results:
+        analysis_func(result)
+
+    msg = {
+        'recipients': project.owner.email_addr,
+        'subject': 'Analysis complete',
+        'body': u'''
+            All results for {} have been analysed.
+            '''.format(project.name)
+    }
+    MAIL_QUEUE.enqueue(send_mail, msg)
+
+
+def analyse_empty(analysis_func, project_id):
+    """Analyse all empty results for a project."""
+    project = project_repo.get(project_id)
+    results = result_repo.filter_by(project_id=project_id, info=None)
+    for result in results:
+        analysis_func(result)
+
+    msg = {
+        'recipients': project.owner.email_addr,
+        'subject': 'Analysis of all empty results complete',
+        'body': u'''
+            All empty results for {} have been analysed.
+            '''.format(project.name)
+    }
+    MAIL_QUEUE.enqueue(send_mail, msg)
