@@ -22,21 +22,21 @@ class TestIIIFAnnotationAnalysis(Test):
         """Test for an overlap ratio of 1."""
         rect = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         overlap = iiif_annotation.get_overlap_ratio(rect, rect)
-        assert overlap == 1
+        assert overlap == 1, "overlap should be 1"
 
     def test_overlap_ratio_is_0_with_adjacent_rects(self):
         """Test for an overlap ratio of 0."""
         r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         r2 = {'x': 100, 'y': 201, 'w': 100, 'h': 100}
         overlap = iiif_annotation.get_overlap_ratio(r1, r2)
-        assert overlap == 0
+        assert overlap == 0, "overlap should be 0"
 
     def test_overlap_ratio_with_partially_overlapping_rects(self):
         """Test for an overlap ratio of 0.33."""
         r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         r2 = {'x': 150, 'y': 100, 'w': 100, 'h': 100}
         overlap = iiif_annotation.get_overlap_ratio(r1, r2)
-        assert '{:.2f}'.format(overlap) == '0.33'
+        assert '{:.2f}'.format(overlap) == '0.33', "overlap should be 0.33"
 
     def test_rect_from_selection(self):
         """Test that we get the correct rect."""
@@ -51,7 +51,7 @@ class TestIIIFAnnotationAnalysis(Test):
             }
         }
         rect = iiif_annotation.get_rect_from_selection(fake_anno)
-        assert rect == coords
+        assert rect == coords, "rect should have original coords"
 
     def test_rect_from_selection_with_floats(self):
         """Test that we get the correct rect with rounded coordinates."""
@@ -66,7 +66,8 @@ class TestIIIFAnnotationAnalysis(Test):
             }
         }
         rect = iiif_annotation.get_rect_from_selection(fake_anno)
-        assert rect == {'x': 400, 'y': 200, 'w': 101, 'h': 151}
+        msg = "rect should have rounded coords"
+        assert rect == {'x': 400, 'y': 200, 'w': 101, 'h': 151}, msg
 
     @with_context
     def test_empty_result_updated(self):
@@ -77,7 +78,7 @@ class TestIIIFAnnotationAnalysis(Test):
         iiif_annotation.analyse(result.id)
         assert result.info == {
             'annotations': []
-        }
+        }, "final annotations should be empty"
 
     @with_context
     @freeze_time("19-11-1984")
@@ -100,7 +101,8 @@ class TestIIIFAnnotationAnalysis(Test):
         TaskRunFactory.create(task=task, info=tr_info)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         iiif_annotation.analyse(result.id)
-        assert result.info == { 'annotations': tr_info }
+        msg = "final annotations should equal tr_info"
+        assert result.info == {'annotations': tr_info}, msg
 
     @with_context
     @freeze_time("19-11-1984")
@@ -139,7 +141,7 @@ class TestIIIFAnnotationAnalysis(Test):
                     }
                 }
             ]
-        }
+        }, "final annotations should contain one combined selection"
 
     @with_context
     @patch('pybossa_lc.analysis.iiif_annotation.analyse', return_value=True)
@@ -170,4 +172,5 @@ class TestIIIFAnnotationAnalysis(Test):
         TaskRunFactory.create(task=task, info=tr_info)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         iiif_annotation.analyse(result.id)
-        assert result.info == { 'annotations': tr_info }
+        msg = "comment annotation should be stored"
+        assert result.info == {'annotations': tr_info}, msg
