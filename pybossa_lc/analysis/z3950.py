@@ -78,3 +78,20 @@ def analyse_all(project_id):
             '''.format(len(results), project.name)
     }
     MAIL_QUEUE.enqueue(send_mail, msg)
+
+
+def analyse_empty(project_id):
+    """Analyse all empty Z39.50 results."""
+    project = project_repo.get(project_id)
+    results = result_repo.filter_by(project_id=project_id, info=None)
+    for result in results:
+        analyse(result)
+
+    msg = {
+        'recipients': project.owner.email_addr,
+        'subject': 'Analysis of all empty results complete',
+        'body': u'''
+            All {0} empty results for {1} have been analysed.
+            '''.format(len(results), project.name)
+    }
+    MAIL_QUEUE.enqueue(send_mail, msg)

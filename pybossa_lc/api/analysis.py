@@ -45,7 +45,23 @@ def analyse_all(short_name, func):
     ensure_authorized_to('update', project)
     results = result_repo.filter_by(project_id=project.id)
     queue_job(func, 12 * HOUR, project_id=project.id)
-    return respond('All results added to job queue', n_results=len(results),
+    return respond('All {} results added to job queue'.format(len(results)),
+                   project_short_name=project.short_name)
+
+
+def analyse_empty(short_name, func):
+    """Queue analysis of all empty results.
+
+    Requires the current user to be authorised to update the project.
+    """
+    project = project_repo.get_by_shortname(short_name)
+    if not project:
+        abort(404)
+
+    ensure_authorized_to('update', project)
+    results = result_repo.filter_by(project_id=project.id, info=None)
+    queue_job(func, 12 * HOUR, project_id=project.id)
+    return respond('{} empty results added to job queue'.format(len(results)),
                    project_short_name=project.short_name)
 
 
@@ -64,13 +80,15 @@ def analyse_single(payload, func):
                    project_short_name=payload['project_short_name'])
 
 
-def analyse(analysis_func, analysis_all_func):
+def analyse(analysis_func, analysis_all_func, analysis_empty_func):
     """Queue analysis for a result or set of results."""
     payload = request.json or {}
     if payload.get('all'):
-        print 'analysing all'
         short_name = payload.get('project_short_name')
         return analyse_all(short_name, analysis_all_func)
+    elif payload.get('empty'):
+        short_name = payload.get('project_short_name')
+        return analyse_empty(short_name, analysis_empty_func)
     return analyse_single(payload, analysis_func)
 
 
@@ -80,7 +98,7 @@ def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
     if request.method == 'GET':
         return respond('The Z39.50 endpoint is listening...')
-    return analyse(z3950.analyse, z3950.analyse_all)
+    return analyse(z3950.analyse, z3950.analyse_all, z3950.analyse_empty)
 
 
 @csrf.exempt
@@ -89,4 +107,5 @@ def iiif_annotation_analysis():
     """Endpoint for IIIF Annotation webhooks."""
     if request.method == 'GET':
         return respond('The IIIF Annotation endpoint is listening...')
-    return analyse(iiif_annotation.analyse, iiif_annotation.analyse_all)
+    return analyse(iiif_annotation.analyse, iiif_annotation.analyse_all,
+                   iiif_annotation.analyse_empty)
