@@ -16,7 +16,7 @@ class TestResultsCache(Test):
 
     @with_context
     def test_empty_results(self):
-        """Test the correct functions are triggered for the Z39.50 endpoint."""
+        """Test empty results."""
         project = ProjectFactory.create()
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
