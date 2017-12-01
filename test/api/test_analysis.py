@@ -85,10 +85,10 @@ class TestAnalysisApi(web.Helper):
         res = analysis_api.respond('Hello', foo='bar')
         assert res.mimetype == 'application/json'
         assert res.status_code == 200
-        assert res.data == {
-          'status': 200,
-          'message': 'Hello',
-          'foo': 'bar'
+        assert json.loads(res.data) == {
+            'status': 200,
+            'message': 'Hello',
+            'foo': 'bar'
         }
 
     def test_invalid_event_rejected(self):
