@@ -146,21 +146,21 @@ class TestIIIFAnnotationAnalysis(Test):
     @with_context
     @patch('pybossa_lc.analysis.iiif_annotation.analyse', return_value=True)
     def test_all_results_analysed(self, mock_analyse):
-        """Test results with non-matching answers are updated correctly."""
+        """Test all IIIF Annotation results analysed."""
         project = ProjectFactory.create()
         task1 = TaskFactory.create(project=project, n_answers=1)
         task2 = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task1)
         TaskRunFactory.create(task=task2)
         results = self.result_repo.filter_by(project_id=project.id)
-        calls = [call(r) for r in results]
+        calls = [call(r.id) for r in results]
         iiif_annotation.analyse_all(project.id)
         assert mock_analyse.has_calls(calls, any_order=True)
 
     @with_context
     @patch('pybossa_lc.analysis.iiif_annotation.analyse', return_value=True)
     def test_empty_results_analysed(self, mock_analyse):
-        """Test results with non-matching answers are updated correctly."""
+        """Test empty IIIF Annotation results analysed."""
         project = ProjectFactory.create()
         task1 = TaskFactory.create(project=project, n_answers=1)
         task2 = TaskFactory.create(project=project, n_answers=1)
@@ -170,7 +170,7 @@ class TestIIIFAnnotationAnalysis(Test):
         results[0].info = dict(foo='bar')
         self.result_repo.update(results[0])
         iiif_annotation.analyse_empty(project.id)
-        mock_analyse.assert_called_once_with(results[1])
+        mock_analyse.assert_called_once_with(results[1].id)
 
     @with_context
     @freeze_time("19-11-1984")
