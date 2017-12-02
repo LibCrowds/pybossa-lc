@@ -18,7 +18,7 @@ def empty_results():
                   AND coalesce(result.info::text, '') = ''
                   AND to_timestamp(result.created, 'YYYY-MM-DD-THH24-MI-SS.US')
                   < NOW() - INTERVAL '1 day'
-                  GROUP BY project.short_name, project.name, result.created;
+                  GROUP BY project.short_name, project.name;
                   ''')
     results = session.execute(sql)
     data = []
