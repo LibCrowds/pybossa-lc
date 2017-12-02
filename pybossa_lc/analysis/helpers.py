@@ -8,6 +8,7 @@ from rq import Queue
 from pybossa.core import task_repo, project_repo, result_repo
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail
+from ..cache import clear_cache
 from rq import Queue
 
 
@@ -81,6 +82,7 @@ def analyse_all(analysis_func, project_id):
             '''.format(project.name)
     }
     MAIL_QUEUE.enqueue(send_mail, msg)
+    clear_cache()
 
 
 def analyse_empty(analysis_func, project_id):
@@ -99,3 +101,4 @@ def analyse_empty(analysis_func, project_id):
             '''.format(project.name)
     }
     MAIL_QUEUE.enqueue(send_mail, msg)
+    clear_cache()

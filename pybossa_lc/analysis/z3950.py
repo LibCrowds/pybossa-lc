@@ -2,6 +2,7 @@
 """Z39.50 analysis module."""
 
 from pybossa.core import result_repo
+from ..cache import clear_cache
 
 from . import helpers
 
@@ -56,6 +57,7 @@ def analyse(result_id):
         result.last_version = False
 
     result_repo.update(result)
+    clear_cache()
 
 
 def analyse_all(project_id):

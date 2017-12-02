@@ -8,6 +8,7 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail
 from rq import Queue
 
+from ..cache import clear_cache
 from . import helpers
 
 
@@ -102,6 +103,7 @@ def analyse(result_id):
 
     result.info['annotations'] = clusters + comments
     result_repo.update(result)
+    clear_cache()
 
 
 def analyse_all(project_id):
