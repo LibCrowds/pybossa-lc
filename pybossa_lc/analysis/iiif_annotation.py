@@ -112,4 +112,3 @@ def analyse_all(project_id):
 def analyse_empty(project_id):
     """Analyse all empty results."""
     helpers.analyse_empty(analyse, project_id)
-
