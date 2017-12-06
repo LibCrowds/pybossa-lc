@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-"""API analysis module for pybossa-lc."""
+"""API results module for pybossa-lc."""
 
 import json
 from flask import Response, Blueprint
