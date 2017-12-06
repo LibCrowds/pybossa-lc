@@ -8,8 +8,8 @@ The plugin is designed to work in conjunction with the
 [LibCrowds frontend](https://github.com/LibCrowds/libcrowds). It contains
 functions for generating LibCrowds projects and analysing their results.
 
-For details of project creation and results analysis works in LibCrowds, see
-the [**LibCrowds Documentation**](https://docs.libcrowds.com).
+For details of how project creation and results analysis works in LibCrowds,
+see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
 
 ## Installation
 
