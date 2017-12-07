@@ -5,6 +5,8 @@ import os
 import json
 from flask import current_app as app
 from flask.ext.plugins import Plugin
+from .importers.iiif import BulkTaskIIIFImporter
+from pybossa.extensions import importer
 
 __plugin__ = "PyBossaLC"
 __version__ = json.load(open(os.path.join(os.path.dirname(__file__),
@@ -17,6 +19,7 @@ class PyBossaLC(Plugin):
     def setup(self):
         """Setup plugin."""
         self.setup_blueprints()
+        self.setup_iiif_importer()
 
     def setup_blueprints(self):
         """Setup blueprints."""
@@ -26,3 +29,7 @@ class PyBossaLC(Plugin):
         app.register_blueprint(analysis_bp, url_prefix='/libcrowds/analysis')
         app.register_blueprint(results_bp, url_prefix='/libcrowds/results')
         app.register_blueprint(projects_bp, url_prefix='/libcrowds/projects')
+
+    def setup_iiif_importer(self):
+        """Setup the IIIF manifest importer."""
+        importer._importers['iiif'] = BulkTaskIIIFImporter

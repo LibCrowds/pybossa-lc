@@ -3,11 +3,14 @@
 
 import re
 import json
-from flask import Response, Blueprint, flash, request, abort
+from flask import Response, Blueprint, flash, request, abort, current_app
 from pybossa.core import csrf, project_repo
 from pybossa.model.project import Project
 from flask.ext.login import login_required, current_user
 from pybossa.auth import ensure_authorized_to
+from pybossa.core import importer
+from pybossa.importers import BulkImportException
+from pybossa.view.projects import _import_tasks
 
 
 BLUEPRINT = Blueprint('projects', __name__)
@@ -37,6 +40,8 @@ def create():
     shortname = re.sub(badchars, '', name.lower().strip()).replace(' ', '_')
     presenter = collection['info']['presenter']
     webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root, presenter)
+
+
     project = Project(name=name,
                       short_name=shortname,
                       description=template['description'],
@@ -50,9 +55,18 @@ def create():
                       category_id=category.id,
                       owners_ids=[current_user.id])
 
-    print project
-    # project_repo.save(project)
-    importer_type = volume['importer']
+    project_repo.save(project)
+    volume['type'] = volume['importer']
+    volume['template'] = 'template'
+    try:
+        print volume
+        return _import_tasks(project, **volume)
+    except BulkImportException as err_msg:
+        flash(err_msg, 'error')
+    except Exception as inst:  # pragma: no cover
+        current_app.logger.error(inst)
+        msg = 'Oops! Looks like there was an error!'
+        flash(msg, 'error')
 
     res = {
         'status': 'success',
