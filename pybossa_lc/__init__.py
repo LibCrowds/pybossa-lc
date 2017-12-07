@@ -22,5 +22,7 @@ class PyBossaLC(Plugin):
         """Setup blueprints."""
         from .api.analysis import BLUEPRINT as analysis_bp
         from .api.results import BLUEPRINT as results_bp
+        from .api.projects import BLUEPRINT as projects_bp
         app.register_blueprint(analysis_bp, url_prefix='/libcrowds/analysis')
         app.register_blueprint(results_bp, url_prefix='/libcrowds/results')
+        app.register_blueprint(projects_bp, url_prefix='/libcrowds/projects')
