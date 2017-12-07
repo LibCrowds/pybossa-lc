@@ -42,7 +42,7 @@ def create():
                       description=template['description'],
                       long_description='',
                       owner_id=current_user.id,
-                      info={,
+                      info={
                           'volume': volume,
                           'template': template
                       },
