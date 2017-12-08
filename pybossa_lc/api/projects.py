@@ -143,7 +143,8 @@ def create():
         project_repo.delete(project)
         return json_response(msg, 'error', name, short_name)
 
-    # Publish the project if generation was successful
+    # Update redundancy and publish the project if generated successfully
+    task_repo.update_tasks_redundancy(project, 3)
     project.published = True
     project_repo.save(project)
     return response
