@@ -4,17 +4,36 @@
 import re
 import json
 from flask import Response, Blueprint, flash, request, abort, current_app
+from flask.ext.login import login_required, current_user
+from rq import Queue
 from pybossa.core import csrf, project_repo
 from pybossa.model.project import Project
-from flask.ext.login import login_required, current_user
 from pybossa.auth import ensure_authorized_to
-from pybossa.core import importer
+from pybossa.core import importer, sentinel, task_repo
 from pybossa.importers import BulkImportException
-from pybossa.view.projects import _import_tasks
 from pybossa.util import handle_content_type
+from pybossa.default_settings import TIMEOUT
+from pybossa.jobs import import_tasks
 
 
 BLUEPRINT = Blueprint('projects', __name__)
+MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 1000
+IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
+                     default_timeout=TIMEOUT)
+
+def _import_tasks(project, **import_data):
+    """Import the tasks."""
+    number_of_tasks = importer.count_tasks_to_import(**import_data)
+    print number_of_tasks
+    if number_of_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
+        importer.create_tasks(task_repo, project.id, **import_data)
+    else:
+        IMPORT_QUEUE.enqueue(import_tasks, project.id, **import_data)
+        msg = '''The project is being generated with a large amount of tasks.
+            You will recieve an email when the process is complete.'''
+        return json_response(msg, 'info')
+    msg = '''The project has been generated successfully.'''
+    return json_response(msg, 'success')
 
 
 def json_response(msg, status):
@@ -108,9 +127,10 @@ def create():
     try:
         return _import_tasks(project, **import_data)
     except BulkImportException as err_msg:
-        flash(err_msg, 'error')
+        return json_response(err_msg, 'error')
     except Exception as inst:  # pragma: no cover
         current_app.logger.error(inst)
+
     msg = '''Uh oh, the project was created but an error was encountered
         while generating the tasks'''
     return json_response(msg, 'error')
