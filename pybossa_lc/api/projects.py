@@ -17,7 +17,7 @@ from pybossa.jobs import import_tasks
 
 
 BLUEPRINT = Blueprint('projects', __name__)
-MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 1000
+MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 500
 IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
                      default_timeout=TIMEOUT)
 
