@@ -7,11 +7,11 @@ from pybossa.importers.base import BulkTaskImport
 class BulkTaskIIIFImporter(BulkTaskImport):
     """Class to import tasks from IIIF manifests."""
 
-    importer_id = "iiif"
+    importer_id = "iiif-annotation"
 
-    def __init__(self, manifest_url, template):
+    def __init__(self, manifest_uri, template):
         """Init method."""
-        self.manifest_url = manifest_url
+        self.manifest_url = manifest_uri
         self.template = template
 
     def tasks(self):
