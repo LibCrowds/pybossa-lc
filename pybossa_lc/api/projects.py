@@ -23,6 +23,7 @@ IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
 
 def _import_tasks(project, **import_data):
     """Import the tasks."""
+    print 'importing', import_data
     number_of_tasks = importer.count_tasks_to_import(**import_data)
     print number_of_tasks
     if number_of_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
@@ -124,13 +125,16 @@ def create():
 
     project_repo.save(project)
 
+    msg = ''
     try:
         return _import_tasks(project, **import_data)
     except BulkImportException as err_msg:
+        msg = err_msg
         return json_response(err_msg, 'error')
     except Exception as inst:  # pragma: no cover
         current_app.logger.error(inst)
+        msg = 'Uh oh, an error was encountered while generating the tasks'
 
-    msg = '''Uh oh, the project was created but an error was encountered
-        while generating the tasks'''
+    # Clean up if something went wrong
+    project_repo.delete(project)
     return json_response(msg, 'error')
