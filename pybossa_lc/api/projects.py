@@ -93,6 +93,7 @@ def create():
                       long_description='',
                       owner_id=current_user.id,
                       info={
+                          'tutorial': template.get('tutorial'),
                           'volume': volume,
                           'template': template
                       },
