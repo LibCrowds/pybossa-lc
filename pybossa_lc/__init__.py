@@ -32,4 +32,4 @@ class PyBossaLC(Plugin):
 
     def setup_iiif_importer(self):
         """Setup the IIIF manifest importer."""
-        importer._importers['iiif'] = BulkTaskIIIFImporter
+        importer._importers['iiif-annotation'] = BulkTaskIIIFImporter
