@@ -96,7 +96,8 @@ def create():
                       info={
                           'tutorial': template.get('tutorial'),
                           'volume': volume,
-                          'template': template
+                          'template': template,
+                          'tags': data.get('tags')
                       },
                       webhook=webhook,
                       category_id=category.id,
