@@ -27,19 +27,19 @@ def _get_iiif_annotation_data(volume, template):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
-    match = re.match(pattern, source)
+    match = re.search(pattern, source)
     if match:
-        return dict(type='iiif-annotation', manifest_uri=match.group(1),
+        return dict(type='iiif-annotation', manifest_uri=source,
                     template=template)
 
 
 def _get_flickr_data(volume):
     """Return Flickr data."""
     pattern = r'(?<=albums/)\d+(?=/|$)'
-    source = volume.get('source', '')
-    match = re.match(pattern, source)
+    source = volume.get('source', '').strip()
+    match = re.search(pattern, source)
     if match:
-        return dict(type='flickr', album_id=match.group(1))
+        return dict(type='flickr', album_id=match.group(0))
 
 
 @csrf.exempt
