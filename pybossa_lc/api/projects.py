@@ -133,17 +133,20 @@ def create():
 
     msg = ''
     try:
-        return _import_tasks(project, name, short_name, **import_data)
+        response = _import_tasks(project, name, short_name, **import_data)
     except BulkImportException as err_msg:
-        msg = err_msg
+        project_repo.delete(project)
         return json_response(err_msg, 'error', name, short_name)
     except Exception as inst:  # pragma: no cover
         current_app.logger.error(inst)
         msg = 'Uh oh, an error was encountered while generating the tasks'
+        project_repo.delete(project)
+        return json_response(msg, 'error', name, short_name)
 
-    # Clean up if something went wrong
-    project_repo.delete(project)
-    return json_response(msg, 'error', name, short_name)
+    # Publish the project if generation was successful
+    project.published = True
+    project_repo.save(project)
+    return response
 
 
 @csrf.exempt
