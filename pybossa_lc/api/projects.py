@@ -148,7 +148,7 @@ def create():
 
 @csrf.exempt
 @login_required
-@BLUEPRINT.route('/check-shortname', methods=['POST'])
+@BLUEPRINT.route('/check-shortname')
 def check_shortname():
     required_args = ['volume', 'template']
     data = json.loads(request.data)
