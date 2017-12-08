@@ -23,9 +23,7 @@ IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
 
 def _import_tasks(project, **import_data):
     """Import the tasks."""
-    print 'importing', import_data
     number_of_tasks = importer.count_tasks_to_import(**import_data)
-    print number_of_tasks
     if number_of_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
         importer.create_tasks(task_repo, project.id, **import_data)
     else:

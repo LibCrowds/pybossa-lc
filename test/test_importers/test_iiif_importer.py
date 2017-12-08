@@ -95,7 +95,6 @@ class TestIIIFImporter(Test):
         assert len(task_data) == len(canvases)
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
-            print task['form']
             assert_equal(task, {
                 'info': self.manifest['@id'],
                 'target': canvases[idx]['@id'],
