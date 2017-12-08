@@ -38,10 +38,10 @@ class BulkTaskIIIFImporter(BulkTaskImport):
         data = []
         for i, img in enumerate(images):
             row = {
-                'tileSource': img + '/info.json',
+                'tileSource': '{}/info.json'.format(img),
                 'target': canvases[i]['@id'],
                 'info': manifest_url,
-                'thumbnailUrl': img + '/full/256,/0/default.jpg',
+                'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'shareUrl': self._get_share_url(manifest_url, i)
             }
             row['mode'] = self.template['mode']
@@ -50,7 +50,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
             row['guidance'] = self.template['guidance']
             if self.template['fields']:
                 row['form'] = {
-                    'model': {},
+                    'model': {f['model']: '' for f in self.template['fields']},
                     'schema': {
                         'fields': self.template['fields']
                     }
@@ -64,13 +64,14 @@ class BulkTaskIIIFImporter(BulkTaskImport):
         query = '#?cv={}'.format(canvas_index)
 
         # Use the BL viewer for BL items
-        if '://api.bl.uk/metadata/iiif' in base:
-            base = base.replace(
+        if '://api.bl.uk/metadata/iiif/' in manifest_url:
+            base = manifest_url.replace(
                 'api.bl.uk/metadata/iiif',
                 'access.bl.uk/item/viewer'
             )
             base = base.replace('/manifest.json', '')
             base = base.replace('https://', 'http://')
+        else:
             query = '?manifest={0}{1}'.format(manifest_url, query)
 
         return base + query
