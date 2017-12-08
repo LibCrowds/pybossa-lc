@@ -61,13 +61,14 @@ def create():
 
     # Get the task import data for different presenter types
     import_data = {}
-    presenter = data['collection'].get('presenter')
+    presenter = data['collection']['info'].get('presenter')
     if presenter == 'z3950':
         import_data = _get_flickr_data(volume)
     elif presenter == 'iiif-annotation':
         import_data = _get_iiif_annotation_data(volume, template)
     else:
-        return json_response('Invalid task presenter', 'error')
+        msg = 'Unknown task presenter: {}'.format(presenter)
+        return json_response(msg, 'error')
     if not import_data:
         msg = "Invalid volume details for the collection's task presenter type"
         return json_response(msg, 'error')
