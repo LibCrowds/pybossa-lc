@@ -63,5 +63,3 @@ class TestProjectsApi(web.Helper):
         }
         data = projects_api._get_flickr_data(volume)
         assert not data
-
-
