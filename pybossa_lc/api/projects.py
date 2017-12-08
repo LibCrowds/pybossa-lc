@@ -24,15 +24,15 @@ IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
 
 def _import_tasks(project, name, short_name, **import_data):
     """Import the tasks."""
-    number_of_tasks = importer.count_tasks_to_import(**import_data)
-    if number_of_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
+    n_tasks = importer.count_tasks_to_import(**import_data)
+    if n_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
         importer.create_tasks(task_repo, project.id, **import_data)
     else:
         IMPORT_QUEUE.enqueue(import_tasks, project.id, **import_data)
         msg = '''The project is being generated with a large amount of tasks.
             You will recieve an email when the process is complete.'''
         return json_response(msg, 'info', name, short_name)
-    msg = '''The project has been generated successfully.'''
+    msg = 'The project was generated with {} tasks.'.format(n_tasks)
     return json_response(msg, 'success', name, short_name)
 
 
