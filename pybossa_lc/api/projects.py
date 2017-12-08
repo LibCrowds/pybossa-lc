@@ -110,5 +110,6 @@ def create():
         flash(err_msg, 'error')
     except Exception as inst:  # pragma: no cover
         current_app.logger.error(inst)
-    msg = 'Oops! Looks like there was an error!'
+    msg = '''Uh oh, the project was created but an error was encountered
+        while generating the tasks'''
     return json_response(msg, 'error')
