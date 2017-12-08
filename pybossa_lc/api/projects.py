@@ -19,7 +19,7 @@ BLUEPRINT = Blueprint('projects', __name__)
 
 def json_response(msg, status):
     """Return a message as a JSON response."""
-    res = dict(status=status, msg=msg)
+    res = dict(status=status, flash=msg)
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
