@@ -26,7 +26,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
         """Generate the tasks."""
         manifest = requests.get(self.manifest_url).json()
         tasks = self._get_task_data_from_manifest(manifest)
-        return tasks
+        return { 'info': task for task in tasks }
 
     def _get_task_data_from_manifest(self, manifest):
         """Return the task data generated from a manifest."""
