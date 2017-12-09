@@ -22,18 +22,16 @@ IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
                      default_timeout=TIMEOUT)
 
 
-def _import_tasks(project, name, short_name, **import_data):
+def _import_tasks(project, **import_data):
     """Import the tasks."""
     n_tasks = importer.count_tasks_to_import(**import_data)
     if n_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
         importer.create_tasks(task_repo, project.id, **import_data)
     else:
         IMPORT_QUEUE.enqueue(import_tasks, project.id, **import_data)
-        msg = '''The project is being generated with a large amount of tasks.
+        return '''The project is being generated with a large amount of tasks.
             You will recieve an email when the process is complete.'''
-        return json_response(msg, 'info', name, short_name)
-    msg = 'The project was generated with {} tasks.'.format(n_tasks)
-    return json_response(msg, 'success', name, short_name)
+    return 'The project was generated with {} tasks.'.format(n_tasks)
 
 
 def _get_name_and_shortname(template, volume):
@@ -44,9 +42,9 @@ def _get_name_and_shortname(template, volume):
     return name, short_name
 
 
-def json_response(msg, status, name, short_name):
+def json_response(msg, status, project={}):
     """Return a message as a JSON response."""
-    res = dict(status=status, flash=msg, name=name, short_name=short_name)
+    res = dict(status=status, flash=msg, project=project)
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
@@ -97,10 +95,10 @@ def create():
         import_data = _get_iiif_annotation_data(volume, template)
     else:
         msg = 'Unknown task presenter: {}'.format(presenter)
-        return json_response(msg, 'error', name, short_name)
+        return json_response(msg, 'error')
     if not import_data:
         msg = "Invalid volume details for the collection's task presenter type"
-        return json_response(msg, 'error', name, short_name)
+        return json_response(msg, 'error')
 
     ensure_authorized_to('create', Project)
 
@@ -109,10 +107,8 @@ def create():
 
     existing_project = project_repo.filter_by(short_name=short_name)
     if existing_project:
-        msg = """A project already exists with that short name, which usually
-            means that a project has already been created from the selected
-            volume and template."""
-        return json_response(msg, 'error', name, short_name)
+        msg = "A project already exists with that short name."
+        return json_response(msg, 'error')
 
     project = Project(name=name,
                       short_name=short_name,
@@ -133,21 +129,23 @@ def create():
 
     msg = ''
     try:
-        response = _import_tasks(project, name, short_name, **import_data)
+        response = _import_tasks(project, **import_data)
     except BulkImportException as err_msg:
         project_repo.delete(project)
-        return json_response(err_msg, 'error', name, short_name)
+        return json_response(err_msg, 'error')
     except Exception as inst:  # pragma: no cover
         current_app.logger.error(inst)
         msg = 'Uh oh, an error was encountered while generating the tasks'
         project_repo.delete(project)
-        return json_response(msg, 'error', name, short_name)
+        return json_response(msg, 'error')
+
+    response['project'] = project
 
     # Update redundancy and publish the project if generated successfully
     task_repo.update_tasks_redundancy(project, 3)
     project.published = True
     project_repo.save(project)
-    return response
+    return json_response(msg, 'success', project)
 
 
 @csrf.exempt
@@ -164,7 +162,6 @@ def check_shortname():
     name, short_name = _get_name_and_shortname(template, volume)
     projects = project_repo.filter_by(short_name=short_name)
     if projects:
-        msg = 'Shortname already exists'
-        return json_response(msg, 'error', name, short_name)
-    msg = 'Shortname does not exist'
-    return json_response(msg, 'success', name, short_name)
+        return Response(json.dumps(projects[0]), 200,
+                        mimetype='application/json')
+    return Response(json.dumps({}), 200, mimetype='application/json')
