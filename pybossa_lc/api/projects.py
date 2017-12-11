@@ -9,7 +9,7 @@ from rq import Queue
 from pybossa.core import csrf, project_repo
 from pybossa.model.project import Project
 from pybossa.auth import ensure_authorized_to
-from pybossa.core import importer, sentinel, task_repo
+from pybossa.core import importer, sentinel, task_repo, result_repo
 from pybossa.importers import BulkImportException
 from pybossa.util import handle_content_type
 from pybossa.default_settings import TIMEOUT
@@ -34,6 +34,25 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} tasks.'.format(n_tasks)
 
 
+def check_parent(parent_id, template):
+    """Check that a parent ID is valid."""
+    if not 'iiif-annotation' or template['mode'] != 'transcribe':
+        return "Only IIIF transcription projects can be built from a parent"
+
+    parent = project_repo.get(parent_id)
+    if not parent:
+        return "Parent not found"
+
+    empty_results = result_repo.filter_by(info=None, project_id=parent.id)
+    if empty_results:
+        return "Parent contains incomplete results"
+
+    incomplete_tasks = task_repo.filter_by(status='ongoing',
+                                            project_id=parent.id)
+    if incomplete_tasks:
+        return "Parent contains incomplete tasks"
+
+
 def _get_name_and_shortname(template, volume):
     """Create a name and shortname from the template and volume details."""
     name = '{0}: {1}'.format(template['name'], volume['name'])
@@ -48,14 +67,14 @@ def json_response(msg, status, project={}):
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
-def _get_iiif_annotation_data(volume, template):
+def _get_iiif_annotation_data(volume, template, parent_id):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
     match = re.search(pattern, source)
     if match:
         return dict(type='iiif-annotation', manifest_uri=source,
-                    template=template)
+                    template=template, parent_id=parent_id)
 
 
 def _get_flickr_data(volume):
@@ -72,7 +91,7 @@ def _get_flickr_data(volume):
 @BLUEPRINT.route('/create', methods=['POST'])
 def create():
     """Create a LibCrowds project."""
-    required_args = ['collection', 'volume', 'template']
+    required_args = ['collection', 'volume', 'template', 'parent_id']
     data = json.loads(request.data)
     if not all(arg in data for arg in required_args):
         abort(400)
@@ -80,9 +99,14 @@ def create():
     volume = data['volume']
     template = data['template']
     collection = data['collection']
+    parent_id = data['parent_id']
     category = project_repo.get_category(collection.get('id'))
     if not category:
         abort(404)
+
+    check_parent_msg = check_parent(parent_id, template)
+    if check_parent_msg:
+        return json_response(check_parent_msg, 'error')
 
     name, short_name = _get_name_and_shortname(template, volume)
 
@@ -92,7 +116,7 @@ def create():
     if presenter == 'z3950':
         import_data = _get_flickr_data(volume)
     elif presenter == 'iiif-annotation':
-        import_data = _get_iiif_annotation_data(volume, template)
+        import_data = _get_iiif_annotation_data(volume, template, parent_id)
     else:
         msg = 'Unknown task presenter: {}'.format(presenter)
         return json_response(msg, 'error')
