@@ -66,6 +66,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
     def _enhance_task_data_from_parent(self, task_data, parent_id):
         """Add tasks according to the results of a parent task."""
         indexed_task_data = {row['target']: row for row in task_data}
+        print(result_repo)
         results = result_repo.filter_by(project_id=parent_id)
         enhanced_task_data = []
         for row in results:
@@ -90,22 +91,16 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                         }
                     ]
                     data['bounds'] = {
-                        'x': float(rect[0]) + data['bounds']['x'],
-                        'y': float(rect[1]) + data['bounds']['y'],
-                        'width': float(rect[2]) + data['bounds']['width'],
-                        'height': float(rect[3]) + data['bounds']['height']
+                        'x': float(rect[0]) + -200,
+                        'y': float(rect[1]) + 0,
+                        'width': float(rect[2]) + 400,
+                        'height': float(rect[3]) + 0
                     }
                     data['parent_task_id'] = row['task_id']
                     enhanced_task_data.append(data)
 
-                elif anno['motivation'] == 'describing':
-                    source = anno['target']['source']
-                    data = indexed_task_data[source].copy()
-                    data['parent_task_id'] = row['task_id']
-                    enhanced_task_data.append(data)
-
                 elif anno['motivation'] != 'commenting':
-                    raise ValueError('Unknown motivation')
+                    raise ValueError('Unhandled motivation')
 
         # Sort
         return sorted(enhanced_task_data,

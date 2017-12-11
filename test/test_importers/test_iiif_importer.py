@@ -4,7 +4,7 @@
 import os
 import json
 from nose.tools import assert_equal
-from default import Test, db
+from default import Test, db, with_context
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
 from pybossa.repositories import ResultRepository
 
@@ -17,7 +17,10 @@ class TestIIIFImporter(Test):
         super(TestIIIFImporter, self).setUp()
         self.result_repo = ResultRepository(db)
         manifest_path = os.path.join('test', 'fixtures', 'manifest.json')
+        select_anno_path = os.path.join('test', 'fixtures',
+                                        'select_annotation.json')
         self.manifest = json.load(open(manifest_path))
+        self.select_annotation = json.load(open(select_anno_path))
 
     def test_get_default_share_url(self):
         """Test get default share URL."""
@@ -114,3 +117,33 @@ class TestIIIFImporter(Test):
                     }
                 }
             })
+
+    @with_context
+    def test_enhance_task_data_from_tagging_parent(self):
+        """Test that a transcription task is created for each tag result."""
+        project = ProjectFactory.create()
+        tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
+        for task in tasks:
+            TaskRunFactory.create(task=task)
+            result = self.result_repo.filter_by(task_id=task.id)[0]
+            result.info = {
+                'annotations': [
+                    self.select_annotation
+                ]
+            }
+            self.result_repo.update(result)
+
+        task_data = [
+            {
+                'target': 'foo'
+            },
+            {
+                'target': 'bar'
+            }
+        ]
+
+        importer = BulkTaskIIIFImporter(self.manifest['@id'], {})
+        task_data = importer._enhance_task_data_from_parent(task_data,
+                                                            project.id)
+        print task_data
+        assert 1 == 2
