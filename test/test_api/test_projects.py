@@ -1,10 +1,13 @@
 # -*- coding: utf8 -*-
 """Test projects API."""
 
+from mock import patch, MagicMock
 from nose.tools import assert_equals
 from helper import web
 from default import with_context
+from factories import ProjectFactory
 
+from pybossa.jobs import import_tasks
 from pybossa_lc.api import projects as projects_api
 
 
@@ -65,3 +68,14 @@ class TestProjectsApi(web.Helper):
         }
         data = projects_api._get_flickr_data(volume)
         assert not data
+
+    @with_context
+    @patch('pybossa_lc.api.analysis.Queue.enqueue')
+    @patch('pybossa.core.importer.count_tasks_to_import', return_value=301)
+    def test_task_import_queued_for_large_sets(self, mock_count, mock_enqueue):
+        """Test that task imports are queued when over 300."""
+        project = ProjectFactory.create()
+        import_data = dict(foo='bar')
+        projects_api._import_tasks(project, **import_data)
+        mock_enqueue.assert_called_with(import_tasks, project.id,
+                                        **import_data)
