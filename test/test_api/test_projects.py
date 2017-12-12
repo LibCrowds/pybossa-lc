@@ -22,9 +22,11 @@ class TestProjectsApi(web.Helper):
             'source': manifest_uri
         }
         template = {'foo': 'bar'}
-        data = projects_api._get_iiif_annotation_data(volume, template)
+        parent_id = 123
+        data = projects_api._get_iiif_annotation_data(volume, template,
+                                                      parent_id)
         expected = dict(type='iiif-annotation', manifest_uri=manifest_uri,
-                        template=template)
+                        template=template, parent_id=parent_id)
         assert_equals(data, expected)
 
     @with_context

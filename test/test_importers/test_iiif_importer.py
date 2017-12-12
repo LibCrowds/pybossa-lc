@@ -3,6 +3,8 @@
 
 import os
 import json
+import copy
+from mock import MagicMock, patch
 from nose.tools import assert_equal
 from default import Test, db, with_context
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
@@ -120,30 +122,67 @@ class TestIIIFImporter(Test):
 
     @with_context
     def test_enhance_task_data_from_tagging_parent(self):
-        """Test that a transcription task is created for each tag result."""
-        project = ProjectFactory.create()
-        tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
-        for task in tasks:
-            TaskRunFactory.create(task=task)
-            result = self.result_repo.filter_by(task_id=task.id)[0]
-            result.info = {
-                'annotations': [
-                    self.select_annotation
-                ]
+        """Test that a transcription task is created for each parent result."""
+        annotations = []
+        n_annos = 3
+        parent_task_id = 42
+        target = 'http://example.org/iiif/book1/canvas/p1'
+        for i in range(n_annos):
+            anno = copy.deepcopy(self.select_annotation)
+            selection = '?xywh={0},{0},{0},{0}'.format(i)
+            anno['target']['source'] = target
+            anno['target']['selector']['value'] = selection
+            annotations.append(anno)
+        results = [
+            {
+                'task_id': parent_task_id,
+                'info': {
+                    'annotations': annotations
+                }
             }
-            self.result_repo.update(result)
-
+        ]
         task_data = [
             {
-                'target': 'foo'
-            },
-            {
-                'target': 'bar'
+                'target': target,
+                'mode': 'transcribe'
             }
         ]
 
         importer = BulkTaskIIIFImporter(self.manifest['@id'], {})
-        task_data = importer._enhance_task_data_from_parent(task_data,
-                                                            project.id)
-        print task_data
-        assert 1 == 2
+        task_data = importer._enhance_task_data_from_parent(task_data, results)
+        assert len(task_data) == len(annotations)
+        for i in range(n_annos):
+            data = task_data[i]
+            assert data['highlights'] == [
+                {
+                    'x': float(i),
+                    'y': float(i),
+                    'width': float(i),
+                    'height': float(i)
+                }
+            ]
+            assert data['bounds'] == {
+                'x': float(i) + -200,
+                'y': float(i) + 0,
+                'width': float(i) + 400,
+                'height': float(i) + 0
+            }
+            assert data['parent_task_id'] == parent_task_id
+
+    def test_task_generation_triggered(self):
+        """Test that task generation is triggered."""
+        importer = BulkTaskIIIFImporter(self.manifest['@id'], {})
+        mock_generate = MagicMock()
+        importer._generate_tasks = mock_generate
+        importer.tasks()
+        assert mock_generate.called
+
+    def test_task_count(self):
+        """Test that tasks are counted correctly."""
+        n_tasks = 42
+        importer = BulkTaskIIIFImporter(self.manifest['@id'], {})
+        mock_generate = MagicMock()
+        mock_generate.return_value = [{}] * n_tasks
+        importer._generate_tasks = mock_generate
+        count = importer.count_tasks()
+        assert count == n_tasks
