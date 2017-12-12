@@ -67,7 +67,7 @@ def json_response(msg, status, project={}):
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
-def _get_iiif_annotation_data(volume, template, parent_id):
+def _get_iiif_annotation_data(volume, template, parent_id=None):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
@@ -99,7 +99,7 @@ def create():
     volume = data['volume']
     template = data['template']
     collection = data['collection']
-    parent_id = data['parent_id']
+    parent_id = data.get('parent_id')
     category = project_repo.get_category(collection.get('id'))
     if not category:
         abort(404)

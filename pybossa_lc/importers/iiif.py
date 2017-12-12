@@ -2,7 +2,7 @@
 """IIIF importer module for pybossa-lc"""
 import requests
 from pybossa.importers.base import BulkTaskImport
-from pybossa.core import result_repo
+from pybossa.core import result_repo, task_repo
 
 
 class BulkTaskIIIFImporter(BulkTaskImport):
@@ -29,8 +29,9 @@ class BulkTaskIIIFImporter(BulkTaskImport):
         manifest = requests.get(self.manifest_url).json()
         task_data = self._get_task_data_from_manifest(manifest)
         if self.parent_id:
-            task_data = self._enhance_task_data_from_parent(task_data,
-                                                            self.parent_id)
+            print task_repo, result_repo
+            results = result_repo.filter_by(project_id=self.parent_id)
+            task_data = self._enhance_task_data_from_parent(task_data, results)
         return [dict(info=data) for data in task_data]
 
     def _get_task_data_from_manifest(self, manifest):
@@ -63,11 +64,9 @@ class BulkTaskIIIFImporter(BulkTaskImport):
             data.append(row)
         return data
 
-    def _enhance_task_data_from_parent(self, task_data, parent_id):
+    def _enhance_task_data_from_parent(self, task_data, results):
         """Add tasks according to the results of a parent task."""
         indexed_task_data = {row['target']: row for row in task_data}
-        print(result_repo)
-        results = result_repo.filter_by(project_id=parent_id)
         enhanced_task_data = []
         for row in results:
             info = row['info']
