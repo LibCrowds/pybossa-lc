@@ -16,6 +16,8 @@ from pybossa.util import handle_content_type
 from pybossa.default_settings import TIMEOUT
 from pybossa.jobs import import_tasks
 
+from ..utils import get_template, get_volume
+
 
 BLUEPRINT = Blueprint('projects', __name__)
 MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 300
@@ -33,16 +35,6 @@ def _import_tasks(project, **import_data):
         return '''The project is being generated with a large amount of tasks.
             You will recieve an email when the process is complete.'''
     return 'The project was generated with {} tasks.'.format(n_tasks)
-
-
-def get_template(category, template_id):
-    """Return a valid template."""
-    templates = category.info.get('templates', {})
-    template = templates.get(template_id)
-    if not template:
-        msg = 'Template not found'
-        abort(jsonify(message=msg), 404)
-    return template
 
 
 def get_volume(category, volume_id):
@@ -97,14 +89,14 @@ def json_response(msg, status, project={}):
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
-def _get_iiif_annotation_data(volume, template_id, parent_id):
+def _get_iiif_annotation_data(volume, template, parent_id):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
     match = re.search(pattern, source)
     if match:
         return dict(type='iiif-annotation', manifest_uri=source,
-                    template_id=template_id, parent_id=parent_id)
+                    template_id=template['id'], parent_id=parent_id)
 
 
 def _get_flickr_data(volume):

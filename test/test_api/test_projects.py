@@ -8,6 +8,7 @@ from default import with_context
 from factories import ProjectFactory
 
 from pybossa.jobs import import_tasks
+from pybossa.core import task_repo
 from pybossa_lc.api import projects as projects_api
 
 
@@ -76,7 +77,16 @@ class TestProjectsApi(web.Helper):
     def test_task_import_queued_for_large_sets(self, mock_count, mock_enqueue):
         """Test that task imports are queued when over 300."""
         project = ProjectFactory.create()
-        import_data = dict(foo='bar')
-        projects_api._import_tasks(project, **import_data)
-        mock_enqueue.assert_called_with(import_tasks, project.id,
-                                        **import_data)
+        data = dict(foo='bar')
+        projects_api._import_tasks(project, **data)
+        mock_enqueue.assert_called_with(import_tasks, project.id, **data)
+
+    @with_context
+    @patch('pybossa.core.importer.create_tasks')
+    @patch('pybossa.core.importer.count_tasks_to_import', return_value=300)
+    def test_task_import_for_smaller_sets(self, mock_count, mock_create):
+        """Test that task imports are created immediately when 300 or less."""
+        project = ProjectFactory.create()
+        data = dict(foo='bar')
+        projects_api._import_tasks(project, **data)
+        mock_create.assert_called_with(task_repo, project.id, **data)
