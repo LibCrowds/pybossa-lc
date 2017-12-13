@@ -158,7 +158,7 @@ class TestIIIFImporter(Test):
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'form': {
                     'model': {
-                      'date': ''
+                        'date': ''
                     },
                     'schema': {
                         'fields': template['fields']

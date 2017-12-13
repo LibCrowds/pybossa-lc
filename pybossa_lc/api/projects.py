@@ -75,7 +75,7 @@ def get_parent(parent_id, template):
         abort(jsonify(message=msg), 400)
 
     incomplete_tasks = task_repo.filter_by(status='ongoing',
-                                            project_id=parent.id)
+                                           project_id=parent.id)
     if incomplete_tasks:
         msg = "Parent contains incomplete tasks"
         abort(jsonify(message=msg), 400)
