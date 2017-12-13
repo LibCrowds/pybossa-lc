@@ -2,7 +2,6 @@
 """IIIF importer module for pybossa-lc"""
 import requests
 from pybossa.importers.base import BulkTaskImport
-from pybossa.core import result_repo, task_repo
 
 
 class BulkTaskIIIFImporter(BulkTaskImport):
@@ -12,8 +11,8 @@ class BulkTaskIIIFImporter(BulkTaskImport):
 
     def __init__(self, manifest_uri, template, parent_id=None):
         """Init method."""
-        self.manifest_url = manifest_uri
         self.template = template
+        self.manifest_uri = manifest_uri
         self.parent_id = parent_id
 
     def tasks(self):
@@ -26,17 +25,15 @@ class BulkTaskIIIFImporter(BulkTaskImport):
 
     def _generate_tasks(self):
         """Generate the tasks."""
-        manifest = requests.get(self.manifest_url).json()
-        task_data = self._get_task_data_from_manifest(manifest)
+        manifest = requests.get(self.manifest_uri).json()
+        task_data = self._get_task_data(manifest)
         if self.parent_id:
-            print task_repo, result_repo
-            results = result_repo.filter_by(project_id=self.parent_id)
-            task_data = self._enhance_task_data_from_parent(task_data, results)
+            task_data = self._enhance_task_data(task_data, self.parent_id)
         return [dict(info=data) for data in task_data]
 
-    def _get_task_data_from_manifest(self, manifest):
+    def _get_task_data(self, manifest):
         """Return the task data generated from a manifest."""
-        manifest_url = manifest['@id']
+        manifest_uri = manifest['@id']
         canvases = manifest['sequences'][0]['canvases']
         images = [c['images'][0]['resource']['service']['@id']
                   for c in canvases]
@@ -46,9 +43,9 @@ class BulkTaskIIIFImporter(BulkTaskImport):
             row = {
                 'tileSource': '{}/info.json'.format(img),
                 'target': canvases[i]['@id'],
-                'info': manifest_url,
+                'info': manifest_uri,
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
-                'shareUrl': self._get_share_url(manifest_url, i)
+                'shareUrl': self._get_share_url(manifest_uri, i)
             }
             row['mode'] = self.template['mode']
             row['tag'] = self.template['tag']
@@ -64,16 +61,16 @@ class BulkTaskIIIFImporter(BulkTaskImport):
             data.append(row)
         return data
 
-    def _enhance_task_data_from_parent(self, task_data, results):
+    def _enhance_task_data(self, task_data, parent_id):
         """Add tasks according to the results of a parent task."""
+        from pybossa.core import result_repo
         indexed_task_data = {row['target']: row for row in task_data}
         enhanced_task_data = []
-        for row in results:
-            info = row['info']
-
-            if not info:
+        results = result_repo.filter_by(project_id=parent_id)
+        for result in results:
+            if not result.info:
                 raise ValueError('The info field for a result is empty')
-            annotations = info['annotations']
+            annotations = result.info['annotations']
 
             for anno in annotations:
                 if anno['motivation'] == 'tagging':
@@ -95,13 +92,13 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                         'width': float(rect[2]) + 400,
                         'height': float(rect[3]) + 0
                     }
-                    data['parent_task_id'] = row['task_id']
+                    data['parent_task_id'] = result.task_id
                     enhanced_task_data.append(data)
 
                 elif anno['motivation'] != 'commenting':
                     raise ValueError('Unhandled motivation')
 
-        # Sort
+        # Sort by target and any highlights
         return sorted(enhanced_task_data,
                       key=lambda x: (
                           x['target'],
@@ -109,20 +106,20 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                           x['highlights'][0]['x']
                       ))
 
-    def _get_share_url(self, manifest_url, canvas_index):
+    def _get_share_url(self, manifest_uri, canvas_index):
         """Return a Universal Viewer URL for sharing."""
         base = 'http://universalviewer.io/uv.html'
         query = '#?cv={}'.format(canvas_index)
 
         # Use the BL viewer for BL items
-        if '://api.bl.uk/metadata/iiif/' in manifest_url:
-            base = manifest_url.replace(
+        if '://api.bl.uk/metadata/iiif/' in manifest_uri:
+            base = manifest_uri.replace(
                 'api.bl.uk/metadata/iiif',
                 'access.bl.uk/item/viewer'
             )
             base = base.replace('/manifest.json', '')
             base = base.replace('https://', 'http://')
         else:
-            query = '?manifest={0}{1}'.format(manifest_url, query)
+            query = '?manifest={0}{1}'.format(manifest_uri, query)
 
         return base + query

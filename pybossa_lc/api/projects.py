@@ -4,6 +4,7 @@
 import re
 import json
 from flask import Response, Blueprint, flash, request, abort, current_app
+from flask import jsonify
 from flask.ext.login import login_required, current_user
 from rq import Queue
 from pybossa.core import csrf, project_repo
@@ -34,26 +35,55 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} tasks.'.format(n_tasks)
 
 
-def check_parent(parent_id, template):
-    """Check that a parent ID is valid."""
+def get_template(category, template_id):
+    """Return a valid template."""
+    templates = category.info.get('templates', {})
+    template = templates.get(template_id)
+    if not template:
+        msg = 'Template not found'
+        abort(jsonify(message=msg), 404)
+    return template
+
+
+def get_volume(category, volume_id):
+    """Return a valid volume."""
+    volumes = category.info.get('volumes', {})
+    volume = volumes.get(volume_id)
+    if not volume:
+        msg = 'Volume not found'
+        abort(jsonify(message=msg), 404)
+    return volume
+
+
+def get_parent(parent_id, template):
+    """Return a valid parent."""
+    if not parent_id:
+        return None
+
     if not 'iiif-annotation' or template['mode'] != 'transcribe':
-        return "Only IIIF transcription projects can be built from a parent"
+        msg = "Only IIIF transcription projects can be built from a parent"
+        abort(jsonify(message=msg), 400)
 
     parent = project_repo.get(parent_id)
     if not parent:
-        return "Parent not found"
+        msg = "Parent not found"
+        abort(jsonify(message=msg), 400)
 
     empty_results = result_repo.filter_by(info=None, project_id=parent.id)
     if empty_results:
-        return "Parent contains incomplete results"
+        msg = "Parent contains incomplete results"
+        abort(jsonify(message=msg), 400)
 
     incomplete_tasks = task_repo.filter_by(status='ongoing',
                                             project_id=parent.id)
     if incomplete_tasks:
-        return "Parent contains incomplete tasks"
+        msg = "Parent contains incomplete tasks"
+        abort(jsonify(message=msg), 400)
+
+    return parent
 
 
-def _get_name_and_shortname(template, volume):
+def get_name_and_shortname(template, volume):
     """Create a name and shortname from the template and volume details."""
     name = '{0}: {1}'.format(template['name'], volume['name'])
     badchars = r"([$#%·:,.~!¡?\"¿'=)(!&\/|]+)"
@@ -67,14 +97,14 @@ def json_response(msg, status, project={}):
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
-def _get_iiif_annotation_data(volume, template, parent_id=None):
+def _get_iiif_annotation_data(volume, template_id, parent_id):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
     match = re.search(pattern, source)
     if match:
         return dict(type='iiif-annotation', manifest_uri=source,
-                    template=template, parent_id=parent_id)
+                    template_id=template_id, parent_id=parent_id)
 
 
 def _get_flickr_data(volume):
@@ -91,24 +121,22 @@ def _get_flickr_data(volume):
 @BLUEPRINT.route('/create', methods=['POST'])
 def create():
     """Create a LibCrowds project."""
-    required_args = ['collection', 'volume', 'template', 'parent_id']
+    required_args = ['category_id', 'volume_id', 'template_id', 'parent_id']
     data = json.loads(request.data)
     if not all(arg in data for arg in required_args):
-        abort(400)
+        msg = 'Missing required arguments'
+        abort(jsonify(message=msg), 400)
 
-    volume = data['volume']
-    template = data['template']
-    collection = data['collection']
-    parent_id = data.get('parent_id')
-    category = project_repo.get_category(collection.get('id'))
+    category = project_repo.get_category(data['category_id'])
     if not category:
-        abort(404)
+        msg = 'Category not found'
+        abort(jsonify(message=msg), 404)
 
-    check_parent_msg = check_parent(parent_id, template)
-    if check_parent_msg:
-        return json_response(check_parent_msg, 'error')
+    volume = get_volume(category, data['volume_id'])
+    template = get_template(category, data['template_id'])
+    parent = get_parent(data['parent_id'], template)
 
-    name, short_name = _get_name_and_shortname(template, volume)
+    name, short_name = get_name_and_shortname(template, volume)
 
     # Get the task import data for different presenter types
     import_data = {}
@@ -116,7 +144,7 @@ def create():
     if presenter == 'z3950':
         import_data = _get_flickr_data(volume)
     elif presenter == 'iiif-annotation':
-        import_data = _get_iiif_annotation_data(volume, template, parent_id)
+        import_data = _get_iiif_annotation_data(volume, template, parent)
     else:
         msg = 'Unknown task presenter: {}'.format(presenter)
         return json_response(msg, 'error')
@@ -126,7 +154,7 @@ def create():
 
     ensure_authorized_to('create', Project)
 
-    presenter = collection['info']['presenter']
+    presenter = category.info['presenter']
     webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root, presenter)
 
     existing_project = project_repo.filter_by(short_name=short_name)
@@ -183,7 +211,7 @@ def check_shortname():
 
     volume = data['volume']
     template = data['template']
-    name, short_name = _get_name_and_shortname(template, volume)
+    _name, short_name = get_name_and_shortname(template, volume)
     projects = project_repo.filter_by(short_name=short_name)
     if projects:
         return Response(json.dumps(projects[0]), 200,

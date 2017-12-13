@@ -24,12 +24,12 @@ class TestProjectsApi(web.Helper):
             'name': 'some_manifest',
             'source': manifest_uri
         }
-        template = {'foo': 'bar'}
+        template_id = 'foo'
         parent_id = 123
-        data = projects_api._get_iiif_annotation_data(volume, template,
+        data = projects_api._get_iiif_annotation_data(volume, template_id,
                                                       parent_id)
         expected = dict(type='iiif-annotation', manifest_uri=manifest_uri,
-                        template=template, parent_id=parent_id)
+                        template_id=template_id, parent_id=parent_id)
         assert_equals(data, expected)
 
     @with_context
@@ -40,8 +40,9 @@ class TestProjectsApi(web.Helper):
             'name': 'some_manifest',
             'source': manifest_uri
         }
-        template = {'foo': 'bar'}
-        data = projects_api._get_iiif_annotation_data(volume, template)
+        template_id = 'foo'
+        data = projects_api._get_iiif_annotation_data(volume, template_id,
+                                                      None)
         assert not data
 
     @with_context
