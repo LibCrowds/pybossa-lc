@@ -23,12 +23,14 @@ class PyBossaLC(Plugin):
 
     def setup_blueprints(self):
         """Setup blueprints."""
-        from .api.analysis import BLUEPRINT as analysis_bp
-        from .api.results import BLUEPRINT as results_bp
-        from .api.projects import BLUEPRINT as projects_bp
-        app.register_blueprint(analysis_bp, url_prefix='/libcrowds/analysis')
-        app.register_blueprint(results_bp, url_prefix='/libcrowds/results')
-        app.register_blueprint(projects_bp, url_prefix='/libcrowds/projects')
+        from .api.analysis import BLUEPRINT as analysis
+        from .api.results import BLUEPRINT as results
+        from .api.projects import BLUEPRINT as projects
+        from .api.categories import BLUEPRINT as categories
+        app.register_blueprint(analysis, url_prefix='/libcrowds/analysis')
+        app.register_blueprint(results, url_prefix='/libcrowds/results')
+        app.register_blueprint(projects, url_prefix='/libcrowds/projects')
+        app.register_blueprint(categories, url_prefix='/libcrowds/categories')
 
     def setup_iiif_importer(self):
         """Setup the IIIF manifest importer."""

@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 """Forms module for pybossa-lc."""
+
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, validators
 from pybossa.forms import validator as pb_validator
