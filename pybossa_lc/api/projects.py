@@ -89,14 +89,14 @@ def json_response(msg, status, project={}):
     return Response(json.dumps(res), 200, mimetype='application/json')
 
 
-def _get_iiif_annotation_data(volume, template, parent_id):
+def _get_iiif_annotation_data(volume, template_id, parent_id):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
     match = re.search(pattern, source)
     if match:
         return dict(type='iiif-annotation', manifest_uri=source,
-                    template_id=template['id'], parent_id=parent_id)
+                    template_id=template_id, parent_id=parent_id)
 
 
 def _get_flickr_data(volume):
@@ -136,7 +136,7 @@ def create():
     if presenter == 'z3950':
         import_data = _get_flickr_data(volume)
     elif presenter == 'iiif-annotation':
-        import_data = _get_iiif_annotation_data(volume, template, parent)
+        import_data = _get_iiif_annotation_data(volume, template['id'], parent)
     else:
         msg = 'Unknown task presenter: {}'.format(presenter)
         return json_response(msg, 'error')
