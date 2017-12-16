@@ -3,7 +3,7 @@
 
 import json
 from mock import patch, MagicMock
-from nose.tools import assert_equals
+from nose.tools import *
 from helper import web
 from default import with_context, db
 from factories import CategoryFactory
@@ -69,7 +69,8 @@ class TestCategoryApi(web.Helper):
         """Test the update template endpoint."""
         tmpl = dict(id=12345, name='Transcribe', tag='title',
                     objective='Transcribe the title', guidance='Do it now',
-                    description='This project is amazing', mode='select')
+                    description='This project is amazing', mode='select',
+                    tutorial='Do stuff')
         info = dict(templates=[tmpl])
         category = CategoryFactory.create(info=info)
         endpoint = '/libcrowds/categories/{}/templates/{}'.format(category.id,
@@ -87,10 +88,15 @@ class TestCategoryApi(web.Helper):
         assert res.status_code == 403, res
 
         # Test admin user authorised
-        self.register()
         self.signin()
         res = self.app_get_json(endpoint)
         assert res.status_code == 200
+
+        # Test form is populated
+        form = json.loads(res.data)['form']
+        fields = {k: v for k, v in form.items()
+                  if k not in ['csrf', 'errors']}
+        assert_dict_equal(fields, tmpl)
 
         # Test that a template is updated
         tmpl['name'] = 'A new name'

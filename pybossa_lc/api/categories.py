@@ -1,8 +1,9 @@
 # -*- coding: utf8 -*-
 """API category module for pybossa-lc."""
+
 import uuid
 import json
-from flask import Response, Blueprint, flash, request, abort
+from flask import Response, Blueprint, flash, request, abort, jsonify
 from flask.ext.login import login_required, current_user
 from pybossa.util import admin_required, handle_content_type
 from pybossa.cache import categories as cached_cat
@@ -21,7 +22,7 @@ def templates(category_id):
     """Add a project template."""
     category = project_repo.get_category(category_id)
     if not category:  # pragma: no-cover
-        abort(404)
+        abort(jsonify(message="Category not found"), 404)
 
     ensure_authorized_to('update', category)
 
@@ -57,35 +58,26 @@ def update_template(category_id, template_id):
     """Update a project template."""
     category = project_repo.get_category(category_id)
     if not category:  # pragma: no-cover
-        abort(404)
+        abort(jsonify(message="Category not found"), 404)
 
     ensure_authorized_to('update', category)
+
+    print category.info.get('templates', [])
 
     try:
         template = [t for t in category.info.get('templates', [])
                     if t['id'] == template_id][0]
-    except KeyError:
-        abort(404)
+    except IndexError:
+        abort(jsonify(message="Template not found"), 404)
 
-    form = ProjectTemplateForm(obj=template)
+    form = ProjectTemplateForm(**template)
 
     if request.method == 'POST' and form.validate():
         form = ProjectTemplateForm(request.body)
-        new_template = {
-            'id': template['id'],
-            'name': form.name.data,
-            'tag': form.tag.data,
-            'description': form.description.data,
-            'objective': form.objective.data,
-            'guidance': form.guidance.data,
-            'tutorial': form.tutorial.data,
-            'mode': form.mode.data
-        }
-
         category_templates = category.info.get('templates', [])
         for idx, tmpl in enumerate(category_templates):
-            if tmpl['id'] == new_template['id']:
-                category_templates[idx] = new_template
+            if tmpl['id'] == form.id.data:
+                category_templates[idx] = form.data
 
         category.info['templates'] = category_templates
         project_repo.update_category(category)
@@ -105,7 +97,7 @@ def delete_template(category_id, template_id):
     """Delete a project template."""
     category = project_repo.get_category(category_id)
     if not category:  # pragma: no-cover
-        abort(404)
+        abort(jsonify(message="Category not found"), 404)
 
     ensure_authorized_to('update', category)
 
@@ -113,7 +105,7 @@ def delete_template(category_id, template_id):
         template = [t for t in category.info.get('templates', [])
                     if t['id'] == template_id][0]
     except KeyError:
-        abort(404)
+        abort(jsonify(message="Template not found"), 404)
 
     if request.method == 'POST':
         category_templates = [t for t in category.info.get('templates', [])

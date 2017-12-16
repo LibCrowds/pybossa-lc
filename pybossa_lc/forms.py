@@ -3,6 +3,8 @@
 
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, validators
+from wtforms import IntegerField
+from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
 
 
@@ -24,6 +26,7 @@ class TemplateFieldForm(Form):
 
 
 class ProjectTemplateForm(Form):
+    id = IntegerField(label=None, widget=HiddenInput())
     name = TextField('Name', [validators.Required()])
     tag = TextField('Tag', [validators.Required(),
                             pb_validator.NotAllowedChars()])
