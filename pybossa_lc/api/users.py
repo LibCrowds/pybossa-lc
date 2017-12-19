@@ -8,14 +8,13 @@ from flask import current_app
 from flask.ext.login import login_required, current_user
 from pybossa.util import admin_required, handle_content_type
 from pybossa.util import redirect_content_type
-from pybossa.cache import categories as cached_cat
-from pybossa.core import project_repo
+from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
 
 from ..forms import *
 
 
-BLUEPRINT = Blueprint('categories', __name__)
+BLUEPRINT = Blueprint('users', __name__)
 
 
 def get_template_form(task_presenter, method, data):
@@ -43,37 +42,57 @@ def get_template_form(task_presenter, method, data):
         for field in data.get('institutions', []):
             form.institutions.append_entry(field)
 
-        print form.data
         return form
 
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/<int:category_id>/templates', methods=['GET', 'POST'])
-def templates(category_id):
-    """Add a project template."""
-    category = project_repo.get_category(category_id)
-    if not category:  # pragma: no-cover
-        abort(jsonify(message="Category not found"), 404)
+@BLUEPRINT.route('/<name>/templates',
+                 methods=['GET', 'POST'])
+def templates(name):
+    """List a user's templates."""
+    user = user_repo.get_by_name(name)
+    if not user:  # pragma: no-cover
+        abort(404)
+    ensure_authorized_to('update', user)
+    user_templates = user.info.get('templates', [])
+    response = dict(templates=user_templates)
+    return handle_content_type(response)
 
-    ensure_authorized_to('update', category)
+
+@login_required
+@admin_required
+@BLUEPRINT.route('/<name>/templates/<cat_short_name>',
+                 methods=['GET', 'POST'])
+def category_templates(name, cat_short_name):
+    """Add a template to a category."""
+    user = user_repo.get_by_name(name)
+    if not user:  # pragma: no-cover
+        abort(404)
+
+    category = project_repo.get_category_by(short_name=cat_short_name)
+    if not category:  # pragma: no-cover
+        abort(404)
+
+    ensure_authorized_to('update', user)
 
     task_presenter = category.info.get('presenter')
     form_data = json.loads(request.data) if request.data else {}
     form = get_template_form(task_presenter, request.method, form_data)
     if not form:
-        flash('Invalid task presenter', 'error')
-        return redirect_content_type(url_for('admin.categories'))
+        msg = ('This category has an invalid task presenter, please contact '
+               'an administrator')
+        flash(msg, 'error')
+        return redirect_content_type(url_for('.templates', name=user.name))
 
     del form.id
     if request.method == 'POST' and form.validate():
         new_template = form.data
         new_template['id'] = str(uuid.uuid4())
-        category_templates = category.info.get('templates', [])
-        category_templates.append(new_template)
-        category.info['templates'] = category_templates
-        project_repo.update_category(category)
-        cached_cat.reset()
+        user_templates = user.info.get('templates', [])
+        user_templates.append(new_template)
+        user.info['templates'] = user_templates
+        user_repo.update(user)
         flash("Project template created", 'success')
     else:
         print form.errors
