@@ -45,7 +45,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         category = CategoryFactory.create()
-        url_base = '/libcrowds/users/{}/templates/{}'
+        url_base = '/libcrowds/users/{}/templates/add/{}'
         endpoint = url_base.format(Fixtures.name, category.short_name)
 
         res = self.app_get_json(endpoint)
@@ -62,7 +62,7 @@ class TestCategoryApi(web.Helper):
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         info = dict(presenter='iiif-annotation')
         category = CategoryFactory.create(info=info)
-        url_base = '/libcrowds/users/{}/templates/{}'
+        url_base = '/libcrowds/users/{}/templates/add/{}'
         endpoint = url_base.format(Fixtures.name, category.short_name)
 
         res = self.app_post_json(endpoint, data=self.iiif_transcribe_tmpl)
@@ -72,6 +72,7 @@ class TestCategoryApi(web.Helper):
         assert_equal(len(templates), 1)
         del self.iiif_transcribe_tmpl['id']
         del templates[0]['id']
+        self.iiif_transcribe_tmpl['category_id'] = category.id
         assert_dict_equal(templates[0], self.iiif_transcribe_tmpl)
 
     @with_context
@@ -82,7 +83,7 @@ class TestCategoryApi(web.Helper):
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         info = dict(presenter='iiif-annotation')
         category = CategoryFactory.create(info=info)
-        url_base = '/libcrowds/users/{}/templates/{}'
+        url_base = '/libcrowds/users/{}/templates/add/{}'
         endpoint = url_base.format(Fixtures.name, category.short_name)
 
         res = self.app_post_json(endpoint, data=self.iiif_select_tmpl)
@@ -92,6 +93,7 @@ class TestCategoryApi(web.Helper):
         assert_equal(len(templates), 1)
         del self.iiif_select_tmpl['id']
         del templates[0]['id']
+        self.iiif_select_tmpl['category_id'] = category.id
         assert_dict_equal(templates[0], self.iiif_select_tmpl)
 
     @with_context
@@ -102,7 +104,7 @@ class TestCategoryApi(web.Helper):
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         info = dict(presenter='z3950')
         category = CategoryFactory.create(info=info)
-        url_base = '/libcrowds/users/{}/templates/{}'
+        url_base = '/libcrowds/users/{}/templates/add/{}'
         endpoint = url_base.format(Fixtures.name, category.short_name)
 
         res = self.app_post_json(endpoint, data=self.z3950_tmpl)
@@ -112,6 +114,7 @@ class TestCategoryApi(web.Helper):
         assert_equal(len(templates), 1)
         del self.z3950_tmpl['id']
         del templates[0]['id']
+        self.z3950_tmpl['category_id'] = category.id
         assert_dict_equal(templates[0], self.z3950_tmpl)
 
     # @with_context

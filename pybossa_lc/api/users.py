@@ -62,10 +62,10 @@ def templates(name):
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/<name>/templates/<cat_short_name>',
+@BLUEPRINT.route('/<name>/templates/add/<cat_short_name>',
                  methods=['GET', 'POST'])
 def category_templates(name, cat_short_name):
-    """Add a template to a category."""
+    """Add a template for a category."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no-cover
         abort(404)
@@ -89,6 +89,7 @@ def category_templates(name, cat_short_name):
     if request.method == 'POST' and form.validate():
         new_template = form.data
         new_template['id'] = str(uuid.uuid4())
+        new_template['category_id'] = category.id
         user_templates = user.info.get('templates', [])
         user_templates.append(new_template)
         user.info['templates'] = user_templates
