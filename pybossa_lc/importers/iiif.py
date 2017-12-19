@@ -51,11 +51,13 @@ class BulkTaskIIIFImporter(BulkTaskImport):
             row['tag'] = self.template['tag']
             row['objective'] = self.template['objective']
             row['guidance'] = self.template['guidance']
-            if self.template['fields']:
+            if self.template['fields_schema']:
                 row['form'] = {
-                    'model': {f['model']: '' for f in self.template['fields']},
+                    'model': {
+                        f['model']: '' for f in self.template['fields_schema']
+                    },
                     'schema': {
-                        'fields': self.template['fields']
+                        'fields': self.template['fields_schema']
                     }
                 }
             data.append(row)

@@ -103,7 +103,7 @@ class TestIIIFImporter(Test):
             'tag': 'title',
             'objective': 'Mark the titles',
             'guidance': 'Mark all of the titles',
-            'fields': []
+            'fields_schema': []
         }
         importer = BulkTaskIIIFImporter(manifest_uri, template, None)
         task_data = importer._get_task_data(self.manifest)
@@ -131,7 +131,7 @@ class TestIIIFImporter(Test):
             'tag': 'date',
             'objective': 'Transcribe the date',
             'guidance': 'Transcribe the data as shown',
-            'fields': [
+            'fields_schema': [
                 {
                     'model': 'date',
                     'type': 'input',
@@ -161,7 +161,7 @@ class TestIIIFImporter(Test):
                         'date': ''
                     },
                     'schema': {
-                        'fields': template['fields']
+                        'fields': template['fields_schema']
                     }
                 }
             })
