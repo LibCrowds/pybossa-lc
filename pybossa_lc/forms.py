@@ -33,6 +33,7 @@ class BaseTemplateForm(Form):
     name = TextField('Name', [validators.Required()])
     description = TextField('Description', [validators.Required()])
     tutorial = TextAreaField('Tutorial')
+    coowners = FieldList(IntegerField('Coowners'))
 
 
 class IIIFAnnotationTemplateForm(BaseTemplateForm):

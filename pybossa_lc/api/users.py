@@ -11,6 +11,7 @@ from pybossa.util import redirect_content_type
 from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
 
+from ..cache.users import get_user_templates
 from ..forms import *
 
 
@@ -23,13 +24,18 @@ def get_template_form(task_presenter, method, data):
         form = IIIFAnnotationTemplateForm(**data)
         if data['mode'] == 'transcribe':
 
-            # Populate fields schema list
+            # Populate fields schema
             form.fields_schema.pop_entry()
             for field in data.get('fields_schema', []):
                 form.fields_schema.append_entry(field)
 
         elif method == 'POST':
             del form.fields_schema
+
+        # Populate coowners
+        for field in data.get('coowners', []):
+            form.coowners.append_entry(field)
+
         return form
 
     elif task_presenter == 'z3950':
@@ -37,10 +43,14 @@ def get_template_form(task_presenter, method, data):
         dbs = current_app.config.get("Z3950_DATABASES", {}).keys()
         form.database.choices = [(k, k.upper()) for k in dbs]
 
-        # Populate institutions list
+        # Populate institutions
         form.institutions.pop_entry()
         for field in data.get('institutions', []):
             form.institutions.append_entry(field)
+
+        # Populate coowners
+        for field in data.get('coowners', []):
+            form.coowners.append_entry(field)
 
         return form
 
@@ -55,7 +65,7 @@ def templates(name):
     if not user:  # pragma: no-cover
         abort(404)
     ensure_authorized_to('update', user)
-    user_templates = user.info.get('templates', [])
+    user_templates = get_user_templates(user.id)
     response = dict(templates=user_templates)
     return handle_content_type(response)
 

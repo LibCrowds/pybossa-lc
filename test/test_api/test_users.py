@@ -23,20 +23,55 @@ class TestCategoryApi(web.Helper):
                      placeholder='', model='title')
         self.iiif_select_tmpl = dict(
             id=12345, name='Mark Up', tag='title', mode='select',
-            objective='Mark up the title', guidance='Do it now',
+            objective='Mark up the title', guidance='Do it now', coowners=[],
             tutorial='Do stuff', description='This project is amazing'
         )
         self.iiif_transcribe_tmpl = dict(
             id=12345, name='Transcribe', tag='title', mode='transcribe',
             objective='Transcribe the title', guidance='Do it now',
-            tutorial='Do stuff', fields_schema=[field],
+            tutorial='Do stuff', fields_schema=[field], coowners=[],
             description='This project is amazing'
         )
         z3950_db = self.flask_app.config['Z3950_DATABASES'].keys()[0]
         self.z3950_tmpl = dict(
             id=12345, name='Search', description='This project is amazing',
-            tutorial='Do stuff', database=z3950_db, institutions=['OCLC']
+            tutorial='Do stuff', database=z3950_db, institutions=['OCLC'],
+            coowners=[]
         )
+
+    @with_context
+    def test_templates_listed_for_owner(self):
+        """Test templates are listed for the owner."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        user.info['templates'] = [self.iiif_select_tmpl]
+        self.user_repo.update(user)
+        endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
+
+        res = self.app_get_json(endpoint)
+        data = json.loads(res.data)
+        assert_equal(data['templates'], [self.iiif_select_tmpl])
+
+    @with_context
+    def test_templates_listed_for_coowner(self):
+        """Test templates are listed for the coowner."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.register(email=Fixtures.email_addr2, name=Fixtures.name2,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        owner = self.user_repo.get_by_name(Fixtures.name)
+        coowner = self.user_repo.get_by_name(Fixtures.name2)
+        self.iiif_select_tmpl['coowners'] = [coowner.id]
+        owner.info['templates'] = [self.iiif_select_tmpl]
+        self.user_repo.update(owner)
+        endpoint = '/libcrowds/users/{}/templates'.format(coowner.name)
+
+        res = self.app_get_json(endpoint)
+        data = json.loads(res.data)
+        assert_equal(data['templates'], [self.iiif_select_tmpl])
 
     @with_context
     def test_add_template_with_invalid_task_presenter(self):
