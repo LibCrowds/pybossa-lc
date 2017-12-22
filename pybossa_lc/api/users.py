@@ -57,16 +57,28 @@ def get_template_form(task_presenter, method, data):
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/<name>/templates',
-                 methods=['GET', 'POST'])
+@BLUEPRINT.route('/<name>/templates', methods=['GET', 'POST'])
 def templates(name):
-    """List a user's templates."""
+    """List or add to a user's templates."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no-cover
         abort(404)
+
     ensure_authorized_to('update', user)
     user_templates = get_user_templates(user.id)
-    response = dict(templates=user_templates)
+    form = ProjectTemplateForm(request.body)
+
+    if request.method == 'POST' and form.validate():
+        new_template = dict(id=str(uuid.uuid4()), project=form.data, task=None)
+        user_templates = user.info.get('templates', [])
+        user_templates.append(new_template)
+        user.info['templates'] = user_templates
+        user_repo.update(user)
+        flash("Project template created", 'success')
+    else:
+        flash('Please correct the errors', 'error')
+
+    response = dict(templates=user_templates, form=form)
     return handle_content_type(response)
 
 

@@ -27,8 +27,8 @@ class FieldsSchemaForm(Form):
                                 pb_validator.NotAllowedChars()])
 
 
-class BaseTemplateForm(Form):
-    """Base form for creating project templates."""
+class ProjectTemplateForm(Form):
+    """Form for creating project templates."""
     id = IntegerField(label=None, widget=HiddenInput())
     name = TextField('Name', [validators.Required()])
     description = TextField('Description', [validators.Required()])
@@ -36,8 +36,8 @@ class BaseTemplateForm(Form):
     coowners = FieldList(IntegerField('Coowners'))
 
 
-class IIIFAnnotationTemplateForm(BaseTemplateForm):
-    """A form for creating project templates for IIIF annotation projects."""
+class IIIFAnnotationTemplateForm(Form):
+    """A form for creating task templates for IIIF annotation projects."""
     tag = TextField('Tag', [validators.Required(),
                             pb_validator.NotAllowedChars()])
     objective = TextField('Objective', [validators.Required()])
@@ -49,8 +49,8 @@ class IIIFAnnotationTemplateForm(BaseTemplateForm):
     fields_schema = FieldList(FormField(FieldsSchemaForm), min_entries=1)
 
 
-class Z3950TemplateForm(BaseTemplateForm):
-    """A form for creating project templates for Z39.50 projects."""
+class Z3950TemplateForm(Form):
+    """A form for creating task templates for Z39.50 projects."""
     database = SelectField('Database', choices=[])
     institutions = FieldList(TextField('Institution code',
                                        [validators.Required()]),
