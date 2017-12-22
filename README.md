@@ -26,21 +26,16 @@ This plugin relies on core functions PYBOSSA, therefore the easiest way to test
 it is use the PYBOSSA testing environment.
 
 ``` bash
-# clone PYBOSSA
+# setup PYBOSSA
 git clone --recursive https://github.com/Scifabric/pybossa.git
-
-# start the environment
 cd pybossa
 vagrant up
-
-# enter the environment
 vagrant ssh
 
-# clonse pybossa-lc
+# setup pybossa-lc
 git clone https://github.com/LibCrowds/pybossa-lc
-
-# change directory
 cd pybossa-lc
+pip install -r test_requirements.txt
 
 # test
 nosetests test/
