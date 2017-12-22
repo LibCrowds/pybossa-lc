@@ -5,14 +5,15 @@
 > A PYBOSSA plugin for managing LibCrowds projects.
 
 The plugin is designed to work in conjunction with the
-[LibCrowds frontend](https://github.com/LibCrowds/libcrowds). For details
-of usage, including descriptions of how the analysis functions work, see the
-[**LibCrowds Documentation**](https://docs.libcrowds.com).
+[LibCrowds frontend](https://github.com/LibCrowds/libcrowds). It contains
+functions for generating LibCrowds projects and analysing their results.
+
+For details of how project creation and results analysis works in LibCrowds,
+see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
 
 ## Installation
 
 ``` bash
-# clone
 cd /path/to/pybossa/pybossa/plugins
 git clone https://github.com/LibCrowds/pybossa-lc
 cp -r pybossa-lc/pybossa_lc pybossa_lc
@@ -22,7 +23,7 @@ The plugin will be available after you restart the server.
 
 ## Testing
 
-This plugin relies on core functions PYBOSSA, therefore the easiest way to test
+As this plugin relies on core functions of PYBOSSA the easiest way to test
 it is use the PYBOSSA testing environment.
 
 ``` bash

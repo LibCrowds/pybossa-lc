@@ -5,9 +5,11 @@ import math
 import numpy
 import pandas
 from rq import Queue
-from pybossa.core import task_repo
+from pybossa.core import task_repo, project_repo, result_repo
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail
+from ..cache import clear_cache
+from rq import Queue
 
 
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
@@ -43,14 +45,9 @@ def has_n_matches(task_run_df, n_task_runs, match_percentage):
     return True
 
 
-def send_email(msg):
-    """Add email to PYBOSSA mail queue."""
-    MAIL_QUEUE.enqueue(send_mail, msg)
-
-
 def get_task_run_df(task_id):
     """Load an Array of task runs into a dataframe."""
-    task_runs = task_repo.filter_task_runs_by(task_id)
+    task_runs = task_repo.filter_task_runs_by(task_id=task_id)
     data = [explode_info(tr) for tr in task_runs]
     index = [tr.__dict__['id'] for tr in task_runs]
     return pandas.DataFrame(data, index)
@@ -68,3 +65,40 @@ def explode_info(item):
             else:
                 item_data[k] = item_data['info'][k]
     return item_data
+
+
+def analyse_all(analysis_func, project_id):
+    """Analyse all results for a project."""
+    project = project_repo.get(project_id)
+    results = result_repo.filter_by(project_id=project_id)
+    for result in results:
+        analysis_func(result.id)
+
+    msg = {
+        'recipients': project.owner.email_addr,
+        'subject': 'Analysis complete',
+        'body': u'''
+            All results for {} have been analysed.
+            '''.format(project.name)
+    }
+    MAIL_QUEUE.enqueue(send_mail, msg)
+    clear_cache()
+
+
+def analyse_empty(analysis_func, project_id):
+    """Analyse all empty results for a project."""
+    project = project_repo.get(project_id)
+    results = result_repo.filter_by(project_id=project_id)
+    empty_results = [r for r in results if not r.info]
+    for result in empty_results:
+        analysis_func(result.id)
+
+    msg = {
+        'recipients': project.owner.email_addr,
+        'subject': 'Analysis of all empty results complete',
+        'body': u'''
+            All empty results for {} have been analysed.
+            '''.format(project.name)
+    }
+    MAIL_QUEUE.enqueue(send_mail, msg)
+    clear_cache()

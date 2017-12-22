@@ -1,14 +1,14 @@
 # -*- coding: utf8 -*-
 """Z39.50 analysis module."""
 
-import time
-from pybossa.core import project_repo, result_repo
+from pybossa.core import result_repo
+from ..cache import clear_cache
 
 from . import helpers
 
 
 MATCH_PERCENTAGE = 60
-VALID_KEYS = ['oclc', 'shelfmark', 'comments']
+VALID_KEYS = ['oclc', 'shelfmark', 'control_number', 'reference', 'comments']
 
 
 def analyse(result_id):
@@ -19,40 +19,52 @@ def analyse(result_id):
     df = helpers.get_task_run_df(result.task_id)
     df = df.loc[:, df.columns.isin(VALID_KEYS)]
 
-    # Initialise the result with empty values for each task run key
+    # Rename old Convert-a-Card specific keys
+    df = df.rename(columns={
+        'oclc': 'control_number',
+        'shelfmark': 'reference'
+    })
+
+    # Initialise the result with empty values
     result.info = {k: "" for k in df.keys()}
+
+    # Check for any comments
+    if not helpers.drop_empty_rows(df['comments']).empty:
+        result_repo.update(result)
+        result.last_version = False
+        return
+
+    # With no comments, focus on control_number and reference
+    df = df[['control_number', 'reference']]
 
     # Check if there are any non-empty answers
     df = helpers.drop_empty_rows(df)
     has_answers = not df.empty
 
     # Check if the match percentage is met
-    n_task_runs = len(df.index)
+    n_task_runs = len(result.task_run_ids)
     has_matches = helpers.has_n_matches(df, n_task_runs, MATCH_PERCENTAGE)
 
-    # Store the matching result if match percentage met
+    # Store most common answers for each key if match percentage met
     if has_answers and has_matches:
-        for k in df.keys():
-            result.info[k] = df[k].value_counts().idxmax()
+        control_number = df['control_number'].value_counts().idxmax()
+        result.info['control_number'] = control_number
+        reference = df['reference'].value_counts().idxmax()
+        result.info['reference'] = reference
 
     # Mark for further checking if match percentage not met
     elif has_answers:
         result.last_version = False
 
-    result_repo.save(result)
+    result_repo.update(result)
+    clear_cache()
 
 
 def analyse_all(project_id):
-    """Analyse all Z39.50 results."""
-    project = project_repo.get(project_id)
-    results = result_repo.filter_by(project_id=project_id)
-    for result in results:
-        analyse(result)
+    """Analyse all results."""
+    helpers.analyse_all(analyse, project_id)
 
-    helpers.send_email({
-        'recipients': project.owner.email_addr,
-        'subject': 'Analysis complete',
-        'body': '''
-            All {0} results for {1} have been analysed.
-            '''.format(len(results), project.name)
-    })
+
+def analyse_empty(project_id):
+    """Analyse all empty results."""
+    helpers.analyse_empty(analyse, project_id)

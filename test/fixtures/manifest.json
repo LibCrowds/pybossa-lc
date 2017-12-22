@@ -1,0 +1,256 @@
+{
+	"@context":"http://iiif.io/api/presentation/2/context.json",
+	"@id":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x000002/manifest.json",
+	"@type":"sc:Manifest",
+	"label":"A collection of playbills from Theatre, King's Lynn 1764-1772",
+	"description":"Item supplied by the British Library",
+	"seeAlso": [
+	],
+	"metadata": [
+		{
+			"label":"Identifier",
+			"value":"Digital Store Playbills 412"
+		},
+		{
+			"label":"Held by",
+			"value":"<span><a href=\"https://www.bl.uk\">The British Library</a></span>"
+		},
+		{
+			"label":"Title",
+			"value":"A collection of playbills from Theatre, King's Lynn 1764-1772"
+		},
+		{
+			"label":"Creator",
+			"value":"Theatre, King's Lynn (King's Lynn, England) "
+		},
+		{
+			"label":"Place",
+			"value":"[King's Lynn]"
+		},
+		{
+			"label":"Publisher",
+			"value":"s.n.]"
+		},
+		{
+			"label":"Date",
+			"value":"1764-1772."
+		},
+		{
+			"label":"Language",
+			"value":"English"
+		},
+		{
+			"label":"Catalogue record",
+			"value":"<a href=\"http://explore.bl.uk/primo_library/libweb/action/dlDisplay.do?docId=BLL01016661396&amp;vid=BLVU1&amp;lang=en_US&amp;institution=BL\">View the catalogue record</a>"
+		},
+		{
+			"label":"Digitised from",
+			"value":"<a href=\"http://explore.bl.uk/primo_library/libweb/action/dlDisplay.do?docId=BLL01015399397&amp;vid=BLVU1&amp;lang=en_US&amp;institution=BL\">A collection of playbills from Theatre, King's Lynn 1764-1772.</a>"
+		},
+		{
+			"label" : "Citation",
+			"value" : "<span>Theatre, King's Lynn (King's Lynn, England) , <i>A collection of playbills from Theatre, King's Lynn 1764-1772</i>, ([King's Lynn]: s.n.], 1764-1772.) &lt;http://access.bl.uk/item/viewer/ark:/81055/vdc_100022589138.0x000002&gt;</span>"
+		}
+	],
+	"related": [
+		{
+			"@id": "http://access.bl.uk/item/viewer/ark:/81055/vdc_100022589138.0x000002",
+			"format": "text/html",
+			"label": "View at the British Library"
+		}
+	],
+	"service": [
+	 	{
+	 	 	"@context":"http://iiif.io/api/auth/0/context.json",
+	 	 	"@id":"https://api.bl.uk/auth/iiif/login",
+	 	 	"profile":"http://iiif.io/api/auth/0/login",
+	 	 	"description":"Some content may only be available to registered readers or staff. Please log-in to The British Library to continue.",
+	 	 	"header":"Please Log-In",
+	 	 	"label":"Login to The British Library",
+	 	 	"service":
+	 	 	{
+	 	 	 	"@id":"https://api.bl.uk/auth/iiif/token",
+	 	 	 	"profile":"http://iiif.io/api/auth/0/token"
+	 	 	}
+	 	},
+	 	{
+	 	 	"@context":"http://universalviewer.io/context.json",
+	 	 	"@id":"http://access.bl.uk/item/share/ark:/81055/vdc_100022589138.0x000002",
+	 	 	"profile":"http://universalviewer.io/share-extensions-profile"
+	 	},
+	 	{
+	 	 	"@context":"http://universalviewer.io/context.json",
+	 	 	"@id":"http://access.bl.uk/item/feedback/ark:/81055/vdc_100022589138.0x000002",
+	 	 	"profile":"http://universalviewer.io/feedback-extensions-profile"
+	 	},
+	 	{
+	 	 	"@context":"http://universalviewer.io/context.json",
+	 	 	"@id":"http://access.bl.uk/item/print/ark:/81055/vdc_100022589138.0x000002",
+	 	 	"profile":"http://universalviewer.io/print-extensions-profile"
+	 	}
+	],
+	"logo": "https://www.bl.uk/images/bl_logo_100.gif",
+	"license":"https://creativecommons.org/publicdomain/mark/1.0/",
+	"attribution":"<span>Public Domain<br/><br/><img src=\"https://i.creativecommons.org/p/mark/1.0/88x31.png\"/></span>",
+	"thumbnail": {
+	 	"@id":"https://api.bl.uk/image/iiif/ark:/81055/vdc_100022589137.0x000003/full/max/0/default.jpg",
+	 	"@type":"dctypes:Image",
+	 	"format":"image/jpg",
+	 	"service": {
+	 	 	"@context":"http://iiif.io/api/image/2/context.json",
+	 	 	"@id":"https://api.bl.uk/image/iiif/ark:/81055/vdc_100022589137.0x000003",
+	 	 	"protocol":"http://iiif.io/api/image",
+	 	 	"width":2196,
+	 	 	"height":3035,
+	 	 	"tiles" : [
+	 	 	 	{
+	 	 	 	 	"scaleFactors" : [1,2,4,8,16,32,64,128],
+	 	 	 	 	"width" : 256
+	 	 	 	}
+	 	 	],
+	 	 	"profile" : [
+	 	 	 	"http://iiif.io/api/image/2/level2.json",
+	 	 	 	{
+	 	 	 	 	"qualities" : [
+	 	 	 	 	 	"gray",
+	 	 	 	 	 	"color",
+	 	 	 	 	 	"bitonal"
+	 	 	 	 	],
+	 	 	 	 	"supports" : [
+	 	 	 	 	 	"profileLinkHeader",
+	 	 	 	 	 	"rotationArbitrary",
+	 	 	 	 	 	"regionSquare",
+	 	 	 	 	 	"mirroring"
+	 	 	 	 	]
+	 	 	 	}
+	 	 	]
+	 	}
+	},
+	"sequences" : [
+		{
+			"@id":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000a9",
+			"@type":"sc:Sequence",
+			"label":"Current Page Order",
+			"viewingHint":"individuals",
+			"startCanvas":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000aa",
+			"canvases": [
+	 	 	 	{
+	 	 	 	 	"@id":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000aa",
+	 	 	 	 	"@type":"sc:Canvas",
+	 	 	 	 	"label":"-",
+	 	 	 	 	"width":2196,
+	 	 	 	 	"height":3035,
+	 	 	 	 	"images":[
+	 	 	 	 	 	{
+							"@type":"oa:Annotation",
+							"motivation":"sc:painting",
+	 	 	 	 	 	 	"resource": {
+	 	 	 	 	 	 	 	"@id":"https://api.bl.uk/image/iiif/ark:/81055/vdc_100022589137.0x000003/full/max/0/default.jpg",
+	 	 	 	 	 	 	 	"@type":"dctypes:Image",
+	 	 	 	 	 	 	 	"format":"image/jpg",
+	 	 	 	 	 	 	 	"service": {
+	 	 	 	 	 	 	 	 	"@context":"http://iiif.io/api/image/2/context.json",
+	 	 	 	 	 	 	 	 	"@id":"https://api.bl.uk/image/iiif/ark:/81055/vdc_100022589137.0x000003",
+	 	 	 	 	 	 	 	 	"protocol":"http://iiif.io/api/image",
+	 	 	 	 	 	 	 	 	"width":2196,
+	 	 	 	 	 	 	 	 	"height":3035,
+	 	 	 	 	 	 	 	 	"tiles" : [
+	 	 	 	 	 	 	 	 	 	{
+	 	 	 	 	 	 	 	 	 	 	"scaleFactors" : [1,2,4,8,16,32,64,128],
+	 	 	 	 	 	 	 	 	 	 	"width" : 256
+	 	 	 	 	 	 	 	 	 	}
+	 	 	 	 	 	 	 	 	],
+	 	 	 	 	 	 	 	 	"profile" : [
+	 	 	 	 	 	 	 	 	 	"http://iiif.io/api/image/2/level2.json",
+	 	 	 	 	 	 	 	 	 	{
+	 	 	 	 	 	 	 	 	 	 	"qualities" : [
+	 	 	 	 	 	 	 	 	 	 	 	"gray",
+	 	 	 	 	 	 	 	 	 	 	 	"color",
+	 	 	 	 	 	 	 	 	 	 	 	"bitonal"
+	 	 	 	 	 	 	 	 	 	 	],
+	 	 	 	 	 	 	 	 	 	 	"supports" : [
+	 	 	 	 	 	 	 	 	 	 	 	"profileLinkHeader",
+	 	 	 	 	 	 	 	 	 	 	 	"rotationArbitrary",
+	 	 	 	 	 	 	 	 	 	 	 	"regionSquare",
+	 	 	 	 	 	 	 	 	 	 	 	"mirroring"
+	 	 	 	 	 	 	 	 	 	 	]
+	 	 	 	 	 	 	 	 	 	}
+	 	 	 	 	 	 	 	 	]
+	 	 	 	 	 	 	 	}
+	 	 	 	 	 	 	},
+							"on":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000aa"
+						}
+					]
+				},
+	 	 	 	{
+	 	 	 	 	"@id":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000ab",
+	 	 	 	 	"@type":"sc:Canvas",
+	 	 	 	 	"label":"-",
+	 	 	 	 	"width":2196,
+	 	 	 	 	"height":3035,
+	 	 	 	 	"images":[
+	 	 	 	 	 	{
+							"@type":"oa:Annotation",
+							"motivation":"sc:painting",
+	 	 	 	 	 	 	"resource": {
+	 	 	 	 	 	 	 	"@id":"https://api.bl.uk/image/iiif/ark:/81055/vdc_100022589137.0x000004/full/max/0/default.jpg",
+	 	 	 	 	 	 	 	"@type":"dctypes:Image",
+	 	 	 	 	 	 	 	"format":"image/jpg",
+	 	 	 	 	 	 	 	"service": {
+	 	 	 	 	 	 	 	 	"@context":"http://iiif.io/api/image/2/context.json",
+	 	 	 	 	 	 	 	 	"@id":"https://api.bl.uk/image/iiif/ark:/81055/vdc_100022589137.0x000004",
+	 	 	 	 	 	 	 	 	"protocol":"http://iiif.io/api/image",
+	 	 	 	 	 	 	 	 	"width":2196,
+	 	 	 	 	 	 	 	 	"height":3035,
+	 	 	 	 	 	 	 	 	"tiles" : [
+	 	 	 	 	 	 	 	 	 	{
+	 	 	 	 	 	 	 	 	 	 	"scaleFactors" : [1,2,4,8,16,32,64,128],
+	 	 	 	 	 	 	 	 	 	 	"width" : 256
+	 	 	 	 	 	 	 	 	 	}
+	 	 	 	 	 	 	 	 	],
+	 	 	 	 	 	 	 	 	"profile" : [
+	 	 	 	 	 	 	 	 	 	"http://iiif.io/api/image/2/level2.json",
+	 	 	 	 	 	 	 	 	 	{
+	 	 	 	 	 	 	 	 	 	 	"qualities" : [
+	 	 	 	 	 	 	 	 	 	 	 	"gray",
+	 	 	 	 	 	 	 	 	 	 	 	"color",
+	 	 	 	 	 	 	 	 	 	 	 	"bitonal"
+	 	 	 	 	 	 	 	 	 	 	],
+	 	 	 	 	 	 	 	 	 	 	"supports" : [
+	 	 	 	 	 	 	 	 	 	 	 	"profileLinkHeader",
+	 	 	 	 	 	 	 	 	 	 	 	"rotationArbitrary",
+	 	 	 	 	 	 	 	 	 	 	 	"regionSquare",
+	 	 	 	 	 	 	 	 	 	 	 	"mirroring"
+	 	 	 	 	 	 	 	 	 	 	]
+	 	 	 	 	 	 	 	 	 	}
+	 	 	 	 	 	 	 	 	]
+	 	 	 	 	 	 	 	}
+	 	 	 	 	 	 	},
+							"on":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000ab"
+						}
+					]
+				}
+			]
+		}
+	],
+	"structures" : [
+		{
+			"@id":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x000003",
+			"@type":"sc:Range",
+			"label":"Playbill",
+
+			"canvases": [
+				"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000aa"
+			]
+		},
+		{
+			"@id":"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x000004",
+			"@type":"sc:Range",
+			"label":"Playbill",
+
+			"canvases": [
+				"https://api.bl.uk/metadata/iiif/ark:/81055/vdc_100022589138.0x0000ab"
+			]
+		}
+	]
+}
