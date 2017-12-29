@@ -78,21 +78,22 @@ class TestCategoryApi(web.Helper):
         data = json.loads(res.data)
         assert_equal(data['templates'], [tmpl])
 
-    # @with_context
-    # def test_add_template_with_invalid_task_presenter(self):
-    #     """Test error is thrown when task presenter is invalid."""
-    #     self.register(email=Fixtures.email_addr, name=Fixtures.name,
-    #                   password=Fixtures.password)
-    #     self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-    #     category = CategoryFactory.create()
-    #     url_base = '/libcrowds/users/{}/templates/add/{}'
-    #     endpoint = url_base.format(Fixtures.name, category.short_name)
-
-    #     res = self.app_get_json(endpoint)
-    #     data = json.loads(res.data)
-    #     redirect_url = '/libcrowds/users/{}/templates'.format(Fixtures.name)
-    #     assert_equal(data['status'], 'error')
-    #     assert_equal(data['next'], redirect_url)
+    @with_context
+    def test_add_template(self):
+        """Test that a template is added."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
+        res = self.app_post_json(endpoint, data=self.project_tmpl)
+        data = json.loads(res.data)
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        templates = updated_user.info.get('templates')
+        assert_equal(data['flash'], 'Project template created')
+        assert_equal(len(templates), 1)
+        del templates[0]['id']
+        expected = dict(project=self.project_tmpl, task=None)
+        assert_dict_equal(templates[0], expected)
 
     # @with_context
     # def test_add_iiif_transcribe_template(self):

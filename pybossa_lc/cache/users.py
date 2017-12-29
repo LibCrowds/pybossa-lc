@@ -16,7 +16,8 @@ def get_user_templates(user_id):
     sql = text('''SELECT info->>'templates' AS templates
                   FROM "user"
                   WHERE id = :user_id
-                  OR (info->>'templates')::jsonb @> '[{"project": {"coowners": [:user_id]}}]'
+                  OR (info->>'templates')::jsonb @>
+                  '[{"project": {"coowners": [:user_id]}}]'
                   ''')
     result = session.execute(sql, dict(user_id=user_id))
     templates = []

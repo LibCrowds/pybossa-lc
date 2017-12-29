@@ -29,7 +29,6 @@ class FieldsSchemaForm(Form):
 
 class ProjectTemplateForm(Form):
     """Form for creating project templates."""
-    id = IntegerField(label=None, widget=HiddenInput())
     name = TextField('Name', [validators.Required()])
     description = TextField('Description', [validators.Required()])
     tutorial = TextAreaField('Tutorial')
