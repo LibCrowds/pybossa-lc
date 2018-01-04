@@ -22,9 +22,10 @@ class TestCategoryApi(web.Helper):
         self.user_repo = UserRepository(db)
         field = dict(label='Title', type='input', inputType='text',
                      placeholder='', model='title')
+        self.category = CategoryFactory.create()
         self.project_tmpl = dict(name='My Project Type', tutorial='Do stuff',
                                  description='This project is amazing',
-                                 coowners=[])
+                                 coowners=[], category_id=self.category.id)
         self.iiif_select_tmpl = dict(tag='title', mode='select',
                                      tutorial='Do stuff', objective='Mark up',
                                      guidance='Do it now')
