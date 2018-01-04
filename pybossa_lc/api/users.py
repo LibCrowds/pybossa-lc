@@ -67,6 +67,8 @@ def templates(name):
     ensure_authorized_to('update', user)
     user_templates = get_user_templates(user.id)
     form = ProjectTemplateForm(request.body)
+    categories = project_repo.get_all_categories()
+    form.category_id.choices = [(c.id, c.name) for c in categories]
 
     if request.method == 'POST' and form.validate():
         new_template = dict(id=str(uuid.uuid4()), project=form.data, task=None)
