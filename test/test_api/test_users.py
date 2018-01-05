@@ -27,8 +27,7 @@ class TestCategoryApi(web.Helper):
                                  description='This project is amazing',
                                  coowners=[], category_id=self.category.id)
         self.iiif_select_tmpl = dict(tag='title', mode='select',
-                                     tutorial='Do stuff', objective='Mark up',
-                                     guidance='Do it now')
+                                     objective='Mark up', guidance='Do it now')
         self.iiif_transcribe_tmpl = dict(tag='title', mode='transcribe',
                                          objective='Transcribe the title',
                                          guidance='Do it now',
@@ -201,9 +200,6 @@ class TestCategoryApi(web.Helper):
         tmpl['task'] = self.z3950_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
-        print user_templates[0]
-        print '---'
-        print tmpl
         assert_dict_equal(user_templates[0], tmpl)
 
     # @with_context
