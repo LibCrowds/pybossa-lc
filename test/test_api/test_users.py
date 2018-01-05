@@ -84,15 +84,21 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
-        res = self.app_post_json(endpoint, data=self.project_tmpl)
+        res = self.app_post_json(endpoint, data=self.project_tmpl,
+                                 follow_redirects=True)
         data = json.loads(res.data)
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         templates = updated_user.info.get('templates')
         assert_equal(data['flash'], 'Project template created')
         assert_equal(len(templates), 1)
-        del templates[0]['id']
+        tmpl_id = templates[0].pop('id')
         expected = dict(project=self.project_tmpl, task=None)
         assert_dict_equal(templates[0], expected)
+
+        # Check redirect to update page
+        next_url = '/libcrowds/users/{0}/templates/{1}'.format(Fixtures.name,
+                                                               tmpl_id)
+        assert_equal(data['next'], next_url)
 
     @with_context
     def test_add_iiif_transcribe_task(self):
@@ -201,48 +207,6 @@ class TestCategoryApi(web.Helper):
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
-
-    # @with_context
-    # def test_add_iiif_select_template(self):
-    #     """Test a IIIF select template is added."""
-    #     self.register(email=Fixtures.email_addr, name=Fixtures.name,
-    #                   password=Fixtures.password)
-    #     self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-    #     info = dict(presenter='iiif-annotation')
-    #     category = CategoryFactory.create(info=info)
-    #     url_base = '/libcrowds/users/{}/templates/add/{}'
-    #     endpoint = url_base.format(Fixtures.name, category.short_name)
-
-    #     res = self.app_post_json(endpoint, data=self.iiif_select_tmpl)
-    #     updated_user = self.user_repo.get_by_name(Fixtures.name)
-    #     templates = updated_user.info.get('templates')
-    #     assert_equal(json.loads(res.data)['flash'], 'Project template created')
-    #     assert_equal(len(templates), 1)
-    #     del self.iiif_select_tmpl['id']
-    #     del templates[0]['id']
-    #     self.iiif_select_tmpl['category_id'] = category.id
-    #     assert_dict_equal(templates[0], self.iiif_select_tmpl)
-
-    # @with_context
-    # def test_add_z3950_template(self):
-    #     """Test a Z39.50 template is added."""
-    #     self.register(email=Fixtures.email_addr, name=Fixtures.name,
-    #                   password=Fixtures.password)
-    #     self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-    #     info = dict(presenter='z3950')
-    #     category = CategoryFactory.create(info=info)
-    #     url_base = '/libcrowds/users/{}/templates/add/{}'
-    #     endpoint = url_base.format(Fixtures.name, category.short_name)
-
-    #     res = self.app_post_json(endpoint, data=self.z3950_tmpl)
-    #     updated_user = self.user_repo.get_by_name(Fixtures.name)
-    #     templates = updated_user.info.get('templates')
-    #     assert_equal(json.loads(res.data)['flash'], 'Project template created')
-    #     assert_equal(len(templates), 1)
-    #     del self.z3950_tmpl['id']
-    #     del templates[0]['id']
-    #     self.z3950_tmpl['category_id'] = category.id
-    #     assert_dict_equal(templates[0], self.z3950_tmpl)
 
     # @with_context
     # def test_update_template(self):

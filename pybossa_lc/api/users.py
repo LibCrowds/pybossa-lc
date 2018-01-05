@@ -71,12 +71,16 @@ def templates(name):
     form.category_id.choices = [(c.id, c.name) for c in categories]
 
     if request.method == 'POST' and form.validate():
-        new_template = dict(id=str(uuid.uuid4()), project=form.data, task=None)
+        tmpl_id = str(uuid.uuid4())
+        new_template = dict(id=tmpl_id, project=form.data, task=None)
         user_templates = user.info.get('templates', [])
         user_templates.append(new_template)
         user.info['templates'] = user_templates
         user_repo.update(user)
         flash("Project template created", 'success')
+        print 'redirecting'
+        return redirect_content_type(url_for('.update_template',
+                                             name=user.name, tmpl_id=tmpl_id))
     else:
         flash('Please correct the errors', 'error')
 
@@ -86,9 +90,27 @@ def templates(name):
 
 @login_required
 @admin_required
+@BLUEPRINT.route('/<name>/templates/<tmpl_id>',
+                 methods=['GET', 'POST'])
+def update_template(name, tmpl_id):
+    user = user_repo.get_by_name(name)
+    if not user:  # pragma: no-cover
+        abort(404)
+
+    # Get template if user is owner or coowner
+    tmpl = get_user_template_by_id(user.id, tmpl_id)
+    if not tmpl:
+        abort(404)
+
+    response = dict(template=tmpl)
+    return handle_content_type(response)
+
+
+@login_required
+@admin_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>/tasks',
                  methods=['GET', 'POST'])
-def category_templates(name, tmpl_id):
+def template_task(name, tmpl_id):
     """Add task data for a template."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no-cover
