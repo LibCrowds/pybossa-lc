@@ -11,6 +11,7 @@ from factories import CategoryFactory
 from pybossa.repositories import UserRepository, ProjectRepository
 from pybossa.jobs import import_tasks
 
+from ..fixtures import TemplateFixtures
 from pybossa_lc.forms import *
 
 
@@ -20,24 +21,6 @@ class TestCategoryApi(web.Helper):
         super(TestCategoryApi, self).setUp()
         self.user_repo = UserRepository(db)
         self.project_repo = ProjectRepository(db)
-        field = dict(label='Title', type='input', inputType='text',
-                     placeholder='', model='title')
-        self.category = CategoryFactory.create()
-        self.project_tmpl = dict(name='My Project Type', tutorial='Do stuff',
-                                 description='This project is amazing',
-                                 coowners=[], category_id=self.category.id)
-        self.iiif_select_tmpl = dict(tag='title', mode='select',
-                                     objective='Mark up', guidance='Do it now')
-        self.iiif_transcribe_tmpl = dict(tag='title', mode='transcribe',
-                                         objective='Transcribe the title',
-                                         guidance='Do it now',
-                                         fields_schema=[field])
-        z3950_db = self.flask_app.config['Z3950_DATABASES'].keys()[0]
-        self.z3950_tmpl = dict(database=z3950_db, institutions=['OCLC'])
-
-    def create_template(self, task_tmpl=None):
-        return dict(id=str(uuid.uuid4()), project=self.project_tmpl,
-                    task=task_tmpl)
 
     @with_context
     def test_templates_listed_for_owner(self):
@@ -46,8 +29,9 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         user.info['templates'] = [tmpl]
+        print tmpl
         self.user_repo.update(user)
         endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
 
@@ -65,7 +49,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         owner = self.user_repo.get_by_name(Fixtures.name)
         coowner = self.user_repo.get_by_name(Fixtures.name2)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         tmpl['project']['coowners'] = [coowner.id]
         owner.info['templates'] = [tmpl]
         self.user_repo.update(owner)
@@ -85,7 +69,7 @@ class TestCategoryApi(web.Helper):
         self.register(email=Fixtures.email_addr, name=Fixtures.name,
                       password=Fixtures.password)
         owner = self.user_repo.get_by_name(Fixtures.name)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         owner.info['templates'] = [tmpl]
         self.user_repo.update(owner)
 
@@ -105,7 +89,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         owner = self.user_repo.get_by_name(Fixtures.name)
         coowner = self.user_repo.get_by_name(Fixtures.name2)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         tmpl['project']['coowners'] = [coowner.id]
         owner.info['templates'] = [tmpl]
         self.user_repo.update(owner)
@@ -147,7 +131,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
@@ -157,10 +141,11 @@ class TestCategoryApi(web.Helper):
         url_base = '/libcrowds/users/{}/templates/{}/tasks'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
-        res = self.app_post_json(endpoint, data=self.iiif_transcribe_tmpl)
+        res = self.app_post_json(endpoint,
+                                 data=TemplateFixtures.iiif_transcribe_tmpl)
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
-        tmpl['task'] = self.iiif_transcribe_tmpl
+        tmpl['task'] = TemplateFixtures.iiif_transcribe_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
@@ -174,7 +159,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         owner = self.user_repo.get_by_name(Fixtures.name)
         coowner = self.user_repo.get_by_name(Fixtures.name2)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         tmpl['project']['coowners'] = [coowner.id]
         owner.info['templates'] = [tmpl]
         self.user_repo.update(owner)
@@ -187,11 +172,12 @@ class TestCategoryApi(web.Helper):
         url_base = '/libcrowds/users/{}/templates/{}/tasks'
         endpoint = url_base.format(coowner.name, tmpl['id'])
 
-        res = self.app_post_json(endpoint, data=self.iiif_transcribe_tmpl)
+        res = self.app_post_json(endpoint,
+                                 data=TemplateFixtures.iiif_transcribe_tmpl)
         print res.data
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
-        tmpl['task'] = self.iiif_transcribe_tmpl
+        tmpl['task'] = TemplateFixtures.iiif_transcribe_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
@@ -203,7 +189,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
@@ -213,10 +199,11 @@ class TestCategoryApi(web.Helper):
         url_base = '/libcrowds/users/{}/templates/{}/tasks'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
-        res = self.app_post_json(endpoint, data=self.iiif_select_tmpl)
+        res = self.app_post_json(endpoint,
+                                 data=TemplateFixtures.iiif_select_tmpl)
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
-        tmpl['task'] = self.iiif_select_tmpl
+        tmpl['task'] = TemplateFixtures.iiif_select_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
@@ -228,7 +215,7 @@ class TestCategoryApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
-        tmpl = self.create_template()
+        tmpl = TemplateFixtures.create_template()
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
@@ -241,7 +228,7 @@ class TestCategoryApi(web.Helper):
         res = self.app_post_json(endpoint, data=self.z3950_tmpl)
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
-        tmpl['task'] = self.z3950_tmpl
+        tmpl['task'] = TemplateFixtures.z3950_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)

@@ -11,7 +11,7 @@ from pybossa.util import redirect_content_type
 from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
 
-from ..cache.users import get_user_templates, get_user_template_by_id
+from ..cache.templates import get_user_templates, get_user_template_by_id
 from ..forms import *
 
 
