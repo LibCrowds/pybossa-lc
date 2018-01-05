@@ -15,9 +15,3 @@ def get_volume(category, volume_id):
     volumes = [v for v in category.info.get('volumes', [])
                if v['id'] == volume_id]
     return volumes[0] if volumes else None
-
-def create_template(category, template_data):
-    """Create a template."""
-    _id = uuid.uuid4()
-    templates = category.info.get('templates', [])
-    templates[_id] = template_data
