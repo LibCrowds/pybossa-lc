@@ -45,19 +45,17 @@ pip install -r test_requirements.txt
 nosetests test/
 ```
 
-## Usage
+## Endpoints
 
 Following are brief details of the endpoints provided by this plugin.
 
-### Templates
+### List Templates
 
-#### /libcrowds/users/<name>/templates
-
-List the templates created by the user or those for which they're listed as
+List all templates created by the user or those for which they're listed as
 a co-owner.
 
 ```html
-GET /<name>/templates
+GET /\<name\>/templates
 ```
 
 ```json
@@ -87,10 +85,12 @@ GET /<name>/templates
 }
 ```
 
+### Add template
+
 Add a template for the current user by posting the form in the above response.
 
 ```html
-POST /<name>/templates
+POST /\<name\>/templates
 ```
 
 ```json
@@ -101,9 +101,9 @@ POST /<name>/templates
 }
 ```
 
-#### /libcrowds/users/<name>/templates/<tmpl_id>
+#### Get template
 
-Get a template
+Get a template by ID.
 
 ```html
 GET /libcrowds/users/<name>/templates/<tmpl_id>
@@ -112,5 +112,3 @@ GET /libcrowds/users/<name>/templates/<tmpl_id>
 ```json
 
 ```
-
-

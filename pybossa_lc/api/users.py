@@ -112,7 +112,6 @@ def template_task(name, tmpl_id):
     if not user:  # pragma: no-cover
         abort(404)
 
-    # Get template if user is owner or coowner
     tmpl = get_user_template_by_id(user.id, tmpl_id)
     if not tmpl:
         abort(404)

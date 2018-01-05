@@ -71,13 +71,51 @@ class TestCategoryApi(web.Helper):
         self.user_repo.update(owner)
 
         # Sign in as co-owner
-        self.signin(email=Fixtures.email_addr2, password=Fixtures.password)
+        self.signin(email=coowner.email_addr, password=Fixtures.password)
 
         endpoint = '/libcrowds/users/{}/templates'.format(coowner.name)
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         assert_equal(data['templates'], [tmpl])
         assert_equal(data['form']['errors'], {})
+
+    @with_context
+    def test_get_template_for_owner(self):
+        """Test get template by ID for owner."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        owner = self.user_repo.get_by_name(Fixtures.name)
+        tmpl = self.create_template()
+        owner.info['templates'] = [tmpl]
+        self.user_repo.update(owner)
+
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        endpoint = '/libcrowds/users/{}/templates/{}'.format(owner.name,
+                                                             tmpl['id'])
+        res = self.app_get_json(endpoint)
+        data = json.loads(res.data)
+        assert_equal(data['template'], tmpl)
+
+    @with_context
+    def test_get_template_for_coowner(self):
+        """Test get template by ID for co-owner."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.register(email=Fixtures.email_addr2, name=Fixtures.name2,
+                      password=Fixtures.password)
+        owner = self.user_repo.get_by_name(Fixtures.name)
+        coowner = self.user_repo.get_by_name(Fixtures.name2)
+        tmpl = self.create_template()
+        tmpl['project']['coowners'] = [coowner.id]
+        owner.info['templates'] = [tmpl]
+        self.user_repo.update(owner)
+
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        endpoint = '/libcrowds/users/{}/templates/{}'.format(coowner.name,
+                                                             tmpl['id'])
+        res = self.app_get_json(endpoint)
+        data = json.loads(res.data)
+        assert_equal(data['template'], tmpl)
 
     @with_context
     def test_add_template(self):
@@ -142,14 +180,15 @@ class TestCategoryApi(web.Helper):
         self.user_repo.update(owner)
 
         # Sign in as co-owner
-        self.signin(email=Fixtures.email_addr2, password=Fixtures.password)
+        self.signin(email=coowner.email_addr, password=Fixtures.password)
 
         self.category.info = dict(presenter='iiif-annotation')
         self.project_repo.update_category(self.category)
         url_base = '/libcrowds/users/{}/templates/{}/tasks'
-        endpoint = url_base.format(Fixtures.name, tmpl['id'])
+        endpoint = url_base.format(coowner.name, tmpl['id'])
 
         res = self.app_post_json(endpoint, data=self.iiif_transcribe_tmpl)
+        print res.data
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
         tmpl['task'] = self.iiif_transcribe_tmpl

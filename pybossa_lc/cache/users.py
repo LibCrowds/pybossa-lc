@@ -39,7 +39,7 @@ def get_user_template_by_id(user_id, tmpl_id):
                   ''')
     result = session.execute(sql, dict(user_id=user_id, tmpl_id=tmpl_id))
     for row in result:
-        if row is not None:
+        if row.templates is not None:
             return json.loads(row.templates)[0]
         else:  # pragma: no cover
             return None
