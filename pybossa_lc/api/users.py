@@ -80,7 +80,7 @@ def templates(name):
         print 'redirecting'
         return redirect_content_type(url_for('.update_template',
                                              name=user.name, tmpl_id=tmpl_id))
-    else:
+    elif request.method == 'POST':
         flash('Please correct the errors', 'error')
 
     response = dict(templates=user_templates, form=form)
@@ -88,8 +88,7 @@ def templates(name):
 
 
 @login_required
-@BLUEPRINT.route('/<name>/templates/<tmpl_id>',
-                 methods=['GET', 'POST'])
+@BLUEPRINT.route('/<name>/templates/<tmpl_id>', methods=['GET'])
 def update_template(name, tmpl_id):
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no-cover

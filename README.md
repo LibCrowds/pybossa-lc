@@ -11,6 +11,9 @@ functions for generating LibCrowds projects and analysing their results.
 For details of how project creation and results analysis works in LibCrowds,
 see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
 
+Details of the endpoints made available by this plugin are given below for
+reference.
+
 ## Installation
 
 ``` bash
@@ -41,3 +44,73 @@ pip install -r test_requirements.txt
 # test
 nosetests test/
 ```
+
+## Usage
+
+Following are brief details of the endpoints provided by this plugin.
+
+### Templates
+
+#### /libcrowds/users/<name>/templates
+
+List the templates created by the user or those for which they're listed as
+a co-owner.
+
+```html
+GET /<name>/templates
+```
+
+```json
+{
+  "form": {
+    "category_id": null,
+    "coowners": [],
+    "csrf": "1515172370.21##b668983b3544e9faeaed77a3d08e6403dc919b00",
+    "description": null,
+    "errors": {},
+    "name": null,
+    "tutorial": null
+  },
+  "templates": [
+    {
+      "id": "c3017984-6885-45a1-81a9-8ba3a18793dc",
+      "project": {
+        "category_id": 1,
+        "coowners": [],
+        "description": "This project is amazing",
+        "name": "My Project Type",
+        "tutorial": "Do stuff"
+      },
+      "task": null
+    }
+  ]
+}
+```
+
+Add a template for the current user by posting the form in the above response.
+
+```html
+POST /<name>/templates
+```
+
+```json
+{
+  "flash": "Project template created",
+  "next": "/libcrowds/users/tester/templates/12865546-8064-41c8-9be0-1d4f9b5a3182",
+  "status": "success"
+}
+```
+
+#### /libcrowds/users/<name>/templates/<tmpl_id>
+
+Get a template
+
+```html
+GET /libcrowds/users/<name>/templates/<tmpl_id>
+```
+
+```json
+
+```
+
+

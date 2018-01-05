@@ -54,6 +54,7 @@ class TestCategoryApi(web.Helper):
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         assert_equal(data['templates'], [tmpl])
+        assert_equal(data['form']['errors'], {})
 
     @with_context
     def test_templates_listed_for_coowner(self):
@@ -76,6 +77,7 @@ class TestCategoryApi(web.Helper):
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         assert_equal(data['templates'], [tmpl])
+        assert_equal(data['form']['errors'], {})
 
     @with_context
     def test_add_template(self):
@@ -178,9 +180,6 @@ class TestCategoryApi(web.Helper):
         tmpl['task'] = self.iiif_select_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
-        print user_templates[0]
-        print '---'
-        print tmpl
         assert_dict_equal(user_templates[0], tmpl)
 
     @with_context
