@@ -56,7 +56,6 @@ def get_template_form(task_presenter, method, data):
 
 
 @login_required
-@admin_required
 @BLUEPRINT.route('/<name>/templates', methods=['GET', 'POST'])
 def templates(name):
     """List or add to a user's templates."""
@@ -89,7 +88,6 @@ def templates(name):
 
 
 @login_required
-@admin_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>',
                  methods=['GET', 'POST'])
 def update_template(name, tmpl_id):
@@ -107,7 +105,6 @@ def update_template(name, tmpl_id):
 
 
 @login_required
-@admin_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>/tasks',
                  methods=['GET', 'POST'])
 def template_task(name, tmpl_id):
