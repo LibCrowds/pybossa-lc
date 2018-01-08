@@ -19,13 +19,13 @@ class TestCategoryApi(web.Helper):
     def setUp(self):
         super(TestCategoryApi, self).setUp()
         self.category = CategoryFactory()
-        self.tmpl_fixtures = TemplateFixtures(category_id=self.category.id)
+        self.tmpl_fixtures = TemplateFixtures(self.category)
         self.user_repo = UserRepository(db)
         self.project_repo = ProjectRepository(db)
 
     @with_context
-    def test_templates_listed_for_owner(self):
-        """Test templates are listed for the owner."""
+    def test_user_templates_listed(self):
+        """Test all of a user's templates are listed."""
         self.register(email=Fixtures.email_addr, name=Fixtures.name,
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
@@ -34,24 +34,23 @@ class TestCategoryApi(web.Helper):
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
         endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
-
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         assert_equal(data['templates'], [tmpl])
         assert_equal(data['form']['errors'], {})
 
     @with_context
-    def test_get_template_for_owner(self):
+    def test_get_template_by_id(self):
         """Test get template by ID for owner."""
         self.register(email=Fixtures.email_addr, name=Fixtures.name,
                       password=Fixtures.password)
-        owner = self.user_repo.get_by_name(Fixtures.name)
+        user = self.user_repo.get_by_name(Fixtures.name)
         tmpl = self.tmpl_fixtures.create_template()
-        owner.info['templates'] = [tmpl]
-        self.user_repo.update(owner)
+        user.info['templates'] = [tmpl]
+        self.user_repo.update(user)
 
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-        endpoint = '/libcrowds/users/{}/templates/{}'.format(owner.name,
+        endpoint = '/libcrowds/users/{}/templates/{}'.format(user.name,
                                                              tmpl['id'])
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
