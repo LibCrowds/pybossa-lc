@@ -31,7 +31,6 @@ class TestCategoryApi(web.Helper):
         user = self.user_repo.get_by_name(Fixtures.name)
         tmpl = TemplateFixtures.create_template()
         user.info['templates'] = [tmpl]
-        print tmpl
         self.user_repo.update(user)
         endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
 
@@ -174,7 +173,6 @@ class TestCategoryApi(web.Helper):
 
         res = self.app_post_json(endpoint,
                                  data=TemplateFixtures.iiif_transcribe_tmpl)
-        print res.data
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
         tmpl['task'] = TemplateFixtures.iiif_transcribe_tmpl
