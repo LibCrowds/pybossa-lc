@@ -32,7 +32,6 @@ class ProjectTemplateForm(Form):
     name = TextField('Name', [validators.Required()])
     description = TextField('Description', [validators.Required()])
     tutorial = TextAreaField('Tutorial')
-    coowners = FieldList(IntegerField('Coowners'))
     category_id = SelectField('Category', coerce=int)
 
 

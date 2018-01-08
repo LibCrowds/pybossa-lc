@@ -11,7 +11,6 @@ from pybossa.util import redirect_content_type
 from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
 
-from ..cache import templates as templates_cache
 from ..forms import *
 
 
@@ -22,20 +21,14 @@ def get_template_form(task_presenter, method, data):
     """Return the template form for a type of task presenter."""
     if task_presenter == 'iiif-annotation':
         form = IIIFAnnotationTemplateForm(**data)
-        if data['mode'] == 'transcribe':
 
-            # Populate fields schema
+        # Populate fields schema for IIIF Transcribe tasks only
+        if data['mode'] == 'transcribe':
             form.fields_schema.pop_entry()
             for field in data.get('fields_schema', []):
                 form.fields_schema.append_entry(field)
-
         elif method == 'POST':
             del form.fields_schema
-
-        # Populate coowners
-        for field in data.get('coowners', []):
-            form.coowners.append_entry(field)
-
         return form
 
     elif task_presenter == 'z3950':
@@ -47,11 +40,6 @@ def get_template_form(task_presenter, method, data):
         form.institutions.pop_entry()
         for field in data.get('institutions', []):
             form.institutions.append_entry(field)
-
-        # Populate coowners
-        for field in data.get('coowners', []):
-            form.coowners.append_entry(field)
-
         return form
 
 
@@ -64,7 +52,7 @@ def templates(name):
         abort(404)
 
     ensure_authorized_to('update', user)
-    user_templates = templates_cache.get_all(user.id)
+    user_templates = user.info.get('templates', [])
     form = ProjectTemplateForm(request.body)
     categories = project_repo.get_all_categories()
     form.category_id.choices = [(c.id, c.name) for c in categories]
@@ -72,11 +60,9 @@ def templates(name):
     if request.method == 'POST' and form.validate():
         tmpl_id = str(uuid.uuid4())
         new_template = dict(id=tmpl_id, project=form.data, task=None)
-        user_templates = user.info.get('templates', [])
         user_templates.append(new_template)
         user.info['templates'] = user_templates
         user_repo.update(user)
-        templates_cache.reset(user.id)
         flash("Project template created", 'success')
         return redirect_content_type(url_for('.update_template',
                                              name=user.name, tmpl_id=tmpl_id))
@@ -94,9 +80,9 @@ def update_template(name, tmpl_id):
     if not user:  # pragma: no-cover
         abort(404)
 
-    # Get template if user is owner or coowner
-    tmpl = templates_cache.get_by_id(user.id, tmpl_id)
-    if not tmpl:
+    try:
+        tmpl = [t for t in user.info['templates'] if t['id'] == tmpl_id][0]
+    except IndexError:
         abort(404)
 
     response = dict(template=tmpl)
@@ -112,8 +98,9 @@ def template_task(name, tmpl_id):
     if not user:  # pragma: no-cover
         abort(404)
 
-    tmpl = templates_cache.get_by_id(user.id, tmpl_id)
-    if not tmpl:
+    try:
+        tmpl = [t for t in user.info['templates'] if t['id'] == tmpl_id][0]
+    except IndexError:
         abort(404)
 
     category = project_repo.get_category(tmpl['project']['category_id'])
@@ -145,7 +132,6 @@ def template_task(name, tmpl_id):
         user_templates[idx] = tmpl
         user.info['templates'] = user_templates
         user_repo.update(user)
-        templates_cache.reset(user.id)
         flash("Task template updated", 'success')
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')

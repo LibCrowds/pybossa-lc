@@ -51,8 +51,7 @@ Following are brief details of the endpoints provided by this plugin.
 
 ### List Templates
 
-List all templates created by the user or those for which they're listed as
-a co-owner.
+List all templates created by the user.
 
 ```html
 GET /\<name\>/templates
@@ -62,7 +61,6 @@ GET /\<name\>/templates
 {
   "form": {
     "category_id": null,
-    "coowners": [],
     "csrf": "1515172370.21##b668983b3544e9faeaed77a3d08e6403dc919b00",
     "description": null,
     "errors": {},
@@ -74,7 +72,6 @@ GET /\<name\>/templates
       "id": "c3017984-6885-45a1-81a9-8ba3a18793dc",
       "project": {
         "category_id": 1,
-        "coowners": [],
         "description": "This project is amazing",
         "name": "My Project Type",
         "tutorial": "Do stuff"
@@ -110,5 +107,16 @@ GET /libcrowds/users/<name>/templates/<tmpl_id>
 ```
 
 ```json
-
+{
+  "template": {
+    "id": "37577f77-fad5-474f-af47-a8a9b2c150eb",
+    "project": {
+      "category_id": 1,
+      "description": "This project is amazing",
+      "name": "My Project Type",
+      "tutorial": "Do stuff"
+    },
+    "task": null
+  }
+}
 ```
