@@ -11,7 +11,7 @@ from pybossa.util import redirect_content_type
 from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
 
-from ..cache.templates import get_user_templates, get_user_template_by_id
+from ..cache import templates as templates_cache
 from ..forms import *
 
 
@@ -64,7 +64,7 @@ def templates(name):
         abort(404)
 
     ensure_authorized_to('update', user)
-    user_templates = get_user_templates(user.id)
+    user_templates = templates_cache.get_all(user.id)
     form = ProjectTemplateForm(request.body)
     categories = project_repo.get_all_categories()
     form.category_id.choices = [(c.id, c.name) for c in categories]
@@ -95,7 +95,7 @@ def update_template(name, tmpl_id):
         abort(404)
 
     # Get template if user is owner or coowner
-    tmpl = get_user_template_by_id(user.id, tmpl_id)
+    tmpl = templates_cache.get_by_id(user.id, tmpl_id)
     if not tmpl:
         abort(404)
 
@@ -112,7 +112,7 @@ def template_task(name, tmpl_id):
     if not user:  # pragma: no-cover
         abort(404)
 
-    tmpl = get_user_template_by_id(user.id, tmpl_id)
+    tmpl = templates_cache.get_by_id(user.id, tmpl_id)
     if not tmpl:
         abort(404)
 
