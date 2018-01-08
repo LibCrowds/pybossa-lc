@@ -122,3 +122,28 @@ GET /libcrowds/users/<name>/templates/<tmpl_id>
   }
 }
 ```
+
+
+### Update template task data
+
+Update the task data for a template.
+
+```html
+GET /libcrowds/users/<name>/templates/<tmpl_id>/tasks
+```
+
+```json
+
+```
+
+### Update template project data
+
+Update the project data for a template.
+
+```html
+GET /libcrowds/users/<name>/templates/<tmpl_id>/project
+```
+
+```json
+
+```

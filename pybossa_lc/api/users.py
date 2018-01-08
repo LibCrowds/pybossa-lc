@@ -53,6 +53,7 @@ def templates(name):
 
     ensure_authorized_to('update', user)
     user_templates = user.info.get('templates', [])
+    user_tmpl_ids = [t['id'] for t in user_templates]
     form = ProjectTemplateForm(request.body)
     categories = project_repo.get_all_categories()
     form.category_id.choices = [(c.id, c.name) for c in categories]
@@ -65,7 +66,7 @@ def templates(name):
         user_repo.update(user)
         templates_cache.reset()
         flash("Project template created", 'success')
-        return redirect_content_type(url_for('.update_template',
+        return redirect_content_type(url_for('.template',
                                              name=user.name, tmpl_id=tmpl_id))
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')
@@ -76,15 +77,19 @@ def templates(name):
 
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>', methods=['GET'])
-def update_template(name, tmpl_id):
+def template(name, tmpl_id):
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no-cover
         abort(404)
 
-    try:
-        tmpl = [t for t in user.info['templates'] if t['id'] == tmpl_id][0]
-    except IndexError:
+    ensure_authorized_to('update', user)
+    user_templates = user.info.get('templates', [])
+    user_tmpl_ids = [t['id'] for t in user_templates]
+    tmpl = templates_cache.get_by_id(tmpl_id)
+    if not tmpl:
         abort(404)
+    elif tmpl['id'] not in user_tmpl_ids:
+        abort(403)
 
     response = dict(template=tmpl)
     return handle_content_type(response)
@@ -99,10 +104,15 @@ def template_task(name, tmpl_id):
     if not user:  # pragma: no-cover
         abort(404)
 
-    try:
-        tmpl = [t for t in user.info['templates'] if t['id'] == tmpl_id][0]
-    except IndexError:
+    ensure_authorized_to('update', user)
+
+    user_templates = user.info.get('templates', [])
+    user_tmpl_ids = [t['id'] for t in user_templates]
+    tmpl = templates_cache.get_by_id(tmpl_id)
+    if not tmpl:
         abort(404)
+    elif tmpl['id'] not in user_tmpl_ids:
+        abort(403)
 
     category = project_repo.get_category(tmpl['project']['category_id'])
     if not category:
@@ -122,7 +132,6 @@ def template_task(name, tmpl_id):
         return redirect_content_type(url_for('.templates', name=user.name))
 
     if request.method == 'POST' and form.validate():
-        user_templates = user.info.get('templates', [])
         try:
             idx = [i for i, _item in enumerate(user_templates)
                    if user_templates[i]['id'] == tmpl['id']][0]
@@ -138,72 +147,3 @@ def template_task(name, tmpl_id):
         flash('Please correct the errors', 'error')
     response = dict(form=form)
     return handle_content_type(response)
-
-# @login_required
-# @admin_required
-# @BLUEPRINT.route('/<int:category_id>/templates/<int:template_id>',
-#                  methods=['GET', 'POST'])
-# def update_template(category_id, template_id):
-#     """Update a project template."""
-#     category = project_repo.get_category(category_id)
-#     if not category:  # pragma: no-cover
-#         abort(jsonify(message="Category not found"), 404)
-
-#     ensure_authorized_to('update', category)
-
-#     try:
-#         template = [t for t in category.info.get('templates', [])
-#                     if t['id'] == template_id][0]
-#     except IndexError:
-#         abort(jsonify(message="Template not found"), 404)
-
-#     task_presenter = category.info.get('presenter')
-#     form = get_template_form(task_presenter, request.method, request.body)
-#     if not form:
-#         flash('Invalid task presenter', 'error')
-#         return redirect_content_type(url_for('admin.categories'))
-
-#     if request.method == 'POST' and form.validate():
-#         category_templates = category.info.get('templates', [])
-#         for idx, tmpl in enumerate(category_templates):
-#             if tmpl['id'] == form.id.data:
-#                 category_templates[idx] = form.data
-
-#         category.info['templates'] = category_templates
-#         project_repo.update_category(category)
-#         cached_cat.reset()
-#         flash("Project template updated", 'success')
-#     else:
-#         flash('Please correct the errors', 'error')
-#     response = dict(form=form)
-#     return handle_content_type(response)
-
-
-# @login_required
-# @admin_required
-# @BLUEPRINT.route('/<int:category_id>/templates/<int:template_id>/delete',
-#                  methods=['POST'])
-# def delete_template(category_id, template_id):
-#     """Delete a project template."""
-#     category = project_repo.get_category(category_id)
-#     if not category:  # pragma: no-cover
-#         abort(jsonify(message="Category not found"), 404)
-
-#     ensure_authorized_to('update', category)
-
-#     try:
-#         template = [t for t in category.info.get('templates', [])
-#                     if t['id'] == template_id][0]
-#     except KeyError:
-#         abort(jsonify(message="Template not found"), 404)
-
-#     if request.method == 'POST':
-#         category_templates = [t for t in category.info.get('templates', [])
-#                               if t['id'] != template_id]
-#         category.info['templates'] = category_templates
-#         project_repo.update_category(category)
-#         cached_cat.reset()
-#         flash("Project template deleted", 'success')
-#     else:
-#         flash('Please correct the errors', 'error')
-#     return handle_content_type({})
