@@ -19,7 +19,7 @@ class TestCategoryApi(web.Helper):
     def setUp(self):
         super(TestCategoryApi, self).setUp()
         self.category = CategoryFactory()
-        self.tmpl_fixtures = TemplateFixtures(self.category)
+        self.tmpl_fixtures = TemplateFixtures(category_id=self.category.id)
         self.user_repo = UserRepository(db)
         self.project_repo = ProjectRepository(db)
 

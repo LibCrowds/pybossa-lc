@@ -12,7 +12,7 @@ from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
 
 from ..forms import *
-
+from ..cache import templates as templates_cache
 
 BLUEPRINT = Blueprint('users', __name__)
 
@@ -63,6 +63,7 @@ def templates(name):
         user_templates.append(new_template)
         user.info['templates'] = user_templates
         user_repo.update(user)
+        templates_cache.reset()
         flash("Project template created", 'success')
         return redirect_content_type(url_for('.update_template',
                                              name=user.name, tmpl_id=tmpl_id))
