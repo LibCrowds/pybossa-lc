@@ -76,8 +76,8 @@ def templates(name):
         user_templates.append(new_template)
         user.info['templates'] = user_templates
         user_repo.update(user)
+        templates_cache.reset(user.id)
         flash("Project template created", 'success')
-        print 'redirecting'
         return redirect_content_type(url_for('.update_template',
                                              name=user.name, tmpl_id=tmpl_id))
     elif request.method == 'POST':
@@ -145,8 +145,9 @@ def template_task(name, tmpl_id):
         user_templates[idx] = tmpl
         user.info['templates'] = user_templates
         user_repo.update(user)
+        templates_cache.reset(user.id)
         flash("Task template updated", 'success')
-    else:
+    elif request.method == 'POST':
         flash('Please correct the errors', 'error')
     response = dict(form=form)
     return handle_content_type(response)

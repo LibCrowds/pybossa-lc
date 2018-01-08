@@ -4,10 +4,15 @@
 import json
 from sqlalchemy import text
 from pybossa.core import db, timeouts
-from pybossa.cache import memoize
+from pybossa.cache import memoize, delete_memoized
 
 
 session = db.slave_session
+
+
+def reset(user_id):
+    """Reset the cache for a user."""
+    delete_memoized(get_all, user_id)
 
 
 @memoize(timeout=timeouts.get('USER_TIMEOUT'))
@@ -26,7 +31,6 @@ def get_all(user_id):
     return templates
 
 
-@memoize(timeout=timeouts.get('USER_TIMEOUT'))
 def get_by_id(user_id, tmpl_id):
     """Return templates that the user owns or co-owns."""
     all_tmpl = get_all(user_id)
