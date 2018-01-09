@@ -48,14 +48,14 @@ def get_template_form(task_presenter, method, data):
 def templates(name):
     """List or add to a user's templates."""
     user = user_repo.get_by_name(name)
-    if not user:  # pragma: no-cover
+    if not user:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('update', user)
     user_templates = user.info.get('templates', [])
-    user_tmpl_ids = [t['id'] for t in user_templates]
-    form = ProjectTemplateForm(request.body)
+
     categories = project_repo.get_all_categories()
+    form = ProjectTemplateForm(request.body)
     form.category_id.choices = [(c.id, c.name) for c in categories]
 
     if request.method == 'POST' and form.validate():
@@ -68,7 +68,7 @@ def templates(name):
         flash("Project template created", 'success')
         return redirect_content_type(url_for('.template',
                                              name=user.name, tmpl_id=tmpl_id))
-    elif request.method == 'POST':
+    elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
     response = dict(templates=user_templates, form=form)
@@ -76,20 +76,45 @@ def templates(name):
 
 
 @login_required
-@BLUEPRINT.route('/<name>/templates/<tmpl_id>', methods=['GET'])
+@BLUEPRINT.route('/<name>/templates/<tmpl_id>', methods=['GET', 'POST'])
 def template(name, tmpl_id):
+    """View or edit the main template project data."""
     user = user_repo.get_by_name(name)
-    if not user:  # pragma: no-cover
+    if not user:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('update', user)
     user_templates = user.info.get('templates', [])
     user_tmpl_ids = [t['id'] for t in user_templates]
     tmpl = templates_cache.get_by_id(tmpl_id)
-    if not tmpl:
+    if not tmpl:  # pragma: no cover
         abort(404)
-    elif tmpl['id'] not in user_tmpl_ids:
+    elif tmpl['id'] not in user_tmpl_ids:  # pragma: no cover
         abort(403)
+
+    categories = project_repo.get_all_categories()
+    category_choices = [(c.id, c.name) for c in categories]
+    form = ProjectTemplateForm(data=tmpl['project'])
+    form.category_id.choices = category_choices
+
+    if request.method == 'POST':
+        form = ProjectTemplateForm(request.body)
+        form.category_id.choices = category_choices
+
+        if form.validate():
+            try:
+                idx = [i for i, _t in enumerate(user_templates)
+                       if _t['id'] == tmpl_id][0]
+            except IndexError:
+                abort(404)
+            tmpl['project'] = form.data
+            user_templates[idx] = tmpl
+            user.info['templates'] = user_templates
+            user_repo.update(user)
+            templates_cache.reset()
+            flash("Project template updated", 'success')
+        else:
+            flash('Please correct the errors', 'error')
 
     response = dict(template=tmpl)
     return handle_content_type(response)
@@ -101,11 +126,10 @@ def template(name, tmpl_id):
 def template_task(name, tmpl_id):
     """Add task data for a template."""
     user = user_repo.get_by_name(name)
-    if not user:  # pragma: no-cover
+    if not user:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('update', user)
-
     user_templates = user.info.get('templates', [])
     user_tmpl_ids = [t['id'] for t in user_templates]
     tmpl = templates_cache.get_by_id(tmpl_id)
@@ -133,8 +157,8 @@ def template_task(name, tmpl_id):
 
     if request.method == 'POST' and form.validate():
         try:
-            idx = [i for i, _item in enumerate(user_templates)
-                   if user_templates[i]['id'] == tmpl['id']][0]
+            idx = [i for i, _t in enumerate(user_templates)
+                   if _t['id'] == tmpl_id][0]
         except IndexError:
             abort(404)
 

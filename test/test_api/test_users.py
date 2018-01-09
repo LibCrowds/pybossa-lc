@@ -82,6 +82,29 @@ class TestCategoryApi(web.Helper):
         assert_equal(data['next'], next_url)
 
     @with_context
+    def test_update_project_template(self):
+        """Test that project template data is updated."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        tmpl = self.tmpl_fixtures.create_template()
+        tmpl['name'] = 'Some updated name'
+        user.info['templates'] = [tmpl]
+        self.user_repo.update(user)
+
+        url_base = '/libcrowds/users/{}/templates/{}'
+        endpoint = url_base.format(Fixtures.name, tmpl['id'])
+        res = self.app_post_json(endpoint, data=tmpl['project'])
+
+        data = json.loads(res.data)
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        templates = updated_user.info.get('templates')
+        assert_equal(data['flash'], 'Project template updated')
+        assert_equal(len(templates), 1)
+        assert_dict_equal(templates[0]['project'], tmpl['project'])
+
+    @with_context
     def test_add_iiif_transcribe_task(self):
         """Test a IIIF transcribe task is added to a template."""
         self.register(email=Fixtures.email_addr, name=Fixtures.name,

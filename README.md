@@ -51,7 +51,7 @@ Following are brief details of the endpoints provided by this plugin.
 
 ## Users
 
-### List User's Templates
+### List a User's Templates
 
 List all templates created by the user.
 
@@ -100,7 +100,7 @@ POST /libcrowds/users/\<name\>/templates
 }
 ```
 
-### Get template
+### Get a template
 
 Get a template by ID for the owner.
 
@@ -123,8 +123,20 @@ GET /libcrowds/users/<name>/templates/<tmpl_id>
 }
 ```
 
+### Update template project data
 
-### Update template task data
+Update the core project template data.
+
+```html
+POST /libcrowds/users/<name>/templates/<tmpl_id>
+```
+
+```json
+
+```
+
+
+### Get the template task data
 
 Update the task data for a template.
 
