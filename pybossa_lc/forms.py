@@ -54,3 +54,9 @@ class Z3950TemplateForm(Form):
     institutions = FieldList(TextField('Institution code',
                                        [validators.Required()]),
                              min_entries=1)
+
+class ProjectForm(Form):
+    """Form for creating projects from templates."""
+    volume_id = SelectField('Template', coerce=int)
+    template_id = SelectField('Template', coerce=int)
+    parent_id = SelectField('Parent Project', coerce=int)

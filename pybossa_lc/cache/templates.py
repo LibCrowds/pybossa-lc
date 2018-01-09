@@ -14,6 +14,7 @@ def reset():
     """Reset the cache."""
     delete_memoized(get_all)
 
+
 @memoize(timeout=timeouts.get('USER_TIMEOUT'))
 def get_all():
     """Return all templates."""
@@ -30,3 +31,10 @@ def get_by_id(tmpl_id):
     all_tmpl = get_all()
     filtered = [tmpl for tmpl in all_tmpl if tmpl['id'] == tmpl_id]
     return filtered[0] if filtered else None
+
+
+def get_by_category_id(category_id):
+    """Return all templates for a category."""
+    all_tmpl = get_all()
+    return [tmpl for tmpl in all_tmpl
+            if tmpl['project']['category_id'] == category_id]
