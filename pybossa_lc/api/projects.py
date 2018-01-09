@@ -218,22 +218,3 @@ def create(category_id):
 
     response = dict(form=form)
     return handle_content_type(response)
-
-
-@csrf.exempt
-@login_required
-@BLUEPRINT.route('/check-shortname', methods=['POST'])
-def check_shortname():
-    required_args = ['volume', 'template']
-    data = json.loads(request.data)
-    if not all(arg in data for arg in required_args):
-        abort(400)
-
-    volume = data['volume']
-    template = data['template']
-    _name, short_name = get_name_and_shortname(template, volume)
-    projects = project_repo.filter_by(short_name=short_name)
-    if projects:
-        return Response(json.dumps(projects[0]), 200,
-                        mimetype='application/json')
-    return Response(json.dumps({}), 200, mimetype='application/json')

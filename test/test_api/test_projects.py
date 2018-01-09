@@ -6,9 +6,9 @@ from nose.tools import assert_equals
 from helper import web
 from default import with_context
 from factories import ProjectFactory
-
 from pybossa.jobs import import_tasks
 from pybossa.core import task_repo
+
 from pybossa_lc.api import projects as projects_api
 
 
@@ -90,3 +90,5 @@ class TestProjectsApi(web.Helper):
         data = dict(foo='bar')
         projects_api._import_tasks(project, **data)
         mock_create.assert_called_with(task_repo, project.id, **data)
+
+

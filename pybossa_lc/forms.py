@@ -55,8 +55,15 @@ class Z3950TemplateForm(Form):
                                        [validators.Required()]),
                              min_entries=1)
 
+
 class ProjectForm(Form):
-    """Form for creating projects from templates."""
+    """A form for creating projects from templates."""
     volume_id = SelectField('Template', coerce=int)
     template_id = SelectField('Template', coerce=int)
     parent_id = SelectField('Parent Project', coerce=int)
+
+
+class VolumeForm(Form):
+    """A form for creating volumes."""
+    name = TextField('Name', [validators.Required()])
+    source = TextField('Source', [validators.Required()])
