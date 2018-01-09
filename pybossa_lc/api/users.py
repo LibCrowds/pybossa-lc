@@ -87,9 +87,9 @@ def template(name, tmpl_id):
     user_templates = user.info.get('templates', [])
     user_tmpl_ids = [t['id'] for t in user_templates]
     tmpl = templates_cache.get_by_id(tmpl_id)
-    if not tmpl:  # pragma: no cover
+    if not tmpl:
         abort(404)
-    elif tmpl['id'] not in user_tmpl_ids:  # pragma: no cover
+    elif tmpl['id'] not in user_tmpl_ids:
         abort(403)
 
     categories = project_repo.get_all_categories()
@@ -105,7 +105,7 @@ def template(name, tmpl_id):
             try:
                 idx = [i for i, _t in enumerate(user_templates)
                        if _t['id'] == tmpl_id][0]
-            except IndexError:
+            except IndexError:  # pragma: no cover
                 abort(404)
             tmpl['project'] = form.data
             user_templates[idx] = tmpl
@@ -113,7 +113,7 @@ def template(name, tmpl_id):
             user_repo.update(user)
             templates_cache.reset()
             flash("Project template updated", 'success')
-        else:
+        else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
     response = dict(template=tmpl)

@@ -7,7 +7,7 @@ from mock import patch, MagicMock
 from nose.tools import *
 from helper import web
 from default import with_context, db, Fixtures
-from factories import CategoryFactory
+from factories import CategoryFactory, UserFactory
 from pybossa.repositories import UserRepository, ProjectRepository
 from pybossa.jobs import import_tasks
 
@@ -180,76 +180,3 @@ class TestCategoryApi(web.Helper):
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
-
-    # @with_context
-    # def test_update_template(self):
-    #     """Test the update template endpoint."""
-    #     info = dict(templates=[self.iiif_transcribe_tmpl])
-    #     category = CategoryFactory.create(info=info)
-    #     url_tmpl = '/libcrowds/users/{}/templates/{}'
-    #     endpoint = url_tmpl.format(category.id,
-    #                                self.iiif_transcribe_tmpl['id'])
-
-    #     # Test anon user unauthorised
-    #     res = self.app_get_json(endpoint)
-    #     assert_equal(res.status_code, 401)
-
-    #     # Test non-admin forbidden
-    #     self.register()
-    #     self.signout()
-    #     self.register(fullname="jane", name="jane", email="jane@jane.com")
-    #     res = self.app_get_json(endpoint)
-    #     assert_equal(res.status_code, 403)
-
-    #     # Test admin user authorised
-    #     self.signin()
-    #     res = self.app_get_json(endpoint)
-    #     assert_equal(res.status_code, 200)
-
-    #     # Test redirects without a task presenter
-    #     assert_equal(json.loads(res.data)['next'], "/admin/categories")
-    #     category.info['presenter'] = 'iiif-annotation'
-    #     self.project_repo.update_category(category)
-
-    #     # Test form is populated
-    #     form = json.loads(res.data)['form']
-    #     form_fields = {k: v for k, v in form.items()
-    #                    if k not in ['csrf', 'errors']}
-    #     assert_dict_equal(form_fields, self.iiif_transcribe_tmpl)
-
-    #     # Test that a template is updated
-    #     self.iiif_transcribe_tmpl['name'] = 'A new name'
-    #     res = self.app_post_json(endpoint, data=self.iiif_transcribe_tmpl)
-    #     updated_category = self.project_repo.get_category(category.id)
-    #     templates = updated_category.info.get('templates')
-    #     assert_equal(json.loads(res.data)['flash'], 'Project template updated')
-    #     assert_equal(len(templates), 1)
-    #     assert_dict_equal(templates[0], self.iiif_transcribe_tmpl)
-
-    # @with_context
-    # def test_delete_template(self):
-    #     """Test the delete template endpoint."""
-    #     info = dict(templates=[self.iiif_transcribe_tmpl])
-    #     category = CategoryFactory.create(info=info)
-    #     url_tmpl = '/libcrowds/users/{}/templates/{}/delete'
-    #     endpoint = url_tmpl.format(category.id,
-    #                                self.iiif_transcribe_tmpl['id'])
-
-    #     # Test anon user unauthorised
-    #     res = self.app_post_json(endpoint)
-    #     assert_equal(res.status_code, 401)
-
-    #     # Test non-admin forbidden
-    #     self.register()
-    #     self.signout()
-    #     self.register(fullname="jane", name="jane", email="jane@jane.com")
-    #     res = self.app_post_json(endpoint)
-    #     assert_equal(res.status_code, 403)
-
-    #     # Test that a template is deleted for admin users
-    #     self.register()
-    #     self.signin()
-    #     res = self.app_post_json(endpoint)
-    #     updated_category = self.project_repo.get_category(category.id)
-    #     assert_equal(json.loads(res.data)['flash'], 'Project template deleted')
-    #     assert not updated_category.info.get('templates')
