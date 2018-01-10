@@ -43,32 +43,25 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} task{}.'.format(n_tasks, plural)
 
 
-def get_parent(parent_id, template):
-    """Return a valid parent."""
-    if not parent_id:
-        return None
+def validate_parent(parent_id, template, presenter):
+    """Validate a parent project."""
+    if presenter != 'iiif-annotation' or template['mode'] != 'transcribe':
+        flash('Only IIIF transcription projects can be built from a parent',
+              'error')
+        return False
 
-    if not 'iiif-annotation' or template['mode'] != 'transcribe':
-        msg = "Only IIIF transcription projects can be built from a parent"
-        abort(jsonify(message=msg), 400)
-
-    parent = project_repo.get(parent_id)
-    if not parent:
-        msg = "Parent not found"
-        abort(jsonify(message=msg), 400)
-
-    empty_results = result_repo.filter_by(info=None, project_id=parent.id)
+    empty_results = result_repo.filter_by(info=None, project_id=parent_id)
     if empty_results:
-        msg = "Parent contains incomplete results"
-        abort(jsonify(message=msg), 400)
+        flash('Parent contains incomplete results', 'error')
+        return False
 
     incomplete_tasks = task_repo.filter_by(status='ongoing',
-                                           project_id=parent.id)
+                                           project_id=parent_id)
     if incomplete_tasks:
-        msg = "Parent contains incomplete tasks"
-        abort(jsonify(message=msg), 400)
+        flash('Parent contains incomplete tasks', 'error')
+        return False
 
-    return parent
+    return True
 
 
 def get_name_and_shortname(template, volume):
@@ -144,20 +137,25 @@ def create(category_short_name):
         elif presenter == 'iiif-annotation':
             import_data = _get_iiif_annotation_data(volume, tmpl['id'],
                                                     form.parent_id)
-
         if not import_data:
             err_msg = "Invalid volume details for the task presenter type"
             flash(err_msg, 'error')
             return redirect_content_type(url_for('home.home'))
 
-        webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root,
-                                                     presenter)
+        # Valid any parent
+        if form.parent_id:
+            validate_parent(form.parent_id.data, tmpl, presenter)
+
+        # Check for similar projects
         existing_project = project_repo.filter_by(short_name=short_name)
         if existing_project:
             err_msg = "A project already exists with that short name."
             flash(err_msg, 'error')
             return redirect_content_type(url_for('home.home'))
 
+        # Create
+        webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root,
+                                                     presenter)
         project = Project(name=name,
                           short_name=short_name,
                           description=tmpl['project']['description'],
