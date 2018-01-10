@@ -58,8 +58,8 @@ class Z3950TemplateForm(Form):
 
 class ProjectForm(Form):
     """A form for creating projects from templates."""
-    volume_id = SelectField('Template', coerce=int)
-    template_id = SelectField('Template', coerce=int)
+    volume_id = SelectField('Volume')
+    template_id = SelectField('Template')
     parent_id = SelectField('Parent Project', coerce=int)
 
 

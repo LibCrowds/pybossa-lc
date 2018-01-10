@@ -18,7 +18,6 @@ from pybossa.default_settings import TIMEOUT
 from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
 
-from ..utils import get_template, get_volume
 from ..forms import ProjectForm
 from ..cache import templates as templates_cache
 
@@ -33,13 +32,15 @@ IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
 def _import_tasks(project, **import_data):
     """Import the tasks."""
     n_tasks = importer.count_tasks_to_import(**import_data)
+    print n_tasks
     if n_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
         importer.create_tasks(task_repo, project.id, **import_data)
     else:
         IMPORT_QUEUE.enqueue(import_tasks, project.id, **import_data)
         return '''The project is being generated with a large amount of tasks.
             You will recieve an email when the process is complete.'''
-    return 'The project was generated with {} tasks.'.format(n_tasks)
+    plural = 's' if n_tasks != 1 else ''
+    return 'The project was generated with {} task{}.'.format(n_tasks, plural)
 
 
 def get_volume(category, volume_id):
@@ -82,16 +83,10 @@ def get_parent(parent_id, template):
 
 def get_name_and_shortname(template, volume):
     """Create a name and shortname from the template and volume details."""
-    name = '{0}: {1}'.format(template['name'], volume['name'])
+    name = '{0}: {1}'.format(template['project']['name'], volume['name'])
     badchars = r"([$#%·:,.~!¡?\"¿'=)(!&\/|]+)"
     short_name = re.sub(badchars, '', name.lower().strip()).replace(' ', '_')
     return name, short_name
-
-
-def json_response(msg, status, project={}):
-    """Return a message as a JSON response."""
-    res = dict(status=status, flash=msg, project=project)
-    return Response(json.dumps(res), 200, mimetype='application/json')
 
 
 def _get_iiif_annotation_data(volume, template_id, parent_id):
@@ -113,19 +108,18 @@ def _get_flickr_data(volume):
         return dict(type='flickr', album_id=match.group(0))
 
 
-@csrf.exempt
 @login_required
-@BLUEPRINT.route('/create/<int:category_id>', methods=['POST'])
-def create(category_id):
+@BLUEPRINT.route('/<category_short_name>/create', methods=['POST'])
+def create(category_short_name):
     """Create a LibCrowds project for a given category."""
-    category = project_repo.get_category(category_id)
+    category = project_repo.get_category_by(short_name=category_short_name)
     if not category:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('create', Project)
     templates = templates_cache.get_by_category_id(category.id)
     volumes = category.info.get('volumes', [])
-    projects = project_repo.get_by(category_id=category.id)
+    projects = project_repo.filter_by(category_id=category.id)
 
     # Check for a valid task presenter
     presenter = category.info.get('presenter')
@@ -137,14 +131,15 @@ def create(category_id):
     # Set the options for the form
     template_choices = [(t['id'], t['project']['name']) for t in templates]
     volume_choices = [(v['id'], v['name']) for v in volumes]
-    project_choices = [(p.id, p.name) for p in projects]
+    parent_choices = [(p.id, p.name) for p in projects]
+    parent_choices.append(('None', 0))
     form = ProjectForm(request.body)
     form.template_id.choices = template_choices
     form.volume_id.choices = volume_choices
-    form.parent_id.choices = project_choices
+    form.parent_id.choices = parent_choices
 
-    # Remove parent ID field for Z39.50 presenter
-    if presenter == 'z3950':
+    # Remove parent ID field if not set or Z39.50 presenter
+    if not form.parent_id.data or presenter != 'iiif-annotation':
         del form.parent_id
 
     if request.method == 'POST' and form.validate():
@@ -161,24 +156,25 @@ def create(category_id):
                                                     form.parent_id)
 
         if not import_data:
-            msg = """Invalid volume details for the task presenter type,
-                  please contact an administrator"""
+            err_msg = "Invalid volume details for the task presenter type"
+            flash(err_msg, 'error')
             return redirect_content_type(url_for('home.home'))
 
         webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root,
                                                      presenter)
         existing_project = project_repo.filter_by(short_name=short_name)
         if existing_project:
-            msg = "A project already exists with that short name."
-            return json_response(msg, 'error')
+            err_msg = "A project already exists with that short name."
+            flash(err_msg, 'error')
+            return redirect_content_type(url_for('home.home'))
 
         project = Project(name=name,
                           short_name=short_name,
-                          description=tmpl['description'],
+                          description=tmpl['project']['description'],
                           long_description='',
                           owner_id=current_user.id,
                           info={
-                              'tutorial': tmpl.get('tutorial'),
+                              'tutorial': tmpl.get('tutorial', ''),
                               'volume_id': volume['id'],
                               'template_id': tmpl['id'],
                               'tags': tmpl.get('tags', {})
@@ -189,10 +185,10 @@ def create(category_id):
         project_repo.save(project)
 
         # Attempt to generate the tasks
-        msg = ''
         success = True
         try:
-            response = _import_tasks(project, **import_data)
+            msg = _import_tasks(project, **import_data)
+            flash(msg, 'success')
         except BulkImportException as err_msg:
             success = False
             project_repo.delete(project)
@@ -201,6 +197,7 @@ def create(category_id):
         except Exception as inst:  # pragma: no cover
             success = False
             current_app.logger.error(inst)
+            print inst
             project_repo.delete(project)
             msg = 'Uh oh, an error was encountered while generating the tasks'
             flash(msg, 'error')
@@ -210,7 +207,6 @@ def create(category_id):
             task_repo.update_tasks_redundancy(project, 3)
             project.published = True
             project_repo.save(project)
-            flash(msg, 'success')
             return redirect_content_type(url_for('home.home'))
 
     elif request.method == 'POST':

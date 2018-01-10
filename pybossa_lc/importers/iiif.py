@@ -3,17 +3,19 @@
 import requests
 from pybossa.importers.base import BulkTaskImport
 
+from ..cache import templates as templates_cache
+
 
 class BulkTaskIIIFImporter(BulkTaskImport):
     """Class to import tasks from IIIF manifests."""
 
     importer_id = "iiif-annotation"
 
-    def __init__(self, manifest_uri, template, parent_id=None):
+    def __init__(self, manifest_uri, template_id, parent_id=None):
         """Init method."""
-        self.template = template
         self.manifest_uri = manifest_uri
         self.parent_id = parent_id
+        self.template = templates_cache.get_by_id(template_id)
 
     def tasks(self):
         """Get tasks."""
@@ -25,6 +27,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
 
     def _generate_tasks(self):
         """Generate the tasks."""
+        print 'gen'
         manifest = requests.get(self.manifest_uri).json()
         task_data = self._get_task_data(manifest)
         if self.parent_id:
@@ -47,11 +50,11 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'shareUrl': self._get_share_url(manifest_uri, i)
             }
-            row['mode'] = self.template['mode']
-            row['tag'] = self.template['tag']
-            row['objective'] = self.template['objective']
-            row['guidance'] = self.template['guidance']
-            if self.template['fields_schema']:
+            row['mode'] = self.template['task']['mode']
+            row['tag'] = self.template['task']['tag']
+            row['objective'] = self.template['task']['objective']
+            row['guidance'] = self.template['task']['guidance']
+            if self.template['task'].get('fields_schema'):
                 row['form'] = {
                     'model': {
                         f['model']: '' for f in self.template['fields_schema']
