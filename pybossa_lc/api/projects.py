@@ -43,16 +43,6 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} task{}.'.format(n_tasks, plural)
 
 
-def get_volume(category, volume_id):
-    """Return a valid volume."""
-    volumes = category.info.get('volumes', {})
-    volume = volumes.get(volume_id)
-    if not volume:
-        msg = 'Volume not found'
-        abort(jsonify(message=msg), 404)
-    return volume
-
-
 def get_parent(parent_id, template):
     """Return a valid parent."""
     if not parent_id:
