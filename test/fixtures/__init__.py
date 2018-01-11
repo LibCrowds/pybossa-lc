@@ -22,4 +22,4 @@ class TemplateFixtures(object):
 
     def create_template(self, task_tmpl=None):
         return dict(id=str(uuid.uuid4()), task=task_tmpl,
-                    project=self.project_tmpl)
+                    project=self.project_tmpl, rules=dict())

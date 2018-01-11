@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """IIIF Annotation analysis module."""
 
+import string
 import datetime
 import itertools
 from pybossa.core import project_repo, result_repo, task_repo
@@ -8,6 +9,7 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail
 from rq import Queue
 
+from ..cache import templates as templates_cache
 from ..cache import clear_cache
 from . import helpers
 
@@ -81,7 +83,7 @@ def get_transcribed_fields(anno):
     return fields
 
 
-def merge_transcriptions(annos):
+def merge_transcriptions(annos, rules):
     """Get the most common normalised transcriptions for each field.
 
     Normalises transcribed values then creates a dictionary with the following
@@ -124,7 +126,7 @@ def merge_transcriptions(annos):
             if item['purpose'] == 'tagging':  # the field tag
                 tag = item['value']
             elif item['purpose'] == 'describing':  # the transcribed value
-                value = normalise_transcription(item['value'])
+                value = normalise_transcription(item['value'], rules)
                 item['value'] = value
 
         count = data.get(tag, {}).get(value, {}).get('count', 0) + 1
@@ -143,10 +145,18 @@ def merge_transcriptions(annos):
 
     return reduced
 
-
-def normalise_transcription(value):
+def normalise_transcription(value, rules):
     """Normalise transcriptions according to the specified rules."""
-    return value
+    normalised = value
+    if rules.get('titlecase'):
+        normalised = normalised.title()
+
+    if rules.get('whitespace'):
+        normalised = " ".join(normalised.split())
+
+    if rules.get('trimpunctuation'):
+        normalised = normalised.translate(None, string.punctuation)
+    return normalised
 
 def update_selector(anno, rect):
     """Update a media frag selector."""
@@ -201,22 +211,30 @@ def analyse(result_id):
     result.last_version = True
 
     # Process transcriptions
-    merged_transcriptions = merge_transcriptions(transcriptions)
     final_transcriptions = []
-    task = task_repo.get_task(result.task_id)
-    for tag in merged_transcriptions:
-        item = merged_transcriptions[tag]
-        if item['count'] >= 2:
-            final_transcriptions.append(item['annotation'])
-        elif task.n_answers < 10:  # update required answers
-            task.n_answers = task.n_answers + 1
-            task_repo.update(task)
-            result.last_version = False
+    if transcriptions:
+        # Get normalisation rules
+        project = project_repo.get(result.project_id)
+        template_id = project.info.get('template_id')
+        tmpl = templates_cache.get_by_id(template_id)
+        rules = tmpl.get('rules') if tmpl else {}
+
+        merged_transcriptions = merge_transcriptions(transcriptions, rules)
+        task = task_repo.get_task(result.task_id)
+        for tag in merged_transcriptions:
+            item = merged_transcriptions[tag]
+            if item['count'] >= 2:  # 2 matching transcriptions required
+                final_transcriptions.append(item['annotation'])
+            elif task.n_answers < 10:  # update required answers otherwise
+                task.n_answers = task.n_answers + 1
+                task_repo.update(task)
+                result.last_version = False
 
     # Set result
-    result.info['annotations'] = comments
+    info = dict(annotations=comments)
     if result.last_version:
-        result.info['annotations'] += clusters + final_transcriptions
+        info['annotations'] += clusters + final_transcriptions
+    result.info = info
     result_repo.update(result)
     clear_cache()
 

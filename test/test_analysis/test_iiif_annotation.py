@@ -206,7 +206,7 @@ class TestIIIFAnnotationAnalysis(Test):
             ]
         }
         annotations = [fake_anno1, fake_anno2, fake_anno2]
-        merged = iiif_annotation.merge_transcriptions(annotations)
+        merged = iiif_annotation.merge_transcriptions(annotations, {})
         assert_dict_equal(merged, {
             tag: {
                 'annotation': fake_anno2,
@@ -294,3 +294,21 @@ class TestIIIFAnnotationAnalysis(Test):
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(result.info['annotations'], [])
         assert_equal(updated_task.n_answers, n_answers + 1)
+
+    def test_titlecase_normalisation(self):
+        """Test titlecase normalisation."""
+        rules = dict(titlecase=True)
+        norm = iiif_annotation.normalise_transcription('word', rules)
+        assert_equal(norm, 'Word')
+
+    def test_whitespace_normalisation(self):
+        """Test whitespace normalisation."""
+        rules = dict(whitespace=True)
+        norm = iiif_annotation.normalise_transcription(' Two  Words', rules)
+        assert_equal(norm, 'Two Words')
+
+    def test_trim_punctuation_normalisation(self):
+        """Test trim punctuation normalisation."""
+        rules = dict(trimpunctuation=True)
+        norm = iiif_annotation.normalise_transcription(':Word.', rules)
+        assert_equal(norm, 'Word')

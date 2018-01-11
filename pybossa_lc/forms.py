@@ -3,7 +3,7 @@
 
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, validators
-from wtforms import IntegerField, FieldList, FormField
+from wtforms import IntegerField, FieldList, FormField, SelectMultipleField
 from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
 
@@ -46,6 +46,11 @@ class IIIFAnnotationTemplateForm(Form):
         ('transcribe', 'Transcribe')
     ])
     fields_schema = FieldList(FormField(FieldsSchemaForm), min_entries=1)
+    normalisation_rules = SelectMultipleField('Normalisation Rules', choices=[
+        ('titlecase', 'Title Case'),
+        ('whitespace', 'Normalise Whitespace'),
+        ('trimpuncuation', 'Trim Puncuation')
+    ])
 
 
 class Z3950TemplateForm(Form):

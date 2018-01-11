@@ -60,7 +60,8 @@ def templates(name):
 
     if request.method == 'POST' and form.validate():
         tmpl_id = str(uuid.uuid4())
-        new_template = dict(id=tmpl_id, project=form.data, task=None)
+        new_template = dict(id=tmpl_id, project=form.data, task=None,
+                            rules=None)
         user_templates.append(new_template)
         user.info['templates'] = user_templates
         user_repo.update(user)
