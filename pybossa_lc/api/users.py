@@ -122,8 +122,7 @@ def template(name, tmpl_id):
 
 
 @login_required
-@BLUEPRINT.route('/<name>/templates/<tmpl_id>/tasks',
-                 methods=['GET', 'POST'])
+@BLUEPRINT.route('/<name>/templates/<tmpl_id>/tasks', methods=['GET', 'POST'])
 def template_task(name, tmpl_id):
     """Add task data for a template."""
     user = user_repo.get_by_name(name)
@@ -147,9 +146,9 @@ def template_task(name, tmpl_id):
         return redirect_content_type(url_for('.templates', name=user.name))
 
     # Get the form for the category's task presenter
-    task_presenter = category.info.get('presenter')
+    presenter = category.info.get('presenter')
     form_data = json.loads(request.data) if request.data else {}
-    form = get_template_form(task_presenter, request.method, form_data)
+    form = get_template_form(presenter, request.method, form_data)
     if not form:
         msg = ('This category has an invalid task presenter, please contact '
                'an administrator')
@@ -171,4 +170,64 @@ def template_task(name, tmpl_id):
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')
     response = dict(form=form)
+    return handle_content_type(response)
+
+
+@login_required
+@BLUEPRINT.route('/<name>/templates/<tmpl_id>/rules',
+                 methods=['GET', 'POST'])
+def template_rules(name, tmpl_id):
+    """Add resulsts analysis rules for a template."""
+    user = user_repo.get_by_name(name)
+    if not user:  # pragma: no cover
+        abort(404)
+
+    ensure_authorized_to('update', user)
+    user_templates = user.info.get('templates', [])
+    user_tmpl_ids = [t['id'] for t in user_templates]
+    tmpl = templates_cache.get_by_id(tmpl_id)
+    if not tmpl:
+        abort(404)
+    elif tmpl['id'] not in user_tmpl_ids:
+        abort(403)
+
+    category = project_repo.get_category(tmpl['project']['category_id'])
+    if not category:
+        msg = ('The category for this template no longer exists, please '
+               'contact an administrator')
+        flash(msg, 'error')
+        return redirect_content_type(url_for('.templates', name=user.name))
+
+    presenter = category.info.get('presenter')
+    if presenter != 'iiif-annotation':
+        msg = 'No normalisation rules available for this presenter type'
+        flash(msg, 'error')
+        return redirect_content_type(url_for('.templates', name=user.name))
+
+    if not tmpl['task'] or tmpl['task'].get('mode') != 'transcribe':
+        msg = ('Normalisation rules are only available for IIIF ',
+               ' transcription projects')
+        flash(msg, 'error')
+        return redirect_content_type(url_for('.templates', name=user.name))
+
+    form = NormalisationRulesForm(data=tmpl['rules'])
+
+    if request.method == 'POST':
+        form = NormalisationRulesForm(request.body)
+        if form.validate():
+            try:
+                idx = [i for i, _t in enumerate(user_templates)
+                       if _t['id'] == tmpl_id][0]
+            except IndexError:  # pragma: no cover
+                abort(404)
+            tmpl['rules'] = form.data
+            user_templates[idx] = tmpl
+            user.info['templates'] = user_templates
+            user_repo.update(user)
+            templates_cache.reset()
+            flash("Project template updated", 'success')
+        else:  # pragma: no cover
+            flash('Please correct the errors', 'error')
+
+    response = dict(template=tmpl)
     return handle_content_type(response)

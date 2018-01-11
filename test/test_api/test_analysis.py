@@ -89,23 +89,3 @@ class TestAnalysisApi(web.Helper):
             'message': 'Hello',
             'foo': 'bar'
         }
-
-    def test_invalid_event_rejected(self):
-        """Test that a non-task_completed event is rejected"""
-        pass
-
-    def test_non_empty_result_rejected_if_anon(self):
-        """Test that a non-empty result is rejected for anon users."""
-        pass
-
-    def test_non_empty_result_rejected_if_not_owner(self):
-        """Test that a non-empty result is rejected for non-owners."""
-        pass
-
-    def test_non_empty_result_analysed_if_owner(self):
-        """Test that a non-empty result is analysed for owners."""
-        pass
-
-    def test_non_empty_result_analysed_if_admin(self):
-        """Test that a non-empty result is analysed for admin."""
-        pass

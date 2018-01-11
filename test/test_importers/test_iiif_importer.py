@@ -5,14 +5,15 @@ import os
 import json
 import copy
 from mock import MagicMock, patch
-from nose.tools import assert_equal, raises
+from nose.tools import *
 from default import Test, db, with_context, FakeResponse
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
-from factories import CategoryFactory
-from pybossa.repositories import ResultRepository
+from factories import CategoryFactory, UserFactory
+from pybossa.repositories import ResultRepository, UserRepository
+from pybossa.core import project_repo
 
 from pybossa_lc.importers.iiif import BulkTaskIIIFImporter
-from pybossa.core import project_repo
+from ..fixtures import TemplateFixtures
 
 
 class TestIIIFImporter(Test):
@@ -20,6 +21,7 @@ class TestIIIFImporter(Test):
     def setUp(self):
         super(TestIIIFImporter, self).setUp()
         self.result_repo = ResultRepository(db)
+        self.user_repo = UserRepository(db)
         manifest_path = os.path.join('test', 'fixtures', 'manifest.json')
         select_anno_path = os.path.join('test', 'fixtures',
                                         'select_annotation.json')
@@ -95,73 +97,68 @@ class TestIIIFImporter(Test):
                                                canvas_index)
         assert share_url == expected_url
 
+    @with_context
     def test_get_select_task_data_from_manifest(self):
         """Test that select task data is generated from a manifest."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        user = UserFactory.create(info=dict(templates=[tmpl]))
+        self.user_repo.update(user)
         manifest_uri = self.manifest['@id']
-        template = {
-            'mode': 'select',
-            'tag': 'title',
-            'objective': 'Mark the titles',
-            'guidance': 'Mark all of the titles',
-            'fields_schema': []
-        }
-        importer = BulkTaskIIIFImporter(manifest_uri, template, None)
+
+        importer = BulkTaskIIIFImporter(manifest_uri, tmpl['id'], None)
         task_data = importer._get_task_data(self.manifest)
         canvases = self.manifest['sequences'][0]['canvases']
         assert len(task_data) == len(canvases)
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
-            assert_equal(task, {
+            assert_dict_equal(task, {
                 'info': self.manifest['@id'],
                 'target': canvases[idx]['@id'],
-                'guidance': template['guidance'],
+                'guidance': tmpl['task']['guidance'],
                 'shareUrl': importer._get_share_url(manifest_uri, idx),
                 'tileSource': '{}/info.json'.format(img),
-                'tag': template['tag'],
-                'mode': template['mode'],
-                'objective': template['objective'],
+                'tag': tmpl['task']['tag'],
+                'mode': tmpl['task']['mode'],
+                'objective': tmpl['task']['objective'],
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img)
             })
 
+    @with_context
     def test_get_transcribe_task_data_from_manifest(self):
         """Test that transcribe task data is generated from a manifest."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        transcribe_task = tmpl_fixtures.iiif_transcribe_tmpl
+        tmpl = tmpl_fixtures.create_template(task_tmpl=transcribe_task)
+        user = UserFactory.create(info=dict(templates=[tmpl]))
+        self.user_repo.update(user)
         manifest_uri = self.manifest['@id']
-        template = {
-            'mode': 'transcribe',
-            'tag': 'date',
-            'objective': 'Transcribe the date',
-            'guidance': 'Transcribe the data as shown',
-            'fields_schema': [
-                {
-                    'model': 'date',
-                    'type': 'input',
-                    'inputType': 'date',
-                    'label': 'Date'
-                }
-            ]
-        }
-        importer = BulkTaskIIIFImporter(manifest_uri, template, None)
+
+        importer = BulkTaskIIIFImporter(manifest_uri, tmpl['id'], None)
         task_data = importer._get_task_data(self.manifest)
         canvases = self.manifest['sequences'][0]['canvases']
         assert len(task_data) == len(canvases)
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
-            assert_equal(task, {
+            assert_dict_equal(task, {
                 'info': self.manifest['@id'],
                 'target': canvases[idx]['@id'],
-                'guidance': template['guidance'],
+                'guidance': tmpl['task']['guidance'],
                 'shareUrl': importer._get_share_url(manifest_uri, idx),
                 'tileSource': '{}/info.json'.format(img),
-                'tag': template['tag'],
-                'mode': template['mode'],
-                'objective': template['objective'],
+                'tag': tmpl['task']['tag'],
+                'mode': tmpl['task']['mode'],
+                'objective': tmpl['task']['objective'],
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'form': {
                     'model': {
-                        'date': ''
+                        'title': ''
                     },
                     'schema': {
-                        'fields': template['fields_schema']
+                        'fields': tmpl['task']['fields_schema']
                     }
                 }
             })

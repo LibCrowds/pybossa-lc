@@ -49,17 +49,19 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'shareUrl': self._get_share_url(manifest_uri, i)
             }
+            print self.template
             row['mode'] = self.template['task']['mode']
             row['tag'] = self.template['task']['tag']
             row['objective'] = self.template['task']['objective']
             row['guidance'] = self.template['task']['guidance']
             if self.template['task'].get('fields_schema'):
+                schema = self.template['task']['fields_schema']
                 row['form'] = {
                     'model': {
-                        f['model']: '' for f in self.template['fields_schema']
+                        field['model']: '' for field in schema
                     },
                     'schema': {
-                        'fields': self.template['fields_schema']
+                        'fields': schema
                     }
                 }
             data.append(row)

@@ -73,7 +73,8 @@ class TestCategoryApi(web.Helper):
         assert_equal(data['flash'], 'Project template created')
         assert_equal(len(templates), 1)
         tmpl_id = templates[0].pop('id')
-        expected = dict(project=self.tmpl_fixtures.project_tmpl, task=None)
+        expected = dict(project=self.tmpl_fixtures.project_tmpl, task=None,
+                        rules=None)
         assert_dict_equal(templates[0], expected)
 
         # Check redirect to update page
@@ -127,6 +128,10 @@ class TestCategoryApi(web.Helper):
         user_templates = updated_user.info.get('templates')
         tmpl['task'] = self.tmpl_fixtures.iiif_transcribe_tmpl
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
+
+        print user_templates
+        print '---'
+        print tmpl
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
 
