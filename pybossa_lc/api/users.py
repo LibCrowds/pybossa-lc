@@ -19,11 +19,14 @@ BLUEPRINT = Blueprint('users', __name__)
 
 def get_template_form(task_presenter, method, data):
     """Return the template form for a type of task presenter."""
+    if not data:
+        data = {}
+
     if task_presenter == 'iiif-annotation':
         form = IIIFAnnotationTemplateForm(**data)
 
         # Populate fields schema for IIIF Transcribe tasks only
-        if data['mode'] == 'transcribe':
+        if data.get('mode') == 'transcribe':
             form.fields_schema.pop_entry()
             for field in data.get('fields_schema', []):
                 form.fields_schema.append_entry(field)
@@ -147,28 +150,30 @@ def template_task(name, tmpl_id):
 
     # Get the form for the category's task presenter
     presenter = category.info.get('presenter')
-    form_data = json.loads(request.data) if request.data else {}
-    form = get_template_form(presenter, request.method, form_data)
+    form = get_template_form(presenter, request.method, tmpl['task'])
     if not form:
-        msg = ('This category has an invalid task presenter, please contact '
-               'an administrator')
+        msg = 'This category has an invalid task presenter'
         flash(msg, 'error')
         return redirect_content_type(url_for('.templates', name=user.name))
 
-    if request.method == 'POST' and form.validate():
-        try:
-            idx = [i for i, _t in enumerate(user_templates)
-                   if _t['id'] == tmpl_id][0]
-        except IndexError:
-            abort(404)
+    if request.method == 'POST':
+        form_data = json.loads(request.data) if request.data else {}
+        form = get_template_form(presenter, request.method, form_data)
 
-        tmpl['task'] = form.data
-        user_templates[idx] = tmpl
-        user.info['templates'] = user_templates
-        user_repo.update(user)
-        flash("Task template updated", 'success')
-    elif request.method == 'POST':
-        flash('Please correct the errors', 'error')
+        if form.validate():
+            try:
+                idx = [i for i, _t in enumerate(user_templates)
+                       if _t['id'] == tmpl_id][0]
+            except IndexError:
+                abort(404)
+
+            tmpl['task'] = form.data
+            user_templates[idx] = tmpl
+            user.info['templates'] = user_templates
+            user_repo.update(user)
+            flash("Task template updated", 'success')
+        else:
+            flash('Please correct the errors', 'error')
     response = dict(form=form)
     return handle_content_type(response)
 
@@ -193,8 +198,7 @@ def template_rules(name, tmpl_id):
 
     category = project_repo.get_category(tmpl['project']['category_id'])
     if not category:
-        msg = ('The category for this template no longer exists, please '
-               'contact an administrator')
+        msg = 'The category for this template no longer exists'
         flash(msg, 'error')
         return redirect_content_type(url_for('.templates', name=user.name))
 
@@ -205,12 +209,11 @@ def template_rules(name, tmpl_id):
         return redirect_content_type(url_for('.templates', name=user.name))
 
     if not tmpl['task'] or tmpl['task'].get('mode') != 'transcribe':
-        msg = ('Normalisation rules are only available for IIIF ',
-               ' transcription projects')
+        msg = 'Analysis rules only available for IIIF transcription projects'
         flash(msg, 'error')
         return redirect_content_type(url_for('.templates', name=user.name))
 
-    form = NormalisationRulesForm(data=tmpl['rules'])
+    form = NormalisationRulesForm(data=tmpl['rules'] or {})
 
     if request.method == 'POST':
         form = NormalisationRulesForm(request.body)
@@ -225,7 +228,7 @@ def template_rules(name, tmpl_id):
             user.info['templates'] = user_templates
             user_repo.update(user)
             templates_cache.reset()
-            flash("Project template updated", 'success')
+            flash("Results analysis rules updated", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 

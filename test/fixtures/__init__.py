@@ -19,7 +19,10 @@ class TemplateFixtures(object):
                                          fields_schema=[transcription_field])
         z3950_db = 'loc' # from test settings
         self.z3950_tmpl = dict(database=z3950_db, institutions=['OCLC'])
+        self.rules_tmpl = dict(concatenate=True, concatenated_tag='foo',
+                               trimpunctuation=True, whitespace=False,
+                               titlecase=False)
 
-    def create_template(self, task_tmpl=None):
+    def create_template(self, task_tmpl=None, rules_tmpl=None):
         return dict(id=str(uuid.uuid4()), task=task_tmpl,
-                    project=self.project_tmpl, rules=None)
+                    project=self.project_tmpl, rules=rules_tmpl)

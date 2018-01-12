@@ -185,3 +185,104 @@ class TestCategoryApi(web.Helper):
         assert_equal(json.loads(res.data)['flash'], 'Task template updated')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
+
+    @with_context
+    def test_update_task_template(self):
+        """Test a task template is updated."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        task_tmpl = self.tmpl_fixtures.iiif_select_tmpl
+        tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+        user.info['templates'] = [tmpl]
+        self.user_repo.update(user)
+        self.category.info = dict(presenter='iiif-annotation')
+        self.project_repo.update_category(self.category)
+
+        tmpl['task']['mode'] = 'transcribe'
+        tmpl['task']['fields_schema'] = []
+        url_base = '/libcrowds/users/{}/templates/{}/tasks'
+        endpoint = url_base.format(Fixtures.name, tmpl['id'])
+        res = self.app_post_json(endpoint, data=tmpl['task'])
+
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        user_templates = updated_user.info.get('templates')
+        assert_equal(json.loads(res.data)['flash'], 'Task template updated')
+        assert_equal(len(user_templates), 1)
+        assert_dict_equal(user_templates[0], tmpl)
+
+    @with_context
+    def test_analysis_rules_not_added_for_z3950_templates(self):
+        """Test analysis rules are not added for Z39.50 templates."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        task_tmpl = self.tmpl_fixtures.z3950_tmpl
+        tmpl = self.tmpl_fixtures.create_template(task_tmpl)
+        user.info['templates'] = [tmpl]
+        self.user_repo.update(user)
+        self.category.info = dict(presenter='z3950')
+        self.project_repo.update_category(self.category)
+
+        url_base = '/libcrowds/users/{}/templates/{}/rules'
+        endpoint = url_base.format(Fixtures.name, tmpl['id'])
+        res = self.app_post_json(endpoint, data=self.tmpl_fixtures.rules_tmpl)
+
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        user_templates = updated_user.info.get('templates')
+        msg = 'No normalisation rules available for this presenter type'
+        assert_equal(json.loads(res.data)['flash'], msg)
+        assert_equal(len(user_templates), 1)
+        assert_equal(user_templates[0]['rules'], None)
+
+    @with_context
+    def test_analysis_rules_not_added_for_iiif_select_templates(self):
+        """Test analysis rules are not added for IIIF select templates."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        task_tmpl = self.tmpl_fixtures.iiif_select_tmpl
+        tmpl = self.tmpl_fixtures.create_template(task_tmpl)
+        user.info['templates'] = [tmpl]
+        self.user_repo.update(user)
+        self.category.info = dict(presenter='iiif-annotation')
+        self.project_repo.update_category(self.category)
+
+        url_base = '/libcrowds/users/{}/templates/{}/rules'
+        endpoint = url_base.format(Fixtures.name, tmpl['id'])
+        res = self.app_post_json(endpoint, data=self.tmpl_fixtures.rules_tmpl)
+
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        user_templates = updated_user.info.get('templates')
+        msg = 'Analysis rules only available for IIIF transcription projects'
+        assert_equal(json.loads(res.data)['flash'], msg)
+        assert_equal(len(user_templates), 1)
+        assert_equal(user_templates[0]['rules'], None)
+
+    @with_context
+    def test_analysis_rules_are_added_for_iiif_transcribe_templates(self):
+        """Test analysis rules are added for IIIF transcribe templates."""
+        self.register(email=Fixtures.email_addr, name=Fixtures.name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
+        tmpl = self.tmpl_fixtures.create_template(task_tmpl)
+        user.info['templates'] = [tmpl]
+        self.user_repo.update(user)
+        self.category.info = dict(presenter='iiif-annotation')
+        self.project_repo.update_category(self.category)
+
+        url_base = '/libcrowds/users/{}/templates/{}/rules'
+        endpoint = url_base.format(Fixtures.name, tmpl['id'])
+        res = self.app_post_json(endpoint, data=self.tmpl_fixtures.rules_tmpl)
+
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        user_templates = updated_user.info.get('templates')
+        msg = 'Results analysis rules updated'
+        assert_equal(json.loads(res.data)['flash'], msg)
+        assert_equal(len(user_templates), 1)
+        assert_equal(user_templates[0]['rules'], self.tmpl_fixtures.rules_tmpl)
