@@ -216,7 +216,7 @@ def analyse(result_id):
         # Get normalisation rules
         project = project_repo.get(result.project_id)
         template_id = project.info.get('template_id')
-        tmpl = templates_cache.get_by_id(template_id)
+        tmpl = templates_cache.get_by_id(template_id) if template_id else {}
         rules = tmpl.get('rules') if tmpl else {}
 
         merged_transcriptions = merge_transcriptions(transcriptions, rules)
