@@ -129,7 +129,7 @@ def template(name, tmpl_id):
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    response = dict(templates=user_templates, form=form)
+    response = dict(template=tmpl, form=form)
     return handle_content_type(response)
 
 
