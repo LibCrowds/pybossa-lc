@@ -189,7 +189,9 @@ def template_task(name, tmpl_id):
         else:
             flash('Please correct the errors', 'error')
 
-    response = dict(form=form, template=tmpl, presenter=presenter)
+    z3950_databases = form.database.choices if presenter == 'z3950' else []
+    response = dict(form=form, template=tmpl, presenter=presenter,
+                    z3950_databases=form.database.choices)
     return handle_content_type(response)
 
 
