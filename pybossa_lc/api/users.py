@@ -59,7 +59,8 @@ def templates(name):
 
     categories = project_repo.get_all_categories()
     form = ProjectTemplateForm(request.body)
-    category_choices = [(c.id, c.name) for c in categories]
+    category_choices = [(c.id, c.name) for c in categories
+                        if c.info.get('published') or user.admin]
     form.category_id.choices = category_choices
 
     if request.method == 'POST' and form.validate():
@@ -99,7 +100,8 @@ def template(name, tmpl_id):
         abort(403)
 
     categories = project_repo.get_all_categories()
-    category_choices = [(c.id, c.name) for c in categories]
+    category_choices = [(c.id, c.name) for c in categories
+                        if c.info.get('published') or user.admin]
     form = ProjectTemplateForm(data=tmpl['project'])
     form.category_id.choices = category_choices
 
