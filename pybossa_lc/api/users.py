@@ -191,7 +191,7 @@ def template_task(name, tmpl_id):
 
     z3950_databases = form.database.choices if presenter == 'z3950' else []
     response = dict(form=form, template=tmpl, presenter=presenter,
-                    z3950_databases=form.database.choices)
+                    z3950_databases=z3950_databases)
     return handle_content_type(response)
 
 
