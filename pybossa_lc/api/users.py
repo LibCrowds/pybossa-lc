@@ -63,6 +63,8 @@ def templates(name):
     form = ProjectTemplateForm(request.body)
     category_choices = [(c.id, c.name) for c in categories]
     form.category_id.choices = category_choices
+    if not form.category_id.data:
+        form.category_id.data = category_choices[0][0]
 
     if request.method == 'POST' and form.validate():
         tmpl_id = str(uuid.uuid4())
@@ -106,6 +108,8 @@ def template(name, tmpl_id):
     current_project_details = tmpl['project'] or {}
     form = ProjectTemplateForm(**current_project_details)
     form.category_id.choices = category_choices
+    if not form.category_id.data:
+        form.category_id.data = category_choices[0][0]
 
     if request.method == 'POST':
         form = ProjectTemplateForm(request.body)
