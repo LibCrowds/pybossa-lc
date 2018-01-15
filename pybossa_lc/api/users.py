@@ -57,7 +57,6 @@ def templates(name):
 
     ensure_authorized_to('update', user)
     user_templates = user.info.get('templates', [])
-    print user_templates
 
     categories = project_repo.get_all_categories()
     form = ProjectTemplateForm(request.body)
