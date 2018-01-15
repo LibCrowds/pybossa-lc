@@ -190,7 +190,7 @@ def template_task(name, tmpl_id):
             flash("Task template updated", 'success')
         else:
             flash('Please correct the errors', 'error')
-    response = dict(form=form, template=tmpl)
+    response = dict(form=form, template=tmpl, presenter=presenter)
     return handle_content_type(response)
 
 
@@ -253,5 +253,5 @@ def template_rules(name, tmpl_id):
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    response = dict(form=form, template=tmpl)
+    response = dict(form=form, template=tmpl, presenter=presenter)
     return handle_content_type(response)
