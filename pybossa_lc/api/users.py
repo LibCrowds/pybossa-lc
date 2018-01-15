@@ -80,8 +80,7 @@ def templates(name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    choices = dict(categories=category_choices)
-    response = dict(templates=user_templates, form=form, choices=choices)
+    response = dict(templates=user_templates, form=form)
     return handle_content_type(response)
 
 
@@ -130,8 +129,7 @@ def template(name, tmpl_id):
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    choices = dict(categories=category_choices)
-    response = dict(templates=user_templates, form=form, choices=choices)
+    response = dict(templates=user_templates, form=form)
     return handle_content_type(response)
 
 
@@ -191,9 +189,7 @@ def template_task(name, tmpl_id):
         else:
             flash('Please correct the errors', 'error')
 
-    choices = dict(z3950_databases=form.databases.choices)
-    response = dict(form=form, template=tmpl, presenter=presenter,
-                    choices=choices)
+    response = dict(form=form, template=tmpl, presenter=presenter)
     return handle_content_type(response)
 
 
