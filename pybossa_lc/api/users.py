@@ -10,6 +10,7 @@ from pybossa.util import admin_required, handle_content_type
 from pybossa.util import redirect_content_type
 from pybossa.core import project_repo, user_repo
 from pybossa.auth import ensure_authorized_to
+from pybossa.cache import users as users_cache
 
 from ..forms import *
 from ..cache import templates as templates_cache
@@ -56,6 +57,7 @@ def templates(name):
 
     ensure_authorized_to('update', user)
     user_templates = user.info.get('templates', [])
+    print user_templates
 
     categories = project_repo.get_all_categories()
     form = ProjectTemplateForm(request.body)
@@ -70,6 +72,7 @@ def templates(name):
         user.info['templates'] = user_templates
         user_repo.update(user)
         templates_cache.reset()
+        users_cache.delete_user_summary_id(user.id)
         flash("Project template created", 'success')
         return redirect_content_type(url_for('.template',
                                              name=user.name, tmpl_id=tmpl_id))
@@ -119,6 +122,7 @@ def template(name, tmpl_id):
             user.info['templates'] = user_templates
             user_repo.update(user)
             templates_cache.reset()
+            users_cache.delete_user_summary_id(user.id)
             flash("Project template updated", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
@@ -175,6 +179,8 @@ def template_task(name, tmpl_id):
             user_templates[idx] = tmpl
             user.info['templates'] = user_templates
             user_repo.update(user)
+            templates_cache.reset()
+            users_cache.delete_user_summary_id(user.id)
             flash("Task template updated", 'success')
         else:
             flash('Please correct the errors', 'error')
@@ -233,6 +239,7 @@ def template_rules(name, tmpl_id):
             user.info['templates'] = user_templates
             user_repo.update(user)
             templates_cache.reset()
+            users_cache.delete_user_summary_id(user.id)
             flash("Results analysis rules updated", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
