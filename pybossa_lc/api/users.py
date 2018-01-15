@@ -59,7 +59,8 @@ def templates(name):
 
     categories = project_repo.get_all_categories()
     form = ProjectTemplateForm(request.body)
-    form.category_id.choices = [(c.id, c.name) for c in categories]
+    category_choices = [(c.id, c.name) for c in categories]
+    form.category_id.choices = category_choices
 
     if request.method == 'POST' and form.validate():
         tmpl_id = str(uuid.uuid4())
@@ -75,7 +76,8 @@ def templates(name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(templates=user_templates, form=form)
+    response = dict(templates=user_templates, form=form,
+                    category_choices=category_choices)
     return handle_content_type(response)
 
 
@@ -120,7 +122,8 @@ def template(name, tmpl_id):
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    response = dict(template=tmpl)
+    response = dict(form=form, template=tmpl,
+                    category_choices=category_choices)
     return handle_content_type(response)
 
 
@@ -174,7 +177,7 @@ def template_task(name, tmpl_id):
             flash("Task template updated", 'success')
         else:
             flash('Please correct the errors', 'error')
-    response = dict(form=form)
+    response = dict(form=form, template=tmpl)
     return handle_content_type(response)
 
 
@@ -232,5 +235,5 @@ def template_rules(name, tmpl_id):
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    response = dict(template=tmpl)
+    response = dict(form=form, template=tmpl)
     return handle_content_type(response)
