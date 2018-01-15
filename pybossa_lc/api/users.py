@@ -159,6 +159,9 @@ def template_task(name, tmpl_id):
         flash(msg, 'error')
         return redirect_content_type(url_for('.templates', name=user.name))
 
+    if not category.info:
+        category.info = {}
+
     # Get the form for the category's task presenter
     presenter = category.info.get('presenter')
     form = get_template_form(presenter, request.method, tmpl['task'])
@@ -214,6 +217,9 @@ def template_rules(name, tmpl_id):
         msg = 'The category for this template no longer exists'
         flash(msg, 'error')
         return redirect_content_type(url_for('.templates', name=user.name))
+
+    if not category.info:
+        category.info = {}
 
     presenter = category.info.get('presenter')
     if presenter != 'iiif-annotation':
