@@ -119,7 +119,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='iiif-annotation')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/tasks'
+        url_base = '/libcrowds/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
         res = self.app_post_json(endpoint,
@@ -146,7 +146,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='iiif-annotation')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/tasks'
+        url_base = '/libcrowds/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
         res = self.app_post_json(endpoint,
@@ -172,7 +172,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='z3950')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/tasks'
+        url_base = '/libcrowds/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
         res = self.app_post_json(endpoint, data=self.tmpl_fixtures.z3950_tmpl)
@@ -199,7 +199,7 @@ class TestCategoryApi(web.Helper):
 
         tmpl['task']['mode'] = 'transcribe'
         tmpl['task']['fields_schema'] = []
-        url_base = '/libcrowds/users/{}/templates/{}/tasks'
+        url_base = '/libcrowds/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
         res = self.app_post_json(endpoint, data=tmpl['task'])
 

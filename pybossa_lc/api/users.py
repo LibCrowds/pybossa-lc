@@ -136,7 +136,7 @@ def template(name, tmpl_id):
 
 
 @login_required
-@BLUEPRINT.route('/<name>/templates/<tmpl_id>/tasks', methods=['GET', 'POST'])
+@BLUEPRINT.route('/<name>/templates/<tmpl_id>/task', methods=['GET', 'POST'])
 def template_task(name, tmpl_id):
     """Add task data for a template."""
     user = user_repo.get_by_name(name)

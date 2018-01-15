@@ -144,7 +144,7 @@ POST /libcrowds/users/<name>/templates/<tmpl_id>
 Update the task data for a template.
 
 ```html
-GET /libcrowds/users/<name>/templates/<tmpl_id>/tasks
+GET /libcrowds/users/<name>/templates/<tmpl_id>/task
 ```
 
 ```json
