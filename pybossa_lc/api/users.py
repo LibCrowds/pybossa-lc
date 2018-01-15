@@ -100,7 +100,8 @@ def template(name, tmpl_id):
 
     categories = project_repo.get_all_categories()
     category_choices = [(c.id, c.name) for c in categories]
-    form = ProjectTemplateForm(data=tmpl['project'])
+    current_project_details = tmpl['project'] or {}
+    form = ProjectTemplateForm(**current_project_details)
     form.category_id.choices = category_choices
 
     if request.method == 'POST':
@@ -216,7 +217,8 @@ def template_rules(name, tmpl_id):
         flash(msg, 'error')
         return redirect_content_type(url_for('.templates', name=user.name))
 
-    form = NormalisationRulesForm(data=tmpl['rules'] or {})
+    current_rules = tmpl['rules'] or {}
+    form = NormalisationRulesForm(**current_rules)
 
     if request.method == 'POST':
         form = NormalisationRulesForm(request.body)
