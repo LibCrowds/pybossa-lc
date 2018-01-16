@@ -27,7 +27,7 @@ def get_template_form(task_presenter, method, data):
         form = IIIFAnnotationTemplateForm(**data)
 
         # Populate fields schema for IIIF Transcribe tasks only
-        if data.get('mode') == 'transcribe':
+        if method == 'POST' and data.get('mode') == 'transcribe':
             for field in data.get('fields_schema', []):
                 form.fields_schema.append_entry(field)
         elif method == 'POST':
@@ -40,8 +40,9 @@ def get_template_form(task_presenter, method, data):
         form.database.choices = [(k, k.upper()) for k in dbs]
 
         # Populate institutions
-        for field in data.get('institutions', []):
-            form.institutions.append_entry(field)
+        if method == 'POST':
+          for field in data.get('institutions', []):
+              form.institutions.append_entry(field)
         return form
 
 
