@@ -16,7 +16,7 @@ class FieldsSchemaForm(Form):
         ('textArea', 'Text Area'),
         ('checkbox', 'Checkbox')
     ])
-    inputType = SelectField('Mode', choices=[
+    inputType = SelectField('Mode', default='text', choices=[
         ('text', 'Text'),
         ('number', 'Number'),
         ('date', 'Date'),

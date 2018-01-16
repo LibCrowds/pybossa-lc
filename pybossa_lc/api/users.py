@@ -30,8 +30,6 @@ def get_template_form(task_presenter, method, data):
         if method == 'POST':
             if data.get('mode') == 'transcribe':
                 for field in data.get('fields_schema', []):
-                    if field['type'] != 'input':
-                        del form.inputType
                     form.fields_schema.append_entry(field)
             else:
                 del form.fields_schema
