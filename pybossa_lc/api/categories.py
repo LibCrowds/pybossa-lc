@@ -29,7 +29,7 @@ def new(short_name):
 
     if request.method == 'POST' and form.validate():
         volumes = category.info.get('volumes', [])
-        if not isinstance(volumes, list):
+        if not isinstance(volumes, list):  # Clear old volumes dict
             volumes = []
         volume_id = str(uuid.uuid4())
         new_volume = dict(id=volume_id,
