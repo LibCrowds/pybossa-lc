@@ -17,10 +17,10 @@ BLUEPRINT = Blueprint('categories', __name__)
 
 
 @login_required
-@BLUEPRINT.route('/<int:category_id>/volumes/new', methods=['GET', 'POST'])
-def new(category_id):
+@BLUEPRINT.route('/<short_name>/volumes/new', methods=['GET', 'POST'])
+def new(short_name):
     """Add a volume."""
-    category = project_repo.get_category(category_id)
+    category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
@@ -46,11 +46,11 @@ def new(category_id):
 
 
 @login_required
-@BLUEPRINT.route('/<int:category_id>/volumes/<volume_id>/update',
+@BLUEPRINT.route('/<short_name>/volumes/<volume_id>/update',
                  methods=['GET', 'POST'])
-def update(category_id, volume_id):
+def update(short_name, volume_id):
     """Update a volume."""
-    category = project_repo.get_category(category_id)
+    category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
