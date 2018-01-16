@@ -61,7 +61,6 @@ class NormalisationRulesForm(Form):
     whitespace = BooleanField('Normalise whitespace')
     trimpunctuation = BooleanField('Trim punctuation')
     concatenate = BooleanField('Concatenate Fields')
-    concatenated_tag = TextField('Concatenated Tag')
 
 
 class ProjectForm(Form):
