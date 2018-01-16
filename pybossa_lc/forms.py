@@ -45,15 +45,14 @@ class IIIFAnnotationTemplateForm(Form):
         ('select', 'Select'),
         ('transcribe', 'Transcribe')
     ])
-    fields_schema = FieldList(FormField(FieldsSchemaForm), min_entries=1)
+    fields_schema = FieldList(FormField(FieldsSchemaForm))
 
 
 class Z3950TemplateForm(Form):
     """A form for creating task templates for Z39.50 projects."""
     database = SelectField('Database', choices=[])
     institutions = FieldList(TextField('Institution code',
-                                       [validators.Required()]),
-                             min_entries=1)
+                                       [validators.Required()]))
 
 
 class NormalisationRulesForm(Form):
