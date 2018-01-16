@@ -26,17 +26,15 @@ def get_template_form(task_presenter, method, data):
     if task_presenter == 'iiif-annotation':
         form = IIIFAnnotationTemplateForm(**data)
 
+        # Populate fields schema
         if method == 'POST':
-            # Populate fields schema for IIIF Transcribe tasks only
             if data.get('mode') == 'transcribe':
                 for field in data.get('fields_schema', []):
+                    if field['type'] != 'input':
+                        del form.inputType
                     form.fields_schema.append_entry(field)
             else:
                 del form.fields_schema
-
-            # Remove unrequired fields
-            if data.get('type') != 'input':
-                del form.inputType
         return form
 
     elif task_presenter == 'z3950':
