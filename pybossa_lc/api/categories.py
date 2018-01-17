@@ -60,11 +60,11 @@ def update(short_name, volume_id):
     volumes = category.info.get('volumes', [])
 
     try:
-        volume = [v for v in volumes if v['id'] == volume_id]
+        volume = [v for v in volumes if v['id'] == volume_id][0]
     except IndexError:
         abort(404)
 
-    form = VolumeForm(data=volume)
+    form = VolumeForm(**volume)
     upload_form = AvatarUploadForm()
 
     def update_volume():
