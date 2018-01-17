@@ -91,8 +91,9 @@ def update(short_name, volume_id):
                 _file = request.files['avatar']
                 coordinates = (upload_form.x1.data, upload_form.y1.data,
                                upload_form.x2.data, upload_form.y2.data)
-                prefix = time.time()
-                _file.filename = "volume_{}.png".format(volume['id'])
+                suffix = time.time()
+                _file.filename = "volume_{0}_{1}.png".format(volume['id'],
+                                                             suffix)
                 container = "category_{}".format(category.id)
                 uploader.upload_file(_file,
                                      container=container,
