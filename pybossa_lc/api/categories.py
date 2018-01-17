@@ -3,9 +3,10 @@
 
 import time
 import uuid
-from flask import Blueprint, flash, request, abort, current_app
+from flask import Blueprint, flash, request, abort, current_app, url_for
 from flask.ext.login import login_required, current_user
 from pybossa.util import handle_content_type, get_avatar_url
+from pybossa.util import redirect_content_type
 from pybossa.core import project_repo
 from pybossa.core import uploader
 from pybossa.auth import ensure_authorized_to
@@ -17,20 +18,21 @@ BLUEPRINT = Blueprint('categories', __name__)
 
 
 @login_required
-@BLUEPRINT.route('/<short_name>/volumes/new', methods=['GET', 'POST'])
-def new(short_name):
-    """Add a volume."""
+@BLUEPRINT.route('/<short_name>/volumes', methods=['GET', 'POST'])
+def volumes(short_name):
+    """List or add volumes."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('update', category)
+    volumes = category.info.get('volumes', [])
+    if not isinstance(volumes, list):  # Clear old volumes dict
+            volumes = []
+
     form = VolumeForm(request.body)
 
     if request.method == 'POST' and form.validate():
-        volumes = category.info.get('volumes', [])
-        if not isinstance(volumes, list):  # Clear old volumes dict
-            volumes = []
         volume_id = str(uuid.uuid4())
         new_volume = dict(id=volume_id,
                           source=form.source.data,
@@ -43,7 +45,7 @@ def new(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, category=category)
+    response = dict(form=form, volumes=volumes, category=category)
     return handle_content_type(response)
 
 
@@ -71,7 +73,7 @@ def update(short_name, volume_id):
         """Helper function to update the current volume."""
         try:
             idx = [i for i, _vol in enumerate(volumes)
-                    if _vol['id'] == volume_id][0]
+                   if _vol['id'] == volume_id][0]
         except IndexError:  # pragma: no cover
             abort(404)
         volumes[idx] = volume
@@ -89,7 +91,7 @@ def update(short_name, volume_id):
         else:
             if upload_form.validate_on_submit():
                 _file = request.files['avatar']
-                coordinates = (upload_form.x1.data, upload_form.y1.data,
+                coordinates = (upload_form.x1.data, upload_form.y1. data,
                                upload_form.x2.data, upload_form.y2.data)
                 suffix = time.time()
                 _file.filename = "volume_{0}_{1}.png".format(volume['id'],
@@ -111,6 +113,8 @@ def update(short_name, volume_id):
                 update_volume()
                 project_repo.save_category(category)
                 flash('Thumbnail updated', 'success')
+                return redirect_content_type(url_for('.volumes',
+                                             short_name=category.short_name))
             else:
                 flash('You must provide a file', 'error')
 
