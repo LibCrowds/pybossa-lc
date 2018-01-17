@@ -43,7 +43,7 @@ def new(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form)
+    response = dict(form=form, category=category)
     return handle_content_type(response)
 
 
@@ -113,5 +113,5 @@ def update(short_name, volume_id):
             else:
                 flash('You must provide a file', 'error')
 
-    response = dict(form=form)
+    response = dict(form=form, category=category)
     return handle_content_type(response)
