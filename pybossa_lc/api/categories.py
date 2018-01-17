@@ -88,7 +88,7 @@ def update(short_name, volume_id):
             flash('Please correct the errors', 'error')
         else:
             if upload_form.validate_on_submit():
-                _file = request.files['thumbnail']
+                _file = request.files['avatar']
                 coordinates = (upload_form.x1.data, upload_form.y1.data,
                                upload_form.x2.data, upload_form.y2.data)
                 prefix = time.time()
