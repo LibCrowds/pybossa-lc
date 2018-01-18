@@ -91,8 +91,8 @@ def _get_flickr_data(volume):
 
 
 @login_required
-@BLUEPRINT.route('/<category_short_name>/create', methods=['POST'])
-def create(category_short_name):
+@BLUEPRINT.route('/<category_short_name>/new', methods=['POST'])
+def new(category_short_name):
     """Create a LibCrowds project for a given category."""
     category = project_repo.get_category_by(short_name=category_short_name)
     if not category:  # pragma: no cover
