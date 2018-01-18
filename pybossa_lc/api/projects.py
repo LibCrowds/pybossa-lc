@@ -17,8 +17,9 @@ from pybossa.util import handle_content_type, redirect_content_type, url_for
 from pybossa.default_settings import TIMEOUT
 from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
+from wtforms import TextField
 
-from ..forms import ProjectForm
+from ..forms import *
 from ..cache import templates as templates_cache
 
 
