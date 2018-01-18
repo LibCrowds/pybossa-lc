@@ -199,5 +199,5 @@ def create(category_short_name):
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form)
+    response = dict(form=form, templates=templates, volumes=volumes)
     return handle_content_type(response)
