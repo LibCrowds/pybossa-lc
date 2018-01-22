@@ -112,8 +112,20 @@ def new(category_short_name):
         return redirect_content_type(url_for('home.home'))
 
     # Set the options for the form
-    template_choices = [(t['id'], t['project']['name']) for t in templates]
-    volume_choices = [(v['id'], v['name']) for v in volumes]
+    try:
+        template_choices = [(t['id'], t['project']['name']) for t in templates]
+    except KeyError:  # pragma: no-cover
+        flash('Invalid templates found, please contact an administrator',
+              'error')
+        return redirect_content_type(url_for('home.home'))
+
+    try:
+        volume_choices = [(v['id'], v['name']) for v in volumes]
+    except KeyError:  # pragma: no-cover
+        flash('Invalid volumes found, please contact an administrator',
+              'error')
+        return redirect_content_type(url_for('home.home'))
+
     parent_choices = [(p.id, p.name) for p in projects]
     parent_choices.append(('None', 0))
     form = ProjectForm(request.body)
