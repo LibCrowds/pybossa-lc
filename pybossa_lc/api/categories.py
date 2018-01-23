@@ -11,7 +11,9 @@ from pybossa.core import project_repo
 from pybossa.core import uploader
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
+from pybossa.cache.projects import overall_progress
 
+from ..cache import templates as templates_cache
 from ..forms import VolumeForm
 
 BLUEPRINT = Blueprint('categories', __name__)
@@ -123,4 +125,45 @@ def update_volume(short_name, volume_id):
                 flash('You must provide a file', 'error')
 
     response = dict(form=form, upload_form=upload_form, category=category)
+    return handle_content_type(response)
+
+
+@login_required
+@BLUEPRINT.route('/<short_name>/volumes/data', methods=['GET', 'POST'])
+def volume_data(short_name):
+    """Return all volumes enhanced project data."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    ensure_authorized_to('read', category)
+    volumes = category.info.get('volumes', [])
+    projects = project_repo.filter_by(category_id=category.id)
+
+    def enhance_volume_data(volume):
+        vol_projects = [dict(id=p.id,
+                             name=p.name,
+                             short_name=p.short_name,
+                             published=p.published,
+                             overall_progress=overall_progress(p.id))
+                        for p in projects
+                        if p.info.get('volume_id') == volume['id']]
+        completed_projects = [p for p in vol_projects
+                              if p['overall_progress'] == 100]
+        ongoing_projects = [p for p in vol_projects
+                            if p['published'] and p not in completed_projects]
+        volume['projects'] = vol_projects
+        volume['n_completed_projects'] = len(completed_projects)
+        volume['n_ongoing_projects'] = len(ongoing_projects)
+
+    for vol in volumes:
+        enhance_volume_data(vol)
+
+    # These projects are not linked to a volume
+    unknown_projects = [dict(id=p.id,
+                                 name=p.name,
+                                 short_name=p.short_name)
+                        for p in projects if not p.info.get('volume_id')]
+
+    response = dict(volumes=volumes, unknown_projects=unknown_projects)
     return handle_content_type(response)
