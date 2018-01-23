@@ -28,9 +28,10 @@ def volumes(short_name):
     ensure_authorized_to('update', category)
     volumes = category.info.get('volumes', [])
     if not isinstance(volumes, list):  # Clear old volumes dict
-            volumes = []
+        volumes = []
 
     form = VolumeForm(request.body)
+    form.category_id.data = category.id
 
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
@@ -67,6 +68,7 @@ def update(short_name, volume_id):
         abort(404)
 
     form = VolumeForm(**volume)
+    form.category_id.data = category.id
     upload_form = AvatarUploadForm()
 
     def update_volume():
@@ -84,10 +86,12 @@ def update(short_name, volume_id):
         if request.form.get('btn') != 'Upload':
             form = VolumeForm(request.body)
             if form.validate():
-                volume['name'] = form.data.name
-                volume['source'] = form.data.name
+                volume['name'] = form.name.data
+                volume['source'] = form.source.data
                 update_volume()
-            flash('Please correct the errors', 'error')
+                flash('Volume updated', 'success')
+            else:
+                flash('Please correct the errors', 'error')
         else:
             if upload_form.validate_on_submit():
                 _file = request.files['avatar']
@@ -113,8 +117,8 @@ def update(short_name, volume_id):
                 update_volume()
                 project_repo.save_category(category)
                 flash('Thumbnail updated', 'success')
-                return redirect_content_type(url_for('.volumes',
-                                             short_name=category.short_name))
+                url = url_for('.volumes', short_name=category.short_name)
+                return redirect_content_type(url)
             else:
                 flash('You must provide a file', 'error')
 
