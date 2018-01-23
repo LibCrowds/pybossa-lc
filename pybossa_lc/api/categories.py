@@ -53,7 +53,7 @@ def volumes(short_name):
 @login_required
 @BLUEPRINT.route('/<short_name>/volumes/<volume_id>/update',
                  methods=['GET', 'POST'])
-def update(short_name, volume_id):
+def update_volume(short_name, volume_id):
     """Update a volume."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
@@ -71,7 +71,7 @@ def update(short_name, volume_id):
     form.category_id.data = category.id
     upload_form = AvatarUploadForm()
 
-    def update_volume():
+    def update():
         """Helper function to update the current volume."""
         try:
             idx = [i for i, _vol in enumerate(volumes)
@@ -88,7 +88,7 @@ def update(short_name, volume_id):
             if form.validate():
                 volume['name'] = form.name.data
                 volume['source'] = form.source.data
-                update_volume()
+                update()
                 flash('Volume updated', 'success')
             else:
                 flash('Please correct the errors', 'error')
@@ -114,7 +114,7 @@ def update(short_name, volume_id):
                 thumbnail_url = get_avatar_url(upload_method, _file.filename,
                                                container)
                 volume['thumbnail_url'] = thumbnail_url
-                update_volume()
+                update()
                 project_repo.save_category(category)
                 flash('Thumbnail updated', 'success')
                 url = url_for('.volumes', short_name=category.short_name)
