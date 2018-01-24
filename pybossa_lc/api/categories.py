@@ -30,7 +30,9 @@ def get_volumes(short_name):
     category_vols = get_enhanced_volumes(category)
     unknown_projects = get_projects_with_unknown_volumes(category)
 
-    response = dict(volumes=category_vols, unknown_projects=unknown_projects)
+    response = dict(volumes=category_vols,
+                    unknown_projects=unknown_projects,
+                    category=category)
     return handle_content_type(response)
 
 
@@ -61,7 +63,7 @@ def new_volume(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, volumes=volumes)
+    response = dict(form=form, volumes=volumes, category=category)
     return handle_content_type(response)
 
 
@@ -137,5 +139,5 @@ def update_volume(short_name, volume_id):
             else:
                 flash('You must provide a file', 'error')
 
-    response = dict(form=form, upload_form=upload_form)
+    response = dict(form=form, upload_form=upload_form, category=category)
     return handle_content_type(response)
