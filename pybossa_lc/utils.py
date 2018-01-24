@@ -32,5 +32,5 @@ def get_projects_with_unknown_volumes(category):
     volume_ids = [vol['id'] for vol in category.info.get('volumes', [])]
     projects = project_repo.filter_by(category_id=category.id)
     return [dict(id=p.id, name=p.name, short_name=p.short_name)
-            for p in projects if not p.info.get('volume_id')
-            or p.info.get('volume_id') not in volume_ids]
+            for p in projects if not p.info.get('volume_id') or
+            p.info.get('volume_id') not in volume_ids]

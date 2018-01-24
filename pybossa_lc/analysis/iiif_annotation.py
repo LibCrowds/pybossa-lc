@@ -145,6 +145,7 @@ def merge_transcriptions(annos, rules):
 
     return reduced
 
+
 def normalise_transcription(value, rules):
     """Normalise transcriptions according to the specified rules."""
     normalised = value
@@ -157,6 +158,7 @@ def normalise_transcription(value, rules):
     if rules.get('trimpunctuation'):
         normalised = normalised.translate(None, string.punctuation)
     return normalised
+
 
 def update_selector(anno, rect):
     """Update a media frag selector."""

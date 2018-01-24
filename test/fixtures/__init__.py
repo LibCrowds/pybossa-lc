@@ -17,7 +17,7 @@ class TemplateFixtures(object):
                                          objective='Transcribe the title',
                                          guidance='Do it now',
                                          fields_schema=[transcription_field])
-        z3950_db = 'loc' # from test settings
+        z3950_db = 'loc'  # from test settings
         self.z3950_tmpl = dict(database=z3950_db, institutions=['OCLC'])
         self.rules_tmpl = dict(concatenate=True, trimpunctuation=True,
                                whitespace=False, titlecase=False)

@@ -42,8 +42,8 @@ def get_template_form(task_presenter, method, data):
 
         # Populate institutions
         if method == 'POST':
-          for field in data.get('institutions', []):
-              form.institutions.append_entry(field)
+            for field in data.get('institutions', []):
+                form.institutions.append_entry(field)
         return form
 
 
