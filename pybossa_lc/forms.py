@@ -79,7 +79,7 @@ class Z3950TemplateForm(Form):
                                        [validators.Required()]))
 
 
-class NormalisationRulesForm(Form):
+class AnalysisRulesForm(Form):
     """A form for setting normalisation rules for transcriptions."""
     titlecase = BooleanField('Convert to title case')
     whitespace = BooleanField('Normalise whitespace')

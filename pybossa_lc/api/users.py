@@ -234,10 +234,10 @@ def template_rules(name, tmpl_id):
         return redirect_content_type(url_for('.templates', name=user.name))
 
     current_rules = tmpl['rules'] or {}
-    form = NormalisationRulesForm(**current_rules)
+    form = AnalysisRulesForm(**current_rules)
 
     if request.method == 'POST':
-        form = NormalisationRulesForm(request.body)
+        form = AnalysisRulesForm(request.body)
         if form.validate():
             try:
                 idx = [i for i, _t in enumerate(user_templates)
