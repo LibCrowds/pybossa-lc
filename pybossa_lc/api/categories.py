@@ -11,44 +11,11 @@ from pybossa.core import project_repo
 from pybossa.core import uploader
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
-from pybossa.cache.projects import overall_progress
 
-from ..cache import templates as templates_cache
+from ..utils import get_enhanced_volumes, get_projects_with_unknown_volumes
 from ..forms import VolumeForm
 
 BLUEPRINT = Blueprint('categories', __name__)
-
-
-def get_enhanced_volumes(category):
-    """Return the categories volumes enhanced with project data."""
-    volumes = category.info.get('volumes', [])
-    projects = project_repo.filter_by(category_id=category.id)
-
-    for volume in volumes:
-        vol_projects = [dict(id=p.id,
-                             name=p.name,
-                             short_name=p.short_name,
-                             published=p.published,
-                             overall_progress=overall_progress(p.id))
-                        for p in projects
-                        if p.info.get('volume_id') == volume['id']]
-        completed_projects = [p for p in vol_projects
-                              if p['overall_progress'] == 100]
-        ongoing_projects = [p for p in vol_projects
-                            if p['published'] and p not in completed_projects]
-        volume['projects'] = vol_projects
-        volume['n_completed_projects'] = len(completed_projects)
-        volume['n_ongoing_projects'] = len(ongoing_projects)
-    return volumes
-
-
-def get_unknown_projects(category):
-    """Return all projects not linked to a known volume."""
-    volume_ids = [vol['id'] for vol in category.info.get('volumes', [])]
-    projects = project_repo.filter_by(category_id=category.id)
-    return [dict(id=p.id, name=p.name, short_name=p.short_name)
-            for p in projects if not p.info.get('volume_id')
-            or p.info.get('volume_id') not in volume_ids]
 
 
 @login_required
@@ -61,7 +28,7 @@ def get_volumes(short_name):
 
     ensure_authorized_to('read', category)
     category_vols = get_enhanced_volumes(category)
-    unknown_projects = get_unknown_projects(category)
+    unknown_projects = get_projects_with_unknown_volumes(category)
 
     response = dict(volumes=category_vols, unknown_projects=unknown_projects)
     return handle_content_type(response)
