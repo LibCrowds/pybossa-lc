@@ -309,6 +309,6 @@ class TestIIIFAnnotationAnalysis(Test):
 
     def test_trim_punctuation_normalisation(self):
         """Test trim punctuation normalisation."""
-        rules = dict(trimpunctuation=True)
+        rules = dict(trim_punctuation=True)
         norm = iiif_annotation.normalise_transcription(':Word.', rules)
         assert_equal(norm, 'Word')

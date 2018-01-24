@@ -83,8 +83,9 @@ class AnalysisRulesForm(Form):
     """A form for setting normalisation rules for transcriptions."""
     titlecase = BooleanField('Convert to title case')
     whitespace = BooleanField('Normalise whitespace')
-    trimpunctuation = BooleanField('Trim punctuation')
+    trim_punctuation = BooleanField('Trim punctuation')
     concatenate = BooleanField('Concatenate Fields')
+
 
 
 class ProjectForm(Form):

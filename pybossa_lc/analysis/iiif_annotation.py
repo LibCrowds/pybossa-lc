@@ -155,7 +155,7 @@ def normalise_transcription(value, rules):
     if rules.get('whitespace'):
         normalised = " ".join(normalised.split())
 
-    if rules.get('trimpunctuation'):
+    if rules.get('trim_punctuation'):
         normalised = normalised.translate(None, string.punctuation)
     return normalised
 
