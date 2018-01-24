@@ -45,6 +45,9 @@ class PyBossaLC(Plugin):
         categories = project_repo.get_all_categories()
         required_keys = ['id', 'name', 'source']
         for category in categories:
+            if not isinstance(category.info, dict):
+                category.info = {}
+
             volumes = category.info.get('volumes', [])
             if not isinstance(volumes, list):
                 volumes = []
