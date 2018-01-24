@@ -52,7 +52,7 @@ def get_unknown_projects(category):
 
 
 @login_required
-@BLUEPRINT.route('/<short_name>/volumes', methods=['GET', 'POST'])
+@BLUEPRINT.route('/<short_name>/volumes')
 def get_volumes(short_name):
     """Return all volumes enhanced with project data."""
     category = project_repo.get_category_by(short_name=short_name)
