@@ -7,6 +7,7 @@ from flask import current_app as app
 from flask.ext.plugins import Plugin
 from .importers.iiif import BulkTaskIIIFImporter
 from pybossa.extensions import importer
+from pybossa.core import project_repo
 
 __plugin__ = "PyBossaLC"
 __version__ = json.load(open(os.path.join(os.path.dirname(__file__),
@@ -20,6 +21,7 @@ class PyBossaLC(Plugin):
         """Setup plugin."""
         self.setup_blueprints()
         self.setup_iiif_importer()
+        self.remove_bad_volumes()
 
     def setup_blueprints(self):
         """Setup blueprints."""
@@ -37,3 +39,21 @@ class PyBossaLC(Plugin):
     def setup_iiif_importer(self):
         """Setup the IIIF manifest importer."""
         importer._importers['iiif-annotation'] = BulkTaskIIIFImporter
+
+    def remove_bad_volumes(self):
+        """Remove volumes that don't comply with the correct data structure."""
+        categories = project_repo.get_all_categories()
+        required_keys = ['id', 'name', 'source']
+        for category in categories:
+            volumes = category.info.get('volumes', [])
+            if not isinstance(volumes, list):
+                volumes = []
+                print "Invalid volumes removed for {}".format(category.name)
+
+            valid_volumes = [v for v in volumes
+                             if all(key in v.keys() for key in required_keys)]
+            if len(valid_volumes) != len(volumes):
+                print "Invalid volumes removed for {}".format(category.name)
+
+            category.info['volumes'] = valid_volumes
+            project_repo.update_category(category)
