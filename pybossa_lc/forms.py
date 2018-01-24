@@ -87,7 +87,6 @@ class AnalysisRulesForm(Form):
     concatenate = BooleanField('Concatenate Fields')
 
 
-
 class ProjectForm(Form):
     """A form for creating projects from templates."""
     volume_id = SelectField('Volume')
