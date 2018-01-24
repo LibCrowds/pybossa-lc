@@ -42,6 +42,9 @@ class PyBossaLC(Plugin):
 
     def remove_bad_volumes(self):
         """Remove volumes that don't comply with the correct data structure."""
+        if app.config.get('TESTING'):
+            return
+
         categories = project_repo.get_all_categories()
         required_keys = ['id', 'name', 'source']
         for category in categories:
