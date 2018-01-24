@@ -19,9 +19,57 @@ from ..forms import VolumeForm
 BLUEPRINT = Blueprint('categories', __name__)
 
 
+def get_enhanced_volumes(category):
+    """Return the categories volumes enhanced with project data."""
+    volumes = category.info.get('volumes', [])
+    projects = project_repo.filter_by(category_id=category.id)
+
+    for volume in volumes:
+        vol_projects = [dict(id=p.id,
+                             name=p.name,
+                             short_name=p.short_name,
+                             published=p.published,
+                             overall_progress=overall_progress(p.id))
+                        for p in projects
+                        if p.info.get('volume_id') == volume['id']]
+        completed_projects = [p for p in vol_projects
+                              if p['overall_progress'] == 100]
+        ongoing_projects = [p for p in vol_projects
+                            if p['published'] and p not in completed_projects]
+        volume['projects'] = vol_projects
+        volume['n_completed_projects'] = len(completed_projects)
+        volume['n_ongoing_projects'] = len(ongoing_projects)
+    return volumes
+
+
+def get_unknown_projects(category):
+    """Return all projects not linked to a known volume."""
+    volume_ids = [vol['id'] for vol in category.info.get('volumes', [])]
+    projects = project_repo.filter_by(category_id=category.id)
+    return [dict(id=p.id, name=p.name, short_name=p.short_name)
+            for p in projects if not p.info.get('volume_id')
+            or p.info.get('volume_id') not in volume_ids]
+
+
 @login_required
 @BLUEPRINT.route('/<short_name>/volumes', methods=['GET', 'POST'])
-def volumes(short_name):
+def get_volumes(short_name):
+    """Return all volumes enhanced with project data."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    ensure_authorized_to('read', category)
+    category_vols = get_enhanced_volumes(category)
+    unknown_projects = get_unknown_projects(category)
+
+    response = dict(volumes=category_vols, unknown_projects=unknown_projects)
+    return handle_content_type(response)
+
+
+@login_required
+@BLUEPRINT.route('/<short_name>/volumes/new', methods=['GET', 'POST'])
+def new_volume(short_name):
     """List or add volumes."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
@@ -29,26 +77,24 @@ def volumes(short_name):
 
     ensure_authorized_to('update', category)
     volumes = category.info.get('volumes', [])
-    if not isinstance(volumes, list):  # Clear old volumes dict
-        volumes = []
 
     form = VolumeForm(request.body)
     form.category_id.data = category.id
 
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
-        new_volume = dict(id=volume_id,
-                          source=form.source.data,
-                          name=form.name.data,
-                          media_url=None)
-        volumes.append(new_volume)
+        new_vol = dict(id=volume_id,
+                       source=form.source.data,
+                       name=form.name.data,
+                       media_url=None)
+        volumes.append(new_vol)
         category.info['volumes'] = volumes
         project_repo.update_category(category)
         flash("Volume added", 'success')
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, volumes=volumes, category=category)
+    response = dict(form=form, volumes=volumes)
     return handle_content_type(response)
 
 
@@ -119,51 +165,10 @@ def update_volume(short_name, volume_id):
                 update()
                 project_repo.save_category(category)
                 flash('Thumbnail updated', 'success')
-                url = url_for('.volumes', short_name=category.short_name)
+                url = url_for('.get_volumes', short_name=category.short_name)
                 return redirect_content_type(url)
             else:
                 flash('You must provide a file', 'error')
 
-    response = dict(form=form, upload_form=upload_form, category=category)
-    return handle_content_type(response)
-
-
-@login_required
-@BLUEPRINT.route('/<short_name>/volumes/data', methods=['GET', 'POST'])
-def volume_data(short_name):
-    """Return all volumes enhanced project data."""
-    category = project_repo.get_category_by(short_name=short_name)
-    if not category:  # pragma: no cover
-        abort(404)
-
-    ensure_authorized_to('read', category)
-    volumes = category.info.get('volumes', [])
-    projects = project_repo.filter_by(category_id=category.id)
-
-    def enhance_volume_data(volume):
-        vol_projects = [dict(id=p.id,
-                             name=p.name,
-                             short_name=p.short_name,
-                             published=p.published,
-                             overall_progress=overall_progress(p.id))
-                        for p in projects
-                        if p.info.get('volume_id') == volume['id']]
-        completed_projects = [p for p in vol_projects
-                              if p['overall_progress'] == 100]
-        ongoing_projects = [p for p in vol_projects
-                            if p['published'] and p not in completed_projects]
-        volume['projects'] = vol_projects
-        volume['n_completed_projects'] = len(completed_projects)
-        volume['n_ongoing_projects'] = len(ongoing_projects)
-
-    for vol in volumes:
-        enhance_volume_data(vol)
-
-    # These projects are not linked to a volume
-    unknown_projects = [dict(id=p.id,
-                                 name=p.name,
-                                 short_name=p.short_name)
-                        for p in projects if not p.info.get('volume_id')]
-
-    response = dict(volumes=volumes, unknown_projects=unknown_projects)
+    response = dict(form=form, upload_form=upload_form)
     return handle_content_type(response)
