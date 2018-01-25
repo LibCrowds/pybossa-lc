@@ -160,6 +160,25 @@ def normalise_transcription(value, rules):
     return normalised
 
 
+def set_target_from_selection_parent(annotation, task):
+    """Set the annotation target according to a selection parent task."""
+    highlights = task.info.get('highlights')
+    if not highlights:
+        raise ValueError('This task was not built from a selection parent')
+
+    rect = highlights[0]
+    selector = '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
+                                              rect['width'], rect['height'])
+    annotation['target'] = {
+        'source': annotation['target'],
+        'selector': {
+            'conformsTo': 'http://www.w3.org/TR/media-frags/',
+            'type': 'FragmentSelector',
+            'value': selector
+        }
+    }
+
+
 def update_selector(anno, rect):
     """Update a media frag selector."""
     frag = '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'], rect['w'],
@@ -225,6 +244,11 @@ def analyse(result_id):
         task = task_repo.get_task(result.task_id)
         for tag in merged_transcriptions:
             item = merged_transcriptions[tag]
+
+            # Set annotation target from a selection parent
+            if rules.get('set_target_from_selection_parent'):
+                set_target_from_selection_parent(item['annotation'], task)
+
             if item['count'] >= 2:  # 2 matching transcriptions required
                 final_transcriptions.append(item['annotation'])
             elif task.n_answers < 10:  # update required answers otherwise

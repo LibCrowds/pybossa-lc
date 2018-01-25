@@ -312,3 +312,26 @@ class TestIIIFAnnotationAnalysis(Test):
         rules = dict(trim_punctuation=True)
         norm = iiif_annotation.normalise_transcription(':Word.', rules)
         assert_equal(norm, 'Word')
+
+    @with_context
+    def test_set_target_from_selection_parent(self):
+        """Test target set from a selection parent."""
+        rect = dict(x=1, y=2, width=3, height=4)
+        info = dict(highlights=[rect])
+        task = TaskFactory.create(n_answers=1, info=info)
+        target = 'http://example.com'
+        anno = {
+            'target': target
+        }
+        iiif_annotation.set_target_from_selection_parent(anno, task)
+        assert_dict_equal(anno['target'], {
+            'source': target,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                        rect['y'],
+                                                        rect['width'],
+                                                        rect['height'])
+            }
+        })

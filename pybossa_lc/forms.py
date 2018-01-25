@@ -81,10 +81,11 @@ class Z3950TemplateForm(Form):
 
 class AnalysisRulesForm(Form):
     """A form for setting normalisation rules for transcriptions."""
-    titlecase = BooleanField('Convert to title case')
-    whitespace = BooleanField('Normalise whitespace')
-    trim_punctuation = BooleanField('Trim punctuation')
-    concatenate = BooleanField('Concatenate Fields')
+    titlecase = BooleanField()
+    whitespace = BooleanField()
+    trim_punctuation = BooleanField()
+    concatenate = BooleanField()
+    target_from_select_parent = BooleanField()
 
 
 class ProjectForm(Form):
