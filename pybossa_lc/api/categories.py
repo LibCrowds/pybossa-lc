@@ -12,10 +12,25 @@ from pybossa.core import uploader
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
 
+from ..cache import templates as templates_cache
 from ..utils import get_enhanced_volumes, get_projects_with_unknown_volumes
 from ..forms import VolumeForm
 
 BLUEPRINT = Blueprint('categories', __name__)
+
+
+@login_required
+@BLUEPRINT.route('/<short_name>/templates')
+def get_templates(short_name):
+    """Return all templates for the category."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    ensure_authorized_to('read', category)
+    templates = templates_cache.get_by_category_id(category.id)
+    response = dict(volumes=templates)
+    return handle_content_type(response)
 
 
 @login_required
