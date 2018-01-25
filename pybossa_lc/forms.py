@@ -9,6 +9,30 @@ from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
 from pybossa.core import project_repo
 
+from .cache import templates as templates_cache
+
+
+class UniqueTemplateField(object):
+    """Checks for a unique template field."""
+
+    def __init__(self, section, field_name, message=None):
+        self.field_name = field_name
+        self.section = section
+        if not message:  # pragma: no cover
+            message = '''A template with this {} already exists
+                      '''.format(field_name)
+        self.message = message
+
+    def __call__(self, form, form_field):
+        tmpl_id = form.id.data
+        templates = templates_cache.get_all()
+        exists = [tmpl for tmpl in templates
+                  if tmpl[self.section] and
+                  tmpl[self.section][self.field_name] == form_field.data and
+                  (not tmpl_id or tmpl_id != tmpl['id'])]
+        if exists:
+            raise ValidationError(self.message)
+
 
 class UniqueVolumeField(object):
     """Checks for a unique volume field for a category."""
@@ -61,8 +85,13 @@ class ProjectTemplateForm(Form):
 
 class IIIFAnnotationTemplateForm(Form):
     """A form for creating task templates for IIIF annotation projects."""
+    id = TextField(label=None, widget=HiddenInput())
+    tag_pattern = r'^[a-z0-9_]*$'
+    tag_msg = '''Must use a combination of lowercase characters, numbers or
+              underscores'''
     tag = TextField('Tag', [validators.Required(),
-                            pb_validator.NotAllowedChars()])
+                            UniqueTemplateField('task', 'tag'),
+                            validators.Regexp(tag_pattern, message=tag_msg)])
     objective = TextField('Objective', [validators.Required()])
     guidance = TextAreaField('Additional Guidance')
     mode = SelectField('Mode', choices=[
