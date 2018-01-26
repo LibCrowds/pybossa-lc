@@ -223,16 +223,6 @@ def template_rules(name, tmpl_id):
         category.info = {}
 
     presenter = category.info.get('presenter')
-    if presenter != 'iiif-annotation':
-        msg = 'No normalisation rules available for this presenter type'
-        flash(msg, 'error')
-        return redirect_content_type(url_for('.templates', name=user.name))
-
-    if not tmpl['task'] or tmpl['task'].get('mode') != 'transcribe':
-        msg = 'Analysis rules only available for IIIF transcription projects'
-        flash(msg, 'error')
-        return redirect_content_type(url_for('.templates', name=user.name))
-
     current_rules = tmpl['rules'] or {}
     form = AnalysisRulesForm(**current_rules)
 
