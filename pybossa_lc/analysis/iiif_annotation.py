@@ -238,13 +238,15 @@ def analyse(result_id):
     final_transcriptions = []
     if transcriptions:
         rules = helpers.get_analysis_rules(result.project_id)
+        print rules
 
         merged_transcriptions = merge_transcriptions(transcriptions, rules)
         for tag in merged_transcriptions:
             item = merged_transcriptions[tag]
 
             # Set annotation target from a selection parent
-            if rules and rules.get('set_target_from_selection_parent'):
+            if rules and rules.get('target_from_select_parent'):
+                print 'using parent selection as target'
                 set_target_from_selection_parent(item['annotation'], task)
 
             if item['count'] >= 2:  # 2 matching transcriptions required
