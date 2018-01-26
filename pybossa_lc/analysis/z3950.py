@@ -44,7 +44,6 @@ def analyse(result_id):
     rules = helpers.get_analysis_rules(result.project_id)
     norm_func = helpers.normalise_transcription
     df['reference'] = df['reference'].apply(lambda x: norm_func(x, rules))
-    print df['reference']
 
     # Check if the match percentage is met
     n_task_runs = len(result.task_run_ids)
@@ -61,7 +60,6 @@ def analyse(result_id):
     elif has_answers:
         result.last_version = False
 
-    print result
     result_repo.update(result)
     results_cache.clear_cache()
 
