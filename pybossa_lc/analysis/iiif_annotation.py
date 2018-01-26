@@ -144,7 +144,10 @@ def merge_transcriptions(annos, rules):
 
 
 def normalise_transcription(value, rules):
-    """Normalise transcriptions according to the specified rules."""
+    """Normalise transcriptions according to the specified analysis rules."""
+    if not rules:
+        return value
+
     normalised = value
     if rules.get('titlecase'):
         normalised = normalised.title()
@@ -241,7 +244,7 @@ def analyse(result_id):
             item = merged_transcriptions[tag]
 
             # Set annotation target from a selection parent
-            if rules.get('set_target_from_selection_parent'):
+            if rules and rules.get('set_target_from_selection_parent'):
                 set_target_from_selection_parent(item['annotation'], task)
 
             if item['count'] >= 2:  # 2 matching transcriptions required
