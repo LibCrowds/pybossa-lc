@@ -18,7 +18,7 @@ from ..cache import templates as templates_cache
 BLUEPRINT = Blueprint('users', __name__)
 
 
-def get_template_form(task_presenter, method, data):
+def get_task_template_form(task_presenter, method, data):
     """Return the template form for a type of task presenter."""
     if not data:
         data = {}
@@ -162,7 +162,7 @@ def template_task(name, tmpl_id):
 
     # Get the form for the category's task presenter
     presenter = category.info.get('presenter')
-    form = get_template_form(presenter, request.method, tmpl['task'])
+    form = get_task_template_form(presenter, request.method, tmpl['task'])
     if not form:
         msg = 'This category has an invalid task presenter'
         flash(msg, 'error')
@@ -170,7 +170,7 @@ def template_task(name, tmpl_id):
 
     if request.method == 'POST':
         form_data = json.loads(request.data) if request.data else {}
-        form = get_template_form(presenter, request.method, form_data)
+        form = get_task_template_form(presenter, request.method, form_data)
 
         if form.validate():
             try:
