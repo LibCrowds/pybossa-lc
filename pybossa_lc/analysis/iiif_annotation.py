@@ -4,13 +4,10 @@
 import string
 import datetime
 import itertools
-from pybossa.core import project_repo, result_repo, task_repo
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail
 from rq import Queue
 
-from ..cache import templates as templates_cache
-from ..cache import clear_cache
 from . import helpers
 
 
@@ -189,10 +186,13 @@ def update_selector(anno, rect):
 
 def analyse(result_id):
     """Analyse a IIIF Annotation result."""
+    from ..cache import results as results_cache
+    from pybossa.core import result_repo, task_repo
     result = result_repo.get(result_id)
+    task = task_repo.get_task(result.task_id)
     df = helpers.get_task_run_df(result.task_id)
 
-    # Flatten annotations into a single list
+    # Flatten all annotations for the task into a single list
     anno_list = df['info'].tolist()
     anno_list = list(itertools.chain.from_iterable(anno_list))
 
@@ -234,14 +234,9 @@ def analyse(result_id):
     # Process transcriptions
     final_transcriptions = []
     if transcriptions:
-        # Get normalisation rules
-        project = project_repo.get(result.project_id)
-        template_id = project.info.get('template_id')
-        tmpl = templates_cache.get_by_id(template_id) if template_id else {}
-        rules = tmpl.get('rules') if tmpl else {}
+        rules = helpers.get_analysis_rules(result.project_id)
 
         merged_transcriptions = merge_transcriptions(transcriptions, rules)
-        task = task_repo.get_task(result.task_id)
         for tag in merged_transcriptions:
             item = merged_transcriptions[tag]
 
@@ -262,7 +257,7 @@ def analyse(result_id):
         info['annotations'] += clusters + final_transcriptions
     result.info = info
     result_repo.update(result)
-    clear_cache()
+    results_cache.clear_cache()
 
 
 def analyse_all(project_id):

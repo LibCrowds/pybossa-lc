@@ -3,10 +3,14 @@
 
 from sqlalchemy import text
 from pybossa.core import db
-from pybossa.cache import cache, ONE_HOUR
+from pybossa.cache import cache, ONE_HOUR, delete_cached
 
 
 session = db.slave_session
+
+
+def clear_cache():
+    delete_cached('empty_results')
 
 
 @cache(timeout=ONE_HOUR, key_prefix="empty_results")

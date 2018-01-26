@@ -1,9 +1,6 @@
 # -*- coding: utf8 -*-
 """Z39.50 analysis module."""
 
-from pybossa.core import result_repo
-from ..cache import clear_cache
-
 from . import helpers
 
 
@@ -13,13 +10,15 @@ VALID_KEYS = ['oclc', 'shelfmark', 'control_number', 'reference', 'comments']
 
 def analyse(result_id):
     """Analyse Z39.50 results."""
+    from pybossa.core import result_repo
+    from ..cache import results as results_cache
     result = result_repo.get(result_id)
 
     # Filter the valid task run keys
     df = helpers.get_task_run_df(result.task_id)
     df = df.loc[:, df.columns.isin(VALID_KEYS)]
 
-    # Rename old Convert-a-Card specific keys
+    # Rename old specific keys
     df = df.rename(columns={
         'oclc': 'control_number',
         'shelfmark': 'reference'
@@ -57,7 +56,7 @@ def analyse(result_id):
         result.last_version = False
 
     result_repo.update(result)
-    clear_cache()
+    results_cache.clear_cache()
 
 
 def analyse_all(project_id):

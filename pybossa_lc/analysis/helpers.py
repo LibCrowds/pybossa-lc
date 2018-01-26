@@ -5,11 +5,8 @@ import math
 import numpy
 import pandas
 from rq import Queue
-from pybossa.core import task_repo, project_repo, result_repo
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail
-from ..cache import clear_cache
-from rq import Queue
 
 
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
@@ -47,6 +44,7 @@ def has_n_matches(task_run_df, n_task_runs, match_percentage):
 
 def get_task_run_df(task_id):
     """Load an Array of task runs into a dataframe."""
+    from pybossa.core import task_repo
     task_runs = task_repo.filter_task_runs_by(task_id=task_id)
     data = [explode_info(tr) for tr in task_runs]
     index = [tr.__dict__['id'] for tr in task_runs]
@@ -69,6 +67,7 @@ def explode_info(item):
 
 def analyse_all(analysis_func, project_id):
     """Analyse all results for a project."""
+    from pybossa.core import project_repo, result_repo
     project = project_repo.get(project_id)
     results = result_repo.filter_by(project_id=project_id)
     for result in results:
@@ -82,11 +81,11 @@ def analyse_all(analysis_func, project_id):
             '''.format(project.name)
     }
     MAIL_QUEUE.enqueue(send_mail, msg)
-    clear_cache()
 
 
 def analyse_empty(analysis_func, project_id):
     """Analyse all empty results for a project."""
+    from pybossa.core import project_repo, result_repo
     project = project_repo.get(project_id)
     results = result_repo.filter_by(project_id=project_id)
     empty_results = [r for r in results if not r.info]
@@ -101,4 +100,19 @@ def analyse_empty(analysis_func, project_id):
             '''.format(project.name)
     }
     MAIL_QUEUE.enqueue(send_mail, msg)
-    clear_cache()
+
+
+def get_analysis_rules(project_id):
+    """Return the project template's analysis rules."""
+    from pybossa.core import project_repo
+    from ..cache import templates as templates_cache
+    project = project_repo.get(project_id)
+    template_id = project.info.get('template_id')
+    if not template_id:
+        return None
+
+    tmpl = templates_cache.get_by_id(template_id)
+    if not tmpl:
+        return None
+
+    return tmpl.get('rules')
