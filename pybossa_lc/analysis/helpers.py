@@ -3,6 +3,7 @@
 
 import math
 import numpy
+import string
 import pandas
 from rq import Queue
 from pybossa.core import sentinel
@@ -121,3 +122,28 @@ def get_analysis_rules(project_id):
         return None
 
     return tmpl.get('rules')
+
+
+def normalise_transcription(value, rules):
+    """Normalise value according to the specified analysis rules."""
+    if not rules:
+        return value
+
+    normalised = value
+    if rules.get('case') == 'title':
+        normalised = normalised.title()
+    elif rules.get('case') == 'lower':
+        normalised = normalised.lower()
+    elif rules.get('case') == 'upper':
+        normalised = normalised.upper()
+
+    if rules.get('whitespace') == 'normalise':
+        normalised = " ".join(normalised.split())
+    elif rules.get('whitespace') == 'underscore':
+        normalised = " ".join(normalised.split()).replace(' ', '_')
+    elif rules.get('whitespace') == 'full_stop':
+        normalised = " ".join(normalised.split()).replace(' ', '.')
+
+    if rules.get('trim_punctuation'):
+        normalised = normalised.translate(None, string.punctuation)
+    return normalised

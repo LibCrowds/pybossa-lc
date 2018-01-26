@@ -5,6 +5,7 @@ import numpy
 import pandas
 from factories import TaskFactory, TaskRunFactory
 from default import Test, with_context
+from nose.tools import *
 
 from pybossa_lc.analysis import helpers
 
@@ -102,3 +103,45 @@ class TestAnalysisHelpers(Test):
         df = helpers.get_task_run_df(taskrun.task_id)
         msg = "info key should be transformed to _info"
         assert df['_info'].tolist() == [info['info']], msg
+
+    def test_titlecase_normalisation(self):
+        """Test titlecase normalisation."""
+        rules = dict(case='title')
+        norm = helpers.normalise_transcription('Some words', rules)
+        assert_equal(norm, 'Some Words')
+
+    def test_lowercase_normalisation(self):
+        """Test lowercase normalisation."""
+        rules = dict(case='lower')
+        norm = helpers.normalise_transcription('Some words', rules)
+        assert_equal(norm, 'some words')
+
+    def test_uppercase_normalisation(self):
+        """Test uppercase normalisation."""
+        rules = dict(case='upper')
+        norm = helpers.normalise_transcription('Some words', rules)
+        assert_equal(norm, 'SOME WORDS')
+
+    def test_whitespace_normalisation(self):
+        """Test whitespace normalisation."""
+        rules = dict(whitespace='normalise')
+        norm = helpers.normalise_transcription(' Two  Words', rules)
+        assert_equal(norm, 'Two Words')
+
+    def test_whitespace_replace_underscore(self):
+        """Test replacing whitespace with underscore normalisation."""
+        rules = dict(whitespace='underscore')
+        norm = helpers.normalise_transcription(' Two  Words', rules)
+        assert_equal(norm, 'Two_Words')
+
+    def test_whitespace_replace_full_stop(self):
+        """Test replacing whitespace with full stop normalisation."""
+        rules = dict(whitespace='full_stop')
+        norm = helpers.normalise_transcription(' Two  Words', rules)
+        assert_equal(norm, 'Two.Words')
+
+    def test_trim_punctuation_normalisation(self):
+        """Test trim punctuation normalisation."""
+        rules = dict(trim_punctuation=True)
+        norm = helpers.normalise_transcription(':Word.', rules)
+        assert_equal(norm, 'Word')

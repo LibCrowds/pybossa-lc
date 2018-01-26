@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 """IIIF Annotation analysis module."""
 
-import string
 import datetime
 import itertools
 from pybossa.core import sentinel
@@ -123,7 +122,7 @@ def merge_transcriptions(annos, rules):
             if item['purpose'] == 'tagging':  # the field tag
                 tag = item['value']
             elif item['purpose'] == 'describing':  # the transcribed value
-                value = normalise_transcription(item['value'], rules)
+                value = helpers.normalise_transcription(item['value'], rules)
                 item['value'] = value
 
         count = data.get(tag, {}).get(value, {}).get('count', 0) + 1
@@ -141,31 +140,6 @@ def merge_transcriptions(annos, rules):
                 reduced[tag] = data[tag][value]
 
     return reduced
-
-
-def normalise_transcription(value, rules):
-    """Normalise transcriptions according to the specified analysis rules."""
-    if not rules:
-        return value
-
-    normalised = value
-    if rules.get('case') == 'title':
-        normalised = normalised.title()
-    elif rules.get('case') == 'lower':
-        normalised = normalised.lower()
-    elif rules.get('case') == 'upper':
-        normalised = normalised.upper()
-
-    if rules.get('whitespace') == 'normalise':
-        normalised = " ".join(normalised.split())
-    elif rules.get('whitespace') == 'underscore':
-        normalised = " ".join(normalised.split()).replace(' ', '_')
-    elif rules.get('whitespace') == 'full_stop':
-        normalised = " ".join(normalised.split()).replace(' ', '.')
-
-    if rules.get('trim_punctuation'):
-        normalised = normalised.translate(None, string.punctuation)
-    return normalised
 
 
 def set_target_from_selection_parent(annotation, task):
