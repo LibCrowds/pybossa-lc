@@ -145,5 +145,5 @@ def normalise_transcription(value, rules):
         normalised = " ".join(normalised.split()).replace(' ', '.')
 
     if rules.get('trim_punctuation'):
-        normalised = normalised.translate(None, string.punctuation)
+        normalised = normalised.strip(string.punctuation)
     return normalised

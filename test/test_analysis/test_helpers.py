@@ -143,5 +143,5 @@ class TestAnalysisHelpers(Test):
     def test_trim_punctuation_normalisation(self):
         """Test trim punctuation normalisation."""
         rules = dict(trim_punctuation=True)
-        norm = helpers.normalise_transcription(':Word.', rules)
-        assert_equal(norm, 'Word')
+        norm = helpers.normalise_transcription(':Oh, a word.', rules)
+        assert_equal(norm, 'Oh, a word')
