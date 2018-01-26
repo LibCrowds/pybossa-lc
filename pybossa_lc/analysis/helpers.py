@@ -86,7 +86,12 @@ def analyse_all(analysis_func, project_id):
 def analyse_empty(analysis_func, project_id):
     """Analyse all empty results for a project."""
     from pybossa.core import project_repo, result_repo
-    project = project_repo.get(project_id)
+    print type(project_id)
+    try:
+        project = project_repo.get(project_id)
+    except Exception:
+        print Exception.__dict__
+        return
     results = result_repo.filter_by(project_id=project_id)
     empty_results = [r for r in results if not r.info]
     for result in empty_results:

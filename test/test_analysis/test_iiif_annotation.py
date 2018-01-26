@@ -297,15 +297,39 @@ class TestIIIFAnnotationAnalysis(Test):
 
     def test_titlecase_normalisation(self):
         """Test titlecase normalisation."""
-        rules = dict(titlecase=True)
-        norm = iiif_annotation.normalise_transcription('word', rules)
-        assert_equal(norm, 'Word')
+        rules = dict(case='title')
+        norm = iiif_annotation.normalise_transcription('Some words', rules)
+        assert_equal(norm, 'Some Words')
+
+    def test_lowercase_normalisation(self):
+        """Test lowercase normalisation."""
+        rules = dict(case='lower')
+        norm = iiif_annotation.normalise_transcription('Some words', rules)
+        assert_equal(norm, 'some words')
+
+    def test_uppercase_normalisation(self):
+        """Test uppercase normalisation."""
+        rules = dict(case='upper')
+        norm = iiif_annotation.normalise_transcription('Some words', rules)
+        assert_equal(norm, 'SOME WORDS')
 
     def test_whitespace_normalisation(self):
         """Test whitespace normalisation."""
-        rules = dict(whitespace=True)
+        rules = dict(whitespace='normalise')
         norm = iiif_annotation.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two Words')
+
+    def test_whitespace_replace_underscore(self):
+        """Test replacing whitespace with underscore normalisation."""
+        rules = dict(whitespace='underscore')
+        norm = iiif_annotation.normalise_transcription(' Two  Words', rules)
+        assert_equal(norm, 'Two_Words')
+
+    def test_whitespace_replace_full_stop(self):
+        """Test replacing whitespace with full stop normalisation."""
+        rules = dict(whitespace='full_stop')
+        norm = iiif_annotation.normalise_transcription(' Two  Words', rules)
+        assert_equal(norm, 'Two.Words')
 
     def test_trim_punctuation_normalisation(self):
         """Test trim punctuation normalisation."""

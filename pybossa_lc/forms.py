@@ -86,8 +86,18 @@ class Z3950TemplateForm(Form):
 
 class AnalysisRulesForm(Form):
     """A form for setting normalisation rules for transcriptions."""
-    titlecase = BooleanField()
-    whitespace = BooleanField()
+    whitespace = SelectField('Mode', choices=[
+        ('', 'Do not modify'),
+        ('normalise', 'Normalise'),
+        ('underscore', 'Replace with underscores'),
+        ('full_stop', 'Replace with full stops')
+    ], default='')
+    case = SelectField('Mode', choices=[
+        ('', 'Do not modify'),
+        ('title', 'Titlecase'),
+        ('lower', 'Lowercase'),
+        ('upper', 'Uppercase'),
+    ], default='')
     trim_punctuation = BooleanField()
     concatenate = BooleanField()
     target_from_select_parent = BooleanField()
