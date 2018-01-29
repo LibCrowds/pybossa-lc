@@ -223,13 +223,8 @@ def handle_valid_project_form(form, template, volume, category,
 def get_built_templates(category):
     """Get dict of templates against volumes for all current projects."""
     templates = templates_cache.get_by_category_id(category.id)
-<<<<<<< HEAD
     built_templates = {tmpl['id']: [] for tmpl in templates}
     projects = project_repo.filter_by(category_id=category.id)
-=======
-    built_templates = {tmpl.id: [] for tmpl in templates}
-    projects = project_repo.get_by_category_id(category.id)
->>>>>>> e7163a096fc1a48e7c16a6b2fd46784cbcfcea4f
     for p in projects:
         tmpl_id = p.info.get('template_id')
         vol_id = p.info.get('volume_id')
@@ -244,11 +239,7 @@ def get_built_templates(category):
 def get_valid_parent_project_ids(category):
     """Return a list of IDs for valid parent projects for the category."""
     valid_project_ids = []
-<<<<<<< HEAD
     projects = project_repo.filter_by(category_id=category.id)
-=======
-    projects = project_repo.get_by_category_id(category.id)
->>>>>>> e7163a096fc1a48e7c16a6b2fd46784cbcfcea4f
     presenter = category.info.get('presenter')
     if presenter == 'iiif-annotation':
         for p in projects:
@@ -264,16 +255,10 @@ def get_valid_parent_project_ids(category):
             if not parent_task.get('mode') == 'select':
                 continue
 
-<<<<<<< HEAD
             results = result_repo.filter_by(project_id=p.id)
             empty_results = [r for r in results if not r.info]
             incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
                                                          project_id=p.id)
-=======
-            empty_results = result_repo.filter_by(info=None, project_id=p.id)
-            incomplete_tasks = task_repo.filter_by(status='ongoing',
-                                                   project_id=p.id)
->>>>>>> e7163a096fc1a48e7c16a6b2fd46784cbcfcea4f
 
             if not empty_results and not incomplete_tasks:
                 valid_project_ids.append(p.id)
