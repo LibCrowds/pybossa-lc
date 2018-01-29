@@ -120,20 +120,22 @@ def new(category_short_name):
     form.volume_id.choices = volume_choices
     form.parent_id.choices = parent_choices
 
-    # Remove parent ID field if not set
-    if not form.parent_id.data:
-        del form.parent_id
-
     built_templates = get_built_templates(category)
 
-    if request.method == 'POST' and form.validate():
-        tmpl = [t for t in templates if t['id'] == form.template_id.data][0]
-        volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
-        handle_valid_project_form(form, tmpl, volume, category,
-                                  built_templates)
+    if request.method == 'POST':
+        # Remove parent ID field if not set
+        if not form.parent_id.data:
+            del form.parent_id
 
-    elif request.method == 'POST':
-        flash('Please correct the errors', 'error')
+        if form.validate():
+            tmpl = [t for t in templates
+                    if t['id'] == form.template_id.data][0]
+            volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
+            handle_valid_project_form(form, tmpl, volume, category,
+                                      built_templates)
+
+        else:
+            flash('Please correct the errors', 'error')
 
     valid_parent_ids = get_valid_parent_project_ids(category)
     response = dict(form=form, templates=templates, volumes=volumes,
