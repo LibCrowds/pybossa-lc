@@ -43,10 +43,10 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} task{}.'.format(n_tasks, plural)
 
 
-def validate_parent(parent_id, template, presenter):
+def validate_parent(parent_id, presenter):
     """Validate a parent project."""
-    if presenter != 'iiif-annotation' or template['mode'] != 'transcribe':
-        flash('Only IIIF transcription projects can be built from a parent',
+    if presenter != 'iiif-annotation':
+        flash('Only IIIF annotation projects can be built from a parent',
               'error')
         return False
 
@@ -111,21 +111,8 @@ def new(category_short_name):
         flash(err_msg, 'error')
         return redirect_content_type(url_for('home.home'))
 
-    # Set the options for the form
-    try:
-        template_choices = [(t['id'], t['project']['name']) for t in templates]
-    except KeyError:  # pragma: no-cover
-        flash('Invalid templates found, please contact an administrator',
-              'error')
-        return redirect_content_type(url_for('home.home'))
-
-    try:
-        volume_choices = [(v['id'], v['name']) for v in volumes]
-    except KeyError:  # pragma: no-cover
-        flash('Invalid volumes found, please contact an administrator',
-              'error')
-        return redirect_content_type(url_for('home.home'))
-
+    template_choices = [(t['id'], t['project']['name']) for t in templates]
+    volume_choices = [(v['id'], v['name']) for v in volumes]
     parent_choices = [(p.id, p.name) for p in projects]
     parent_choices.append(('None', 0))
     form = ProjectForm(request.body)
@@ -133,84 +120,96 @@ def new(category_short_name):
     form.volume_id.choices = volume_choices
     form.parent_id.choices = parent_choices
 
-    # Remove parent ID field if not set or Z39.50 presenter
-    if not form.parent_id.data or presenter != 'iiif-annotation':
+    # Remove parent ID field if not set
+    if not form.parent_id.data:
         del form.parent_id
 
     if request.method == 'POST' and form.validate():
         tmpl = [t for t in templates if t['id'] == form.template_id.data][0]
         volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
-        name, short_name = get_name_and_shortname(tmpl, volume)
-
-        # Get the task import data
-        import_data = {}
-        if presenter == 'z3950':
-            import_data = _get_flickr_data(volume)
-        elif presenter == 'iiif-annotation':
-            import_data = _get_iiif_annotation_data(volume, tmpl['id'],
-                                                    form.parent_id)
-        if not import_data:
-            err_msg = "Invalid volume details for the task presenter type"
-            flash(err_msg, 'error')
-            return redirect_content_type(url_for('home.home'))
-
-        # Valid any parent
-        if form.parent_id:
-            validate_parent(form.parent_id.data, tmpl, presenter)
-
-        # Check for similar projects
-        existing_project = project_repo.filter_by(short_name=short_name)
-        if existing_project:
-            err_msg = "A project already exists with that short name."
-            flash(err_msg, 'error')
-            return redirect_content_type(url_for('home.home'))
-
-        # Create
-        webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root,
-                                                     presenter)
-        project = Project(name=name,
-                          short_name=short_name,
-                          description=tmpl['project']['description'],
-                          long_description='',
-                          owner_id=current_user.id,
-                          info={
-                              'tutorial': tmpl.get('tutorial', ''),
-                              'volume_id': volume['id'],
-                              'template_id': tmpl['id'],
-                              'tags': tmpl.get('tags', {})
-                          },
-                          webhook=webhook,
-                          category_id=category.id,
-                          owners_ids=[current_user.id])
-        project_repo.save(project)
-
-        # Attempt to generate the tasks
-        success = True
-        try:
-            msg = _import_tasks(project, **import_data)
-            flash(msg, 'success')
-        except BulkImportException as err_msg:
-            success = False
-            project_repo.delete(project)
-            flash(err_msg, 'error')
-
-        except Exception as inst:  # pragma: no cover
-            success = False
-            current_app.logger.error(inst)
-            print inst
-            project_repo.delete(project)
-            msg = 'Uh oh, an error was encountered while generating the tasks'
-            flash(msg, 'error')
-
-        if success:
-            auditlogger.add_log_entry(None, project, current_user)
-            task_repo.update_tasks_redundancy(project, 3)
-            project.published = True
-            project_repo.save(project)
-            return redirect_content_type(url_for('home.home'))
+        handle_valid_project_form(form, tmpl, volume, category)
 
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')
 
     response = dict(form=form, templates=templates, volumes=volumes)
     return handle_content_type(response)
+
+
+def handle_valid_project_form(form, template, volume, category):
+    """Handle a seemingly valid project form."""
+    presenter = category.info.get('presenter')
+    task = template['task']
+    if not task:
+        flash('The selected template is incomplete', 'error')
+        return
+
+    name, short_name = get_name_and_shortname(template, volume)
+
+    # Get the task import data
+    parent_id = form.parent_id.data if form.parent_id else None
+    import_data = {}
+    if presenter == 'z3950':
+        import_data = _get_flickr_data(volume)
+    elif presenter == 'iiif-annotation':
+        import_data = _get_iiif_annotation_data(volume, template['id'],
+                                                parent_id)
+    if not import_data:
+        err_msg = "Invalid volume details for the task presenter type"
+        flash(err_msg, 'error')
+        return
+
+    # Validate a parent
+    if form.parent_id:
+        validate_parent(form.parent_id.data, presenter)
+
+    # Check for similar projects
+    existing_project = project_repo.filter_by(short_name=short_name)
+    if existing_project:
+        err_msg = "A project already exists with that short name."
+        flash(err_msg, 'error')
+        return
+
+    # Create
+    webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root,
+                                                  presenter)
+    project = Project(name=name,
+                      short_name=short_name,
+                      description=template['project']['description'],
+                      long_description='',
+                      owner_id=current_user.id,
+                      info={
+                          'tutorial': template.get('tutorial', ''),
+                          'volume_id': volume['id'],
+                          'template_id': template['id'],
+                          'tags': template.get('tags', {})
+                      },
+                      webhook=webhook,
+                      category_id=category.id,
+                      owners_ids=[current_user.id])
+    project_repo.save(project)
+
+    # Attempt to generate the tasks
+    success = True
+    try:
+        msg = _import_tasks(project, **import_data)
+        flash(msg, 'success')
+    except BulkImportException as err_msg:
+        success = False
+        project_repo.delete(project)
+        flash(err_msg, 'error')
+
+    except Exception as inst:  # pragma: no cover
+        success = False
+        current_app.logger.error(inst)
+        print inst
+        project_repo.delete(project)
+        msg = 'Uh oh, an error was encountered while generating the tasks'
+        flash(msg, 'error')
+
+    if success:
+        auditlogger.add_log_entry(None, project, current_user)
+        task_repo.update_tasks_redundancy(project, 3)
+        project.published = True
+        project_repo.save(project)
+        return redirect_content_type(url_for('home.home'))

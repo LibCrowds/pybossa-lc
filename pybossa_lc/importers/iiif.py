@@ -49,7 +49,6 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'shareUrl': self._get_share_url(manifest_uri, i)
             }
-            print self.template
             row['mode'] = self.template['task']['mode']
             row['tag'] = self.template['task']['tag']
             row['objective'] = self.template['task']['objective']
