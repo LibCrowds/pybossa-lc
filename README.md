@@ -23,6 +23,7 @@ reference.
 cd /path/to/pybossa/pybossa/plugins
 git clone https://github.com/LibCrowds/pybossa-lc
 cp -r pybossa-lc/pybossa_lc pybossa_lc
+source ../../env/bin/activate
 cd pybossa-lc
 pip install -r requirements.txt
 ```
@@ -48,119 +49,4 @@ pip install -r requirements.txt
 
 # test
 nosetests test/
-```
-
-# Endpoints
-
-Following are brief details of the endpoints provided by this plugin.
-
-## Users
-
-### List a User's Templates
-
-List all templates created by the user.
-
-```html
-GET /libcrowds/users/\<name\>/templates
-```
-
-```json
-{
-  "form": {
-    "category_id": null,
-    "csrf": "1515172370.21##b668983b3544e9faeaed77a3d08e6403dc919b00",
-    "description": null,
-    "errors": {},
-    "name": null,
-    "tutorial": null
-  },
-  "templates": [
-    {
-      "id": "c3017984-6885-45a1-81a9-8ba3a18793dc",
-      "project": {
-        "category_id": 1,
-        "description": "This project is amazing",
-        "name": "My Project Type",
-        "tutorial": "Do stuff"
-      },
-      "task": null
-    }
-  ]
-}
-```
-
-### Add a template
-
-Add a template for the user by posting the form in the above response.
-
-```html
-POST /libcrowds/users/\<name\>/templates
-```
-
-```json
-{
-  "flash": "Project template created",
-  "next": "/libcrowds/users/tester/templates/12865546-8064-41c8-9be0-1d4f9b5a3182",
-  "status": "success"
-}
-```
-
-### Get a template
-
-Get a template by ID for the owner.
-
-```html
-GET /libcrowds/users/<name>/templates/<tmpl_id>
-```
-
-```json
-{
-  "template": {
-    "id": "37577f77-fad5-474f-af47-a8a9b2c150eb",
-    "project": {
-      "category_id": 1,
-      "description": "This project is amazing",
-      "name": "My Project Type",
-      "tutorial": "Do stuff"
-    },
-    "task": null
-  }
-}
-```
-
-### Update template project data
-
-Update the core project template data.
-
-```html
-POST /libcrowds/users/<name>/templates/<tmpl_id>
-```
-
-```json
-
-```
-
-
-### Get the template task data
-
-Update the task data for a template.
-
-```html
-GET /libcrowds/users/<name>/templates/<tmpl_id>/task
-```
-
-```json
-
-```
-
-### Update template project data
-
-Update the project data for a template.
-
-```html
-GET /libcrowds/users/<name>/templates/<tmpl_id>/project
-```
-
-```json
-
 ```
