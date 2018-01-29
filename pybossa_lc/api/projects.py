@@ -124,24 +124,26 @@ def new(category_short_name):
     if not form.parent_id.data:
         del form.parent_id
 
-    project_origins = get_project_origins(projects)
+    built_templates = get_built_templates(category)
 
     if request.method == 'POST' and form.validate():
         tmpl = [t for t in templates if t['id'] == form.template_id.data][0]
         volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
         handle_valid_project_form(form, tmpl, volume, category,
-                                  project_origins)
+                                  built_templates)
 
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')
 
+    valid_parent_ids = get_valid_parent_project_ids(category)
     response = dict(form=form, templates=templates, volumes=volumes,
-                    project_origins=project_origins)
+                    built_templates=built_templates,
+                    valid_parent_ids=valid_parent_ids)
     return handle_content_type(response)
 
 
 def handle_valid_project_form(form, template, volume, category,
-                              project_origins):
+                              built_templates):
     """Handle a seemingly valid project form."""
     presenter = category.info.get('presenter')
     task = template['task']
@@ -169,7 +171,7 @@ def handle_valid_project_form(form, template, volume, category,
         validate_parent(form.parent_id.data, presenter)
 
     # Check for similar projects
-    if volume['id'] in project_origins[template['id']]:
+    if volume['id'] in built_templates[template['id']]:
         err_msg = "A project already exists for that volume and template."
         flash(err_msg, 'error')
         return
@@ -218,14 +220,46 @@ def handle_valid_project_form(form, template, volume, category,
         return redirect_content_type(url_for('home.home'))
 
 
-def get_project_origins(projects):
+def get_built_templates(category):
     """Get dict of templates against volumes for all current projects."""
-    current_projects = {}
+    templates = templates_cache.get_by_category_id(category.id)
+    built_templates = {tmpl['id']: [] for tmpl in templates}
+    projects = project_repo.filter_by(category_id=category.id)
     for p in projects:
         tmpl_id = p.info.get('template_id')
         vol_id = p.info.get('volume_id')
-        if tmpl_id and vol_id:
-            tmpl_vols = current_projects.get(tmpl_id, [])
-            tmpl_vols.append(vol_id)
-            current_projects[tmpl_id] = tmpl_vols
-    return current_projects
+        if tmpl_id and vol_id and tmpl_id in built_templates.keys():
+            tmpl_vols = built_templates.get(tmpl_id, [])
+            if vol_id not in tmpl_vols:
+                tmpl_vols.append(vol_id)
+                built_templates[tmpl_id] = tmpl_vols
+    return built_templates
+
+
+def get_valid_parent_project_ids(category):
+    """Return a list of IDs for valid parent projects for the category."""
+    valid_project_ids = []
+    projects = project_repo.filter_by(category_id=category.id)
+    presenter = category.info.get('presenter')
+    if presenter == 'iiif-annotation':
+        for p in projects:
+            parent_tmpl_id = p.info.get('template_id')
+            if not parent_tmpl_id:
+                continue
+
+            parent_tmpl = templates_cache.get_by_id(parent_tmpl_id)
+            if not parent_tmpl or not parent_tmpl['task']:
+                continue
+
+            parent_task = parent_tmpl['task']
+            if not parent_task.get('mode') == 'select':
+                continue
+
+            results = result_repo.filter_by(project_id=p.id)
+            empty_results = [r for r in results if not r.info]
+            incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
+                                                         project_id=p.id)
+
+            if not empty_results and not incomplete_tasks:
+                valid_project_ids.append(p.id)
+    return valid_project_ids
