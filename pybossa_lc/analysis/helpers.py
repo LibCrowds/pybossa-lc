@@ -5,6 +5,7 @@ import math
 import numpy
 import string
 import pandas
+from titlecase import titlecase
 from rq import Queue
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail
@@ -131,7 +132,7 @@ def normalise_transcription(value, rules):
 
     normalised = value
     if rules.get('case') == 'title':
-        normalised = normalised.title()
+        normalised = titlecase(normalised)
     elif rules.get('case') == 'lower':
         normalised = normalised.lower()
     elif rules.get('case') == 'upper':

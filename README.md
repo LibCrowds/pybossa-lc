@@ -23,6 +23,8 @@ reference.
 cd /path/to/pybossa/pybossa/plugins
 git clone https://github.com/LibCrowds/pybossa-lc
 cp -r pybossa-lc/pybossa_lc pybossa_lc
+cd pybossa-lc
+pip install -r requirements.txt
 ```
 
 The plugin will be available after you restart the server.
@@ -42,7 +44,7 @@ vagrant ssh
 # setup pybossa-lc
 git clone https://github.com/LibCrowds/pybossa-lc
 cd pybossa-lc
-pip install -r test_requirements.txt
+pip install -r requirements.txt
 
 # test
 nosetests test/
