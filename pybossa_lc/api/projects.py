@@ -124,19 +124,24 @@ def new(category_short_name):
     if not form.parent_id.data:
         del form.parent_id
 
+    project_origins = get_project_origins(projects)
+
     if request.method == 'POST' and form.validate():
         tmpl = [t for t in templates if t['id'] == form.template_id.data][0]
         volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
-        handle_valid_project_form(form, tmpl, volume, category)
+        handle_valid_project_form(form, tmpl, volume, category,
+                                  project_origins)
 
     elif request.method == 'POST':
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, templates=templates, volumes=volumes)
+    response = dict(form=form, templates=templates, volumes=volumes,
+                    project_origins=project_origins)
     return handle_content_type(response)
 
 
-def handle_valid_project_form(form, template, volume, category):
+def handle_valid_project_form(form, template, volume, category,
+                              project_origins):
     """Handle a seemingly valid project form."""
     presenter = category.info.get('presenter')
     task = template['task']
@@ -164,15 +169,13 @@ def handle_valid_project_form(form, template, volume, category):
         validate_parent(form.parent_id.data, presenter)
 
     # Check for similar projects
-    existing_project = project_repo.filter_by(short_name=short_name)
-    if existing_project:
-        err_msg = "A project already exists with that short name."
+    if volume['id'] in project_origins[template['id']]:
+        err_msg = "A project already exists for that volume and template."
         flash(err_msg, 'error')
         return
 
     # Create
-    webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root,
-                                                  presenter)
+    webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root, presenter)
     project = Project(name=name,
                       short_name=short_name,
                       description=template['project']['description'],
@@ -213,3 +216,16 @@ def handle_valid_project_form(form, template, volume, category):
         project.published = True
         project_repo.save(project)
         return redirect_content_type(url_for('home.home'))
+
+
+def get_project_origins(projects):
+    """Get dict of templates against volumes for all current projects."""
+    current_projects = {}
+    for p in projects:
+        tmpl_id = p.info.get('template_id')
+        vol_id = p.info.get('volume_id')
+        if tmpl_id and vol_id:
+            tmpl_vols = current_projects.get(tmpl_id, [])
+            tmpl_vols.append(vol_id)
+            current_projects[tmpl_id] = tmpl_vols
+    return current_projects
