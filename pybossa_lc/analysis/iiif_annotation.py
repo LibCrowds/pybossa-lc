@@ -233,6 +233,7 @@ def analyse(result_id):
                 final_transcriptions.append(item['annotation'])
             elif task.n_answers < 10:  # update required answers otherwise
                 task.n_answers = task.n_answers + 1
+                task.state = "ongoing"
                 task_repo.update(task)
                 result.last_version = False
 
