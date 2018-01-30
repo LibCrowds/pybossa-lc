@@ -6,7 +6,7 @@ import numpy
 import string
 import pandas
 from titlecase import titlecase
-from pybossa.jobs import send_mail
+from pybossa.jobs import send_mail, project_export
 
 
 def drop_keys(task_run_df, keys):
@@ -78,6 +78,7 @@ def analyse_all(analysis_func, project_id):
             '''.format(project.name)
     }
     send_mail(msg)
+    project_export(project.id)
 
 
 def analyse_empty(analysis_func, project_id):
@@ -97,6 +98,7 @@ def analyse_empty(analysis_func, project_id):
             '''.format(project.name)
     }
     send_mail(msg)
+    project_export(project.id)
 
 
 def get_analysis_rules(project_id):
