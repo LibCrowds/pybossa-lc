@@ -17,15 +17,17 @@ def analyse(result_id):
     # Update old method of verification
     if result.info == 'Unverified':
         result.info = {}
-        result.last_version = False
 
-    # Fix any bad headers from previous analysis module
-    if result.info and 'oclc-option' in result.info:
-        result.info['control_number'] = result.info.pop('oclc-option')
-    if result.info and 'shelfmark-option' in result.info:
-        result.info['reference'] = result.info.pop('shelfmark-option')
-    if result.info and 'comments-option' in result.info:
-        result.info['comments'] = result.info.pop('comments-option')
+    # Fix any bad keys from previous analysis module
+    old_keys = ['oclc-option', 'shelfmark-option', 'comments-option']
+    if result.info and any(key in result.info for key in old_keys):
+        if 'oclc-option' in result.info:
+            result.info['control_number'] = result.info.pop('oclc-option')
+        if 'shelfmark-option' in result.info:
+            result.info['reference'] = result.info.pop('shelfmark-option')
+        if 'comments-option' in result.info:
+            result.info['comments'] = result.info.pop('comments-option')
+        result_repo.update(result)
 
     # Don't update if info field populated (ie. answer already verified)
     if result.info:
