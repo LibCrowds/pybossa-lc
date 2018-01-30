@@ -6,7 +6,7 @@ import numpy
 import string
 import pandas
 from titlecase import titlecase
-from pybossa.jobs import send_mail, project_export
+from pybossa.jobs import project_export
 
 
 def drop_keys(task_run_df, keys):
@@ -69,15 +69,6 @@ def analyse_all(analysis_func, project_id):
     results = result_repo.filter_by(project_id=project_id)
     for result in results:
         analysis_func(result.id)
-
-    msg = {
-        'recipients': [project.owner.email_addr],
-        'subject': 'Analysis complete',
-        'body': u'''
-            All results for {} have been analysed.
-            '''.format(project.name)
-    }
-    send_mail(msg)
     project_export(project.id)
 
 
@@ -89,15 +80,6 @@ def analyse_empty(analysis_func, project_id):
     empty_results = [r for r in results if not r.info]
     for result in empty_results:
         analysis_func(result.id)
-
-    msg = {
-        'recipients': [project.owner.email_addr],
-        'subject': 'Analysis of all empty results complete',
-        'body': u'''
-            All empty results for {} have been analysed.
-            '''.format(project.name)
-    }
-    send_mail(msg)
     project_export(project.id)
 
 
