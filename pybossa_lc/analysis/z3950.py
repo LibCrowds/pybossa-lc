@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """Z39.50 analysis module."""
 
+import copy
 from . import helpers
 
 
@@ -16,17 +17,18 @@ def analyse(result_id):
 
     # Update old method of verification
     if result.info == 'Unverified':
+        print 'remove unverified from {}'.format(result.id)
         result.info = {}
 
     # Fix any bad keys from previous analysis module
     old_keys = ['oclc-option', 'shelfmark-option', 'comments-option']
     if result.info and any(key in result.info for key in old_keys):
-        if 'oclc-option' in result.info:
-            result.info['control_number'] = result.info.pop('oclc-option')
-        if 'shelfmark-option' in result.info:
-            result.info['reference'] = result.info.pop('shelfmark-option')
-        if 'comments-option' in result.info:
-            result.info['comments'] = result.info.pop('comments-option')
+        new_info = {
+            'control_number': result.info.pop('oclc-option', ''),
+            'reference': result.info.pop('shelfmark-option', ''),
+            'comments': result.info.pop('comments-option', '')
+        }
+        result.info = new_info
         result_repo.update(result)
 
     # Don't update if info field populated (ie. answer already verified)
@@ -82,6 +84,7 @@ def analyse(result_id):
     elif has_answers:
         result.last_version = False
 
+    print 'set answer for {}'.format(result.id)
     result_repo.update(result)
     results_cache.clear_cache()
 

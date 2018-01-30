@@ -263,9 +263,12 @@ class TestZ3950Analysis(Test):
         }
         # Also making sure that the verified answer is not replaced
         verified_answer = {
-            'oclc-option': '',
-            'shelfmark-option': '',
-            'comments-option': 'some comment'
+            'oclc-option': '789',
+            'oclc': '',
+            'shelfmark-option': 'baz',
+            'shelfmark': '',
+            'comments-option': 'some comment',
+            'comments': 'some comment'
         }
         TaskRunFactory.create_batch(n_answers, task=task, info=answer)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
@@ -274,7 +277,7 @@ class TestZ3950Analysis(Test):
         z3950.analyse(result.id)
         assert_equal(result.last_version, True)
         assert_dict_equal(result.info, {
-            'control_number': '',
-            'reference': '',
+            'control_number': '789',
+            'reference': 'baz',
             'comments': 'some comment'
         })
