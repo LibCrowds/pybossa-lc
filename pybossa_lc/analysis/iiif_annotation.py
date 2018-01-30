@@ -12,6 +12,7 @@ from . import helpers
 
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
 MERGE_RATIO = 0.5
+N_MATCHING_TRANSCRIPTIONS = 2
 
 
 def get_overlap_ratio(r1, r2):
@@ -229,12 +230,11 @@ def analyse(result_id):
             if rules and rules.get('target_from_select_parent'):
                 set_target_from_selection_parent(item['annotation'], task)
 
-            if item['count'] >= 2:  # 2 matching transcriptions required
+            # Save matching transcriptions or ask for another answer
+            if item['count'] >= N_MATCHING_TRANSCRIPTIONS:
                 final_transcriptions.append(item['annotation'])
-            elif task.n_answers < 10:  # update required answers otherwise
-                task.n_answers = task.n_answers + 1
-                task.state = "ongoing"
-                task_repo.update(task)
+            else:
+                helpers.update_n_answers_required(task)
                 result.last_version = False
 
     # Set result

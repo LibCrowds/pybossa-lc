@@ -148,3 +148,17 @@ def normalise_transcription(value, rules):
     if rules.get('trim_punctuation'):
         normalised = normalised.strip(string.punctuation)
     return normalised
+
+
+def update_n_answers_required(task, max_answers=10):
+    """Update number of answers required for a task, if already completed."""
+    from pybossa.core import task_repo
+    task_runs = task_repo.filter_task_runs_by(task_id=task.id)
+    n_task_runs = len(task_runs)
+    if task.n_answers < max_answers:
+        task.state = "ongoing"
+        if n_task_runs >= task.n_answers:
+            task.n_answers = task.n_answers + 1
+    else:
+        task.state = "completed"
+    task_repo.update(task)

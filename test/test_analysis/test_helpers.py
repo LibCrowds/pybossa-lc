@@ -145,3 +145,34 @@ class TestAnalysisHelpers(Test):
         rules = dict(trim_punctuation=True)
         norm = helpers.normalise_transcription(':Oh, a word.', rules)
         assert_equal(norm, 'Oh, a word')
+
+    @with_context
+    def test_n_answers_increased_when_task_complete(self):
+        """Test n answers required for a task is updated."""
+        n_original_answers = 1
+        task = TaskFactory.create(n_answers=n_original_answers)
+        TaskRunFactory.create(task=task)
+        helpers.update_n_answers_required(task)
+        print task.n_answers
+        assert_equal(task.n_answers, n_original_answers + 1)
+        assert_equal(task.state, 'ongoing')
+
+    @with_context
+    def test_n_answers_not_increased_when_still_task_runs(self):
+        """Test n answers not updated when task runs still required."""
+        n_original_answers = 2
+        task = TaskFactory.create(n_answers=n_original_answers)
+        TaskRunFactory.create(task=task)
+        helpers.update_n_answers_required(task)
+        assert_equal(task.n_answers, n_original_answers)
+        assert_equal(task.state, 'ongoing')
+
+    @with_context
+    def test_n_answers_not_increased_when_max_answers_reached(self):
+        """Test n answers not updated when max answers reached."""
+        n_original_answers = 3
+        task = TaskFactory.create(n_answers=n_original_answers)
+        TaskRunFactory.create_batch(n_original_answers, task=task)
+        helpers.update_n_answers_required(task, max_answers=n_original_answers)
+        assert_equal(task.n_answers, n_original_answers)
+        assert_equal(task.state, 'completed')
