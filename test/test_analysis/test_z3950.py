@@ -207,3 +207,74 @@ class TestZ3950Analysis(Test):
             'reference': 'Or.123.456',
             'comments': ''
         })
+
+    @with_context
+    def test_result_not_auto_updated_if_info_field_already_populated(self):
+        """Test that a result is not updated if the info field is not empty."""
+        project = ProjectFactory.create()
+        n_answers = 3
+        task = TaskFactory.create(n_answers=n_answers, project=project)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'control_number': '123',
+            'reference': 'abc',
+            'comments': ''
+        })
+        original_answer = {
+            'control_number': '789',
+            'reference': 'foo',
+            'comments': 'bar'
+        }
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        result.info = original_answer
+        self.result_repo.update(result)
+        z3950.analyse(result.id)
+        assert_equal(result.last_version, True)
+        assert_dict_equal(result.info, original_answer)
+
+    @with_context
+    def test_old_unverified_key_cleared(self):
+        """Test that the old Unverified key is cleared."""
+        project = ProjectFactory.create()
+        n_answers = 3
+        task = TaskFactory.create(n_answers=n_answers, project=project)
+        answer = {
+            'control_number': '123',
+            'reference': 'abc',
+            'comments': ''
+        }
+        TaskRunFactory.create_batch(n_answers, task=task, info=answer)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        result.info = 'Unverified'
+        self.result_repo.update(result)
+        z3950.analyse(result.id)
+        assert_equal(result.last_version, True)
+        assert_dict_equal(result.info, answer)
+
+    @with_context
+    def test_bad_headers_from_old_module_fixed(self):
+        """Test that bad headers from the old analysis module are fixed."""
+        project = ProjectFactory.create()
+        n_answers = 3
+        task = TaskFactory.create(n_answers=n_answers, project=project)
+        answer = {
+            'oclc': '123',
+            'shelfmark': 'foo',
+            'comments': 'bar'
+        }
+        # Also making sure that the verified answer is not replaced
+        verified_answer = {
+            'oclc-option': '',
+            'shelfmark-option': '',
+            'comments-option': 'some comment'
+        }
+        TaskRunFactory.create_batch(n_answers, task=task, info=answer)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        result.info = verified_answer
+        self.result_repo.update(result)
+        z3950.analyse(result.id)
+        assert_equal(result.last_version, True)
+        assert_dict_equal(result.info, {
+            'control_number': '',
+            'reference': '',
+            'comments': 'some comment'
+        })

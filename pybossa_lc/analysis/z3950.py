@@ -14,6 +14,23 @@ def analyse(result_id):
     from ..cache import results as results_cache
     result = result_repo.get(result_id)
 
+    # Update old method of verification
+    if result.info == 'Unverified':
+        result.info = {}
+        result.last_version = False
+
+    # Fix any bad headers from previous analysis module
+    if result.info and 'oclc-option' in result.info:
+        result.info['control_number'] = result.info.pop('oclc-option')
+    if result.info and 'shelfmark-option' in result.info:
+        result.info['reference'] = result.info.pop('shelfmark-option')
+    if result.info and 'comments-option' in result.info:
+        result.info['comments'] = result.info.pop('comments-option')
+
+    # Don't update if info field populated (ie. answer already verified)
+    if result.info:
+        return
+
     # Filter the valid task run keys
     df = helpers.get_task_run_df(result.task_id)
     df = df.loc[:, df.columns.isin(VALID_KEYS)]
@@ -26,6 +43,9 @@ def analyse(result_id):
 
     # Initialise the result with empty values
     result.info = {k: "" for k in df.keys()}
+
+    # Assume last version for now
+    result.last_version = True
 
     # Check for any comments (which might signify further checks required)
     if not helpers.drop_empty_rows(df['comments']).empty:
