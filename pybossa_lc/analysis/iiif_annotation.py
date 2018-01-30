@@ -3,14 +3,10 @@
 
 import datetime
 import itertools
-from pybossa.core import sentinel
-from pybossa.jobs import send_mail
-from rq import Queue
 
 from . import helpers
 
 
-MAIL_QUEUE = Queue('email', connection=sentinel.master)
 MERGE_RATIO = 0.5
 N_MATCHING_TRANSCRIPTIONS = 2
 
