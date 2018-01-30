@@ -71,7 +71,7 @@ def analyse_all(analysis_func, project_id):
         analysis_func(result.id)
 
     msg = {
-        'recipients': project.owner.email_addr,
+        'recipients': [project.owner.email_addr],
         'subject': 'Analysis complete',
         'body': u'''
             All results for {} have been analysed.
@@ -91,7 +91,7 @@ def analyse_empty(analysis_func, project_id):
         analysis_func(result.id)
 
     msg = {
-        'recipients': project.owner.email_addr,
+        'recipients': [project.owner.email_addr],
         'subject': 'Analysis of all empty results complete',
         'body': u'''
             All empty results for {} have been analysed.
