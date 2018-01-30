@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 """Z39.50 analysis module."""
 
-import copy
 from . import helpers
 
 
