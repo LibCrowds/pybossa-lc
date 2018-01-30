@@ -6,12 +6,7 @@ import numpy
 import string
 import pandas
 from titlecase import titlecase
-from rq import Queue
-from pybossa.core import sentinel
 from pybossa.jobs import send_mail
-
-
-MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
 
 def drop_keys(task_run_df, keys):
@@ -82,7 +77,7 @@ def analyse_all(analysis_func, project_id):
             All results for {} have been analysed.
             '''.format(project.name)
     }
-    MAIL_QUEUE.enqueue(send_mail, msg)
+    send_mail(msg)
 
 
 def analyse_empty(analysis_func, project_id):
@@ -101,7 +96,7 @@ def analyse_empty(analysis_func, project_id):
             All empty results for {} have been analysed.
             '''.format(project.name)
     }
-    MAIL_QUEUE.enqueue(send_mail, msg)
+    send_mail(msg)
 
 
 def get_analysis_rules(project_id):
