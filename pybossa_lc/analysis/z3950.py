@@ -17,16 +17,23 @@ def analyse(result_id):
 
     # Update old method of verification
     if result.info == 'Unverified':
-        print 'remove unverified from {}'.format(result.id)
         result.info = {}
 
     # Fix any bad keys from previous analysis module
-    old_keys = ['oclc-option', 'shelfmark-option', 'comments-option']
+    old_keys = ['oclc', 'shelfmark', 'oclc-option', 'shelfmark-option',
+                'comments-option']
     if result.info and any(key in result.info for key in old_keys):
+
+        def replace_old_key(old_key, new_key):
+            old = result.info.get(old_key)
+            old_analysed = result.info.get('{}-option'.format(old_key))
+            new = result.info.get(new_key)
+            return new if new else old_analysed if old_analysed else old
+
         new_info = {
-            'control_number': result.info.pop('oclc-option', ''),
-            'reference': result.info.pop('shelfmark-option', ''),
-            'comments': result.info.pop('comments-option', '')
+            'control_number': replace_old_key('oclc', 'control_number'),
+            'reference': replace_old_key('shelfmark', 'reference'),
+            'comments': replace_old_key('comments', 'comments'),
         }
         result.info = new_info
         result_repo.update(result)
@@ -39,7 +46,7 @@ def analyse(result_id):
     df = helpers.get_task_run_df(result.task_id)
     df = df.loc[:, df.columns.isin(VALID_KEYS)]
 
-    # Rename old specific keys
+    # Rename old keys from task runs
     df = df.rename(columns={
         'oclc': 'control_number',
         'shelfmark': 'reference'
@@ -84,7 +91,6 @@ def analyse(result_id):
     elif has_answers:
         result.last_version = False
 
-    print 'set answer for {}'.format(result.id)
     result_repo.update(result)
     results_cache.clear_cache()
 
