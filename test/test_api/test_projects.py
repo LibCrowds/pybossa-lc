@@ -136,7 +136,9 @@ class TestProjectsApi(web.Helper):
         self.user_repo.update(user)
 
         endpoint = '/libcrowds/projects/{}/new'.format(category.short_name)
-        form_data = dict(template_id=tmpl['id'],
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=tmpl['id'],
                          volume_id=vol['id'],
                          parent_id='')
         res = self.app_post_json(endpoint, data=form_data)
@@ -148,7 +150,7 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['volume_id'], vol['id'])
         assert_equal(project.description, tmpl['project']['description'])
         assert_equal(project.category_id, tmpl['project']['category_id'])
-        assert_equal(project.published, True)
+        assert_equal(project.published, False)
 
     @with_context
     @patch('pybossa_lc.api.projects.importer')
@@ -169,7 +171,9 @@ class TestProjectsApi(web.Helper):
         self.user_repo.update(user)
 
         endpoint = '/libcrowds/projects/{}/new'.format(category.short_name)
-        form_data = dict(template_id=tmpl['id'],
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=tmpl['id'],
                          volume_id=vol['id'],
                          parent_id='')
         res = self.app_post_json(endpoint, data=form_data)
@@ -181,4 +185,4 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['volume_id'], vol['id'])
         assert_equal(project.description, tmpl['project']['description'])
         assert_equal(project.category_id, tmpl['project']['category_id'])
-        assert_equal(project.published, True)
+        assert_equal(project.published, False)

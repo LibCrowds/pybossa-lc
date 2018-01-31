@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """Forms module for pybossa-lc."""
 
+from flask import current_app
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, validators
 from wtforms import IntegerField, FieldList, FormField, BooleanField
@@ -108,6 +109,22 @@ class ProjectForm(Form):
     volume_id = SelectField('Volume')
     template_id = SelectField('Template')
     parent_id = SelectField('Parent Project', coerce=int)
+    name_msg = ("Name is already taken. This might mean that a similar ",
+                "project has already been created")
+    name = TextField('Name',
+                     [validators.Required(),
+                      pb_validator.Unique(project_repo.get_by,
+                                          'name',
+                                          message=name_msg)])
+    sn_msg = ("Short name is already taken. This might mean that a similar ",
+              "project has already been created")
+    short_name = TextField('Short Name',
+                           [validators.Required(),
+                            pb_validator.NotAllowedChars(),
+                            pb_validator.Unique(project_repo.get_by,
+                                                'short_name',
+                                                message=sn_msg),
+                            pb_validator.ReservedName('project', current_app)])
 
 
 class VolumeForm(Form):

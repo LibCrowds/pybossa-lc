@@ -64,14 +64,6 @@ def validate_parent(parent_id, presenter):
     return True
 
 
-def get_name_and_shortname(template, volume):
-    """Create a name and shortname from the template and volume details."""
-    name = '{0}: {1}'.format(template['project']['name'], volume['name'])
-    badchars = r"([$#%·:,.~!¡?\"¿'=)(!&\/|]+)"
-    short_name = re.sub(badchars, '', name.lower().strip()).replace(' ', '_')
-    return name, short_name
-
-
 def _get_iiif_annotation_data(volume, template_id, parent_id):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
@@ -153,8 +145,6 @@ def handle_valid_project_form(form, template, volume, category,
         flash('The selected template is incomplete', 'error')
         return
 
-    name, short_name = get_name_and_shortname(template, volume)
-
     # Get the task import data
     parent_id = form.parent_id.data if form.parent_id else None
     import_data = {}
@@ -180,8 +170,8 @@ def handle_valid_project_form(form, template, volume, category,
 
     # Create
     webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root, presenter)
-    project = Project(name=name,
-                      short_name=short_name,
+    project = Project(name=form.name.data,
+                      short_name=form.short_name.data,
                       description=template['project']['description'],
                       long_description='',
                       owner_id=current_user.id,
@@ -217,8 +207,6 @@ def handle_valid_project_form(form, template, volume, category,
     if success:
         auditlogger.add_log_entry(None, project, current_user)
         task_repo.update_tasks_redundancy(project, 3)
-        project.published = True
-        project_repo.save(project)
         return redirect_content_type(url_for('home.home'))
 
 
