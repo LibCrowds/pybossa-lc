@@ -6,11 +6,10 @@ import json
 from flask import Response, Blueprint, flash, request, abort, current_app
 from flask import jsonify
 from flask.ext.login import login_required, current_user
-from rq import Queue
 from pybossa.core import csrf, project_repo
 from pybossa.model.project import Project
 from pybossa.auth import ensure_authorized_to
-from pybossa.core import importer, sentinel
+from pybossa.core import importer
 from pybossa.core import auditlog_repo, task_repo, result_repo
 from pybossa.importers import BulkImportException
 from pybossa.util import handle_content_type, redirect_content_type, url_for
@@ -18,6 +17,7 @@ from pybossa.default_settings import TIMEOUT
 from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
 from wtforms import TextField
+from pybossa.jobs import enqueue_job
 
 from ..forms import *
 from ..cache import templates as templates_cache
@@ -26,8 +26,6 @@ from ..cache import templates as templates_cache
 auditlogger = AuditLogger(auditlog_repo, caller='web')
 BLUEPRINT = Blueprint('projects', __name__)
 MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 300
-IMPORT_QUEUE = Queue('medium', connection=sentinel.master,
-                     default_timeout=TIMEOUT)
 
 
 def _import_tasks(project, **import_data):
@@ -36,7 +34,12 @@ def _import_tasks(project, **import_data):
     if n_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
         importer.create_tasks(task_repo, project.id, **import_data)
     else:
-        IMPORT_QUEUE.enqueue(import_tasks, project.id, **import_data)
+        job = dict(name=import_tasks,
+                   args=[project.id],
+                   kwargs=import_data,
+                   timeout=current_app.config.get('TIMEOUT'),
+                   queue='medium')
+        enqueue_job(job)
         return '''The project is being generated with a large amount of tasks.
             You will recieve an email when the process is complete.'''
     plural = 's' if n_tasks != 1 else ''

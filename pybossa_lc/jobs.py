@@ -1,12 +1,11 @@
 # -*- coding: utf8 -*-
 """Jobs module for pybossa-lc."""
 
-from rq import Queue
 from flask import current_app
-from pybossa.core import sentinel
 from pybossa.core import project_repo, announcement_repo
 from pybossa.cache.projects import overall_progress
 from pybossa.model.announcement import Announcement
+from pybossa.jobs import enqueue_job
 
 from .cache import templates as templates_cache
 
@@ -16,10 +15,15 @@ PROJECT_TMPL_ENDPOINT = '/admin/project/{}/template'
 
 def queue_startup_jobs():
     """Queue startup jobs."""
-    timeout = current_app.config.get('TIMEOUT')
-    redis_conn = sentinel.master
-    queue = Queue('low', connection=redis_conn)
-    queue.enqueue_call(func=check_for_missing_templates, timeout=timeout)
+    jobs = [
+        dict(name=check_for_missing_templates,
+             args=[],
+             kwargs={},
+             timeout=current_app.config.get('TIMEOUT'),
+             queue='high')
+    ]
+    for job in jobs:
+        enqueue_job(job)
 
 
 def check_for_missing_templates():

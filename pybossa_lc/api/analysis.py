@@ -2,11 +2,11 @@
 """API analysis module for pybossa-lc."""
 
 import json
-from rq import Queue
 from flask import Blueprint, request, current_app, abort, make_response
-from pybossa.core import sentinel, csrf
+from pybossa.core import csrf
 from pybossa.core import project_repo, result_repo
 from pybossa.auth import ensure_authorized_to
+from pybossa.jobs import enqueue_job
 
 from ..analysis import z3950, iiif_annotation
 
@@ -26,13 +26,6 @@ def respond(msg, **kwargs):
     return response
 
 
-def queue_job(job, timeout, **kwargs):
-    """Add an analysis job to the queue."""
-    redis_conn = sentinel.master
-    queue = Queue('low', connection=redis_conn)
-    queue.enqueue(job, timeout=timeout, **kwargs)
-
-
 def analyse_all(short_name, func):
     """Queue analysis of all results.
 
@@ -43,7 +36,12 @@ def analyse_all(short_name, func):
         abort(404)
 
     ensure_authorized_to('update', project)
-    queue_job(func, 12 * HOUR, project_id=project.id)
+    job = dict(name=func,
+               args=[],
+               kwargs={'project_id': project.id},
+               timeout=current_app.config.get('TIMEOUT'),
+               queue='high')
+    enqueue_job(job)
     return respond('All results added to job queue',
                    project_short_name=project.short_name)
 
@@ -72,8 +70,12 @@ def analyse_single(payload, func):
     result = result_repo.get(payload['result_id'])
     if result.info:
         ensure_authorized_to('update', result)
-
-    queue_job(func, 10 * MINUTE, result_id=result.id)
+    job = dict(name=func,
+               args=[],
+               kwargs={ 'result_id': result.id },
+               timeout=current_app.config.get('TIMEOUT'),
+               queue='high')
+    enqueue_job(job)
     return respond('Result added to job queue', result_id=result.id,
                    project_short_name=payload['project_short_name'])
 
