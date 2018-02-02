@@ -23,17 +23,17 @@ def queue_startup_jobs():
 
 
 def check_for_missing_templates():
-        """Make an announcement if any projects are missing templates."""
-        projects = project_repo.get_all()
-        templates = templates_cache.get_all()
-        template_ids = [tmpl['id'] for tmpl in templates]
-        for project in projects:
-            project_tmpl_id = project.info.get('template_id')
-            if not project_tmpl_id or project_tmpl_id not in template_ids:
-                body = 'Set a valid template for {}'.format(project.name)
-                endpoint = PROJECT_TMPL_ENDPOINT.format(project.short_name)
-                url = get_launch_url(endpoint)
-                make_announcement('Missing Template', body, url, admin=True)
+    """Make an announcement if any projects are missing templates."""
+    projects = project_repo.get_all()
+    templates = templates_cache.get_all()
+    template_ids = [tmpl['id'] for tmpl in templates]
+    for project in projects:
+        project_tmpl_id = project.info.get('template_id')
+        if not project_tmpl_id or project_tmpl_id not in template_ids:
+            body = 'Set a valid template for {}'.format(project.name)
+            endpoint = PROJECT_TMPL_ENDPOINT.format(project.short_name)
+            url = get_launch_url(endpoint)
+            make_announcement('Missing Template', body, url, admin=True)
 
 
 def make_announcement(title, body, url, media_url=None, admin=False):
