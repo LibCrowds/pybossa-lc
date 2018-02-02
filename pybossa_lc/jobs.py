@@ -34,10 +34,10 @@ def check_for_missing_templates():
     for project in projects:
         project_tmpl_id = project.info.get('template_id')
         if not project_tmpl_id or project_tmpl_id not in template_ids:
-            body = 'Set a valid template for {}'.format(project.name)
             endpoint = PROJECT_TMPL_ENDPOINT.format(project.short_name)
             url = get_launch_url(endpoint)
-            make_announcement('Missing Template', body, url, admin=True)
+            make_announcement('Missing Template', project.name, url,
+                              admin=True)
 
 
 def make_announcement(title, body, url, media_url=None, admin=False):
