@@ -168,7 +168,6 @@ def update_selector(anno, rect):
 
 def analyse(result_id):
     """Analyse a IIIF Annotation result."""
-    from ..cache import results as results_cache
     from pybossa.core import result_repo, task_repo
     result = result_repo.get(result_id)
     task = task_repo.get_task(result.task_id)
@@ -239,7 +238,6 @@ def analyse(result_id):
         info['annotations'] += clusters + final_transcriptions
     result.info = info
     result_repo.update(result)
-    results_cache.clear_cache()
 
 
 def analyse_all(project_id):

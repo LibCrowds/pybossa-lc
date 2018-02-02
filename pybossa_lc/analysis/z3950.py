@@ -11,7 +11,6 @@ VALID_KEYS = ['oclc', 'shelfmark', 'control_number', 'reference', 'comments']
 def analyse(result_id):
     """Analyse Z39.50 results."""
     from pybossa.core import result_repo
-    from ..cache import results as results_cache
     result = result_repo.get(result_id)
 
     # Update old method of verification
@@ -91,7 +90,6 @@ def analyse(result_id):
         result.last_version = False
 
     result_repo.update(result)
-    results_cache.clear_cache()
 
 
 def analyse_all(project_id):
