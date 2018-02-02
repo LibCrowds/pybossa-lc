@@ -106,19 +106,16 @@ def new(category_short_name):
     template_choices = [(t['id'], t['project']['name']) for t in templates]
     volume_choices = [(v['id'], v['name']) for v in volumes]
     parent_choices = [(p.id, p.name) for p in projects]
-    parent_choices.append(('None', 0))
+    parent_choices.append(('', 'None'))
+
     form = ProjectForm(request.body)
     form.template_id.choices = template_choices
     form.volume_id.choices = volume_choices
-    form.parent_id.choices = parent_choices
+    form.parent_id.choices += parent_choices
 
     built_templates = get_built_templates(category)
 
     if request.method == 'POST':
-        # Remove parent ID field if not set
-        if not form.parent_id.data:
-            del form.parent_id
-
         if form.validate():
             tmpl = [t for t in templates
                     if t['id'] == form.template_id.data][0]
@@ -146,7 +143,7 @@ def handle_valid_project_form(form, template, volume, category,
         return
 
     # Get the task import data
-    parent_id = form.parent_id.data if form.parent_id else None
+    parent_id = int(form.parent_id.data) if form.parent_id.data else None
     import_data = {}
     if presenter == 'z3950':
         import_data = _get_flickr_data(volume)

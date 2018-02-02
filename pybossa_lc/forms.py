@@ -108,7 +108,7 @@ class ProjectForm(Form):
     """A form for creating projects from templates."""
     volume_id = SelectField('Volume')
     template_id = SelectField('Template')
-    parent_id = SelectField('Parent Project', coerce=int)
+    parent_id = SelectField('Parent Project')
     name_msg = ("Name is already taken. This might mean that a similar ",
                 "project has already been created")
     name = TextField('Name',
