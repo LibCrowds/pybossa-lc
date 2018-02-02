@@ -109,15 +109,13 @@ class ProjectForm(Form):
     volume_id = SelectField('Volume')
     template_id = SelectField('Template')
     parent_id = SelectField('Parent Project')
-    name_msg = ("Name is already taken. This might mean that a similar ",
-                "project has already been created")
+    name_msg = "This name is already taken."
     name = TextField('Name',
                      [validators.Required(),
                       pb_validator.Unique(project_repo.get_by,
                                           'name',
                                           message=name_msg)])
-    sn_msg = ("Short name is already taken. This might mean that a similar ",
-              "project has already been created")
+    sn_msg = "This short name is already taken."
     short_name = TextField('Short Name',
                            [validators.Required(),
                             pb_validator.NotAllowedChars(),
