@@ -9,6 +9,8 @@ from .importers.iiif import BulkTaskIIIFImporter
 from pybossa.extensions import importer
 from pybossa.core import project_repo
 
+from .jobs import queue_startup_jobs
+
 __plugin__ = "PyBossaLC"
 __version__ = json.load(open(os.path.join(os.path.dirname(__file__),
                                           'info.json')))['version']
@@ -22,6 +24,7 @@ class PyBossaLC(Plugin):
         self.setup_blueprints()
         self.setup_iiif_importer()
         self.remove_bad_volumes()
+        queue_startup_jobs()
 
     def setup_blueprints(self):
         """Setup blueprints."""
