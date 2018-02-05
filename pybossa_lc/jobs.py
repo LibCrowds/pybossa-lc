@@ -23,7 +23,7 @@ def queue_startup_jobs():
              args=[],
              kwargs={},
              timeout=current_app.config.get('TIMEOUT'),
-             queue='high')
+             queue='medium')
     ]
     for job in jobs:
         enqueue_job(job)
