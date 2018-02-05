@@ -114,7 +114,7 @@ def new(category_short_name):
     form = ProjectForm(request.body)
     form.template_id.choices = template_choices
     form.volume_id.choices = volume_choices
-    form.parent_id.choices += parent_choices
+    form.parent_id.choices = parent_choices
 
     built_templates = get_built_templates(category)
 
