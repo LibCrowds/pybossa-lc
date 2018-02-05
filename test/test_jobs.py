@@ -65,6 +65,7 @@ class TestJobs(Test):
         category = CategoryFactory(info=dict(presenter='z3950'))
         project = ProjectFactory.create(category=category)
         task = TaskFactory.create(project=project, n_answers=1)
-        TaskRunFactory.create(task=task)
+        tr_info = dict(comments='', reference='', control_number='')
+        TaskRunFactory.create(task=task, info=tr_info)
         jobs.populate_empty_results()
         assert mock_analyse.called_once_with(project.id)
