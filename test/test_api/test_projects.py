@@ -78,14 +78,20 @@ class TestProjectsApi(web.Helper):
         assert not data
 
     @with_context
-    @patch('pybossa_lc.api.analysis.Queue.enqueue')
-    @patch('pybossa.core.importer.count_tasks_to_import', return_value=301)
+    @patch('pybossa_lc.api.projects.enqueue_job')
+    @patch('pybossa.core.importer.count_tasks_to_import')
     def test_task_import_queued_for_large_sets(self, mock_count, mock_enqueue):
         """Test that task imports are queued when over 300."""
+        mock_count.return_value = 301
         project = ProjectFactory.create()
-        data = dict(foo='bar')
-        projects_api._import_tasks(project, **data)
-        mock_enqueue.assert_called_with(import_tasks, project.id, **data)
+        import_data = dict(foo='bar')
+        projects_api._import_tasks(project, **import_data)
+        job = dict(name=projects_api.import_tasks,
+                   args=[project.id],
+                   kwargs=import_data,
+                   timeout=self.flask_app.config.get('TIMEOUT'),
+                   queue='medium')
+        mock_enqueue.assert_called_with(job)
 
     @with_context
     @patch('pybossa.core.importer.create_tasks')
