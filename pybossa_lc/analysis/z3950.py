@@ -50,6 +50,11 @@ def analyse(result_id):
         'shelfmark': 'reference'
     })
 
+    # Verify that the required columns exist
+    required_keys = ['control_number', 'reference', 'comments']
+    if not all(key in df for key in required_keys):
+        raise ValueError('Missing required keys')
+
     # Initialise the result with empty values
     result.info = {k: "" for k in df.keys()}
 
