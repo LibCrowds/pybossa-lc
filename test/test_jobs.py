@@ -56,10 +56,10 @@ class TestJobs(Test):
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
         jobs.populate_empty_results()
-        assert mock_analyse.called_once_with(project.id)
+        mock_analyse.assert_called_once_with(project.id)
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.analyse_empty')
+    @patch('pybossa_lc.analysis.z3950.analyse_empty')
     def test_populate_empty_z3950_results(self, mock_analyse):
         """Check that empty Z3950 results are analysed."""
         category = CategoryFactory(info=dict(presenter='z3950'))
@@ -68,4 +68,4 @@ class TestJobs(Test):
         tr_info = dict(comments='', reference='', control_number='')
         TaskRunFactory.create(task=task, info=tr_info)
         jobs.populate_empty_results()
-        assert mock_analyse.called_once_with(project.id)
+        mock_analyse.assert_called_once_with(project.id)
