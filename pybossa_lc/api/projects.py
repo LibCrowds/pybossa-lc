@@ -58,7 +58,7 @@ def validate_parent(parent_id, presenter):
         flash('Parent contains incomplete results', 'error')
         return False
 
-    incomplete_tasks = task_repo.filter_tasks_by(status='ongoing',
+    incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
                                                  project_id=parent_id)
     if incomplete_tasks:
         flash('Parent contains incomplete tasks', 'error')
