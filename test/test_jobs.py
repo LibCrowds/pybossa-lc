@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """Test background jobs."""
 
+from mock import patch
 from nose.tools import *
 from default import Test, db, with_context, flask_app
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
@@ -21,6 +22,7 @@ class TestJobs(Test):
 
     @with_context
     def test_empty_templates_identified(self):
+        """Check that empty templates are identified."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
@@ -44,3 +46,25 @@ class TestJobs(Test):
             'admin': True,
             'url': launch_url
         })
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.analyse_empty')
+    def test_populate_empty_iiif_annotation_results(self, mock_analyse):
+        """Check that empty IIIF Annotation results are analysed."""
+        category = CategoryFactory(info=dict(presenter='iiif-annotation'))
+        project = ProjectFactory.create(category=category)
+        task = TaskFactory.create(project=project, n_answers=1)
+        TaskRunFactory.create(task=task)
+        jobs.populate_empty_results()
+        assert mock_analyse.called_once_with(project.short_name)
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.analyse_empty')
+    def test_populate_empty_z3950_results(self, mock_analyse):
+        """Check that empty Z3950 results are analysed."""
+        category = CategoryFactory(info=dict(presenter='z3950'))
+        project = ProjectFactory.create(category=category)
+        task = TaskFactory.create(project=project, n_answers=1)
+        TaskRunFactory.create(task=task)
+        jobs.populate_empty_results()
+        assert mock_analyse.called_once_with(project.short_name)
