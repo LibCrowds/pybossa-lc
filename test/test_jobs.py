@@ -56,7 +56,7 @@ class TestJobs(Test):
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
         jobs.populate_empty_results()
-        assert mock_analyse.called_once_with(project.short_name)
+        assert mock_analyse.called_once_with(project.id)
 
     @with_context
     @patch('pybossa_lc.analysis.iiif_annotation.analyse_empty')
@@ -67,4 +67,4 @@ class TestJobs(Test):
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
         jobs.populate_empty_results()
-        assert mock_analyse.called_once_with(project.short_name)
+        assert mock_analyse.called_once_with(project.id)

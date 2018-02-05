@@ -54,9 +54,9 @@ def populate_empty_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             if presenter == 'iiif-annotation':
-                iiif_annotation.analyse_empty(project.short_name)
+                iiif_annotation.analyse_empty(project.id)
             elif presenter == 'z3950':
-                z3950.analyse_empty(project.short_name)
+                z3950.analyse_empty(project.id)
 
 
 def make_announcement(title, body, url, media_url=None, admin=False):
