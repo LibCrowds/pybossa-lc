@@ -12,8 +12,6 @@ from ..analysis import z3950, iiif_annotation
 
 
 BLUEPRINT = Blueprint('analysis', __name__)
-MINUTE = 60
-HOUR = 60 * MINUTE
 
 
 def respond(msg, **kwargs):
@@ -56,7 +54,12 @@ def analyse_empty(short_name, func):
         abort(404)
 
     ensure_authorized_to('update', project)
-    queue_job(func, 12 * HOUR, project_id=project.id)
+    job = dict(name=func,
+               args=[],
+               kwargs={'project_id': project.id},
+               timeout=current_app.config.get('TIMEOUT'),
+               queue='high')
+    enqueue_job(job)
     return respond('Empty results added to job queue',
                    project_short_name=project.short_name)
 
@@ -72,7 +75,7 @@ def analyse_single(payload, func):
         ensure_authorized_to('update', result)
     job = dict(name=func,
                args=[],
-               kwargs={ 'result_id': result.id },
+               kwargs={'result_id': result.id},
                timeout=current_app.config.get('TIMEOUT'),
                queue='high')
     enqueue_job(job)
