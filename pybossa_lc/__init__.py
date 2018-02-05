@@ -9,6 +9,7 @@ from .importers.iiif import BulkTaskIIIFImporter
 from pybossa.extensions import importer
 from pybossa.core import project_repo
 
+from . import default_settings
 from .jobs import queue_startup_jobs
 
 __plugin__ = "PyBossaLC"
@@ -21,10 +22,16 @@ class PyBossaLC(Plugin):
 
     def setup(self):
         """Setup plugin."""
+        self.configure()
         self.setup_blueprints()
         self.setup_iiif_importer()
         self.remove_bad_volumes()
         queue_startup_jobs()
+
+    def configure(self):
+        """Load configuration settings."""
+        app.config.from_object(default_settings)
+
 
     def setup_blueprints(self):
         """Setup blueprints."""
