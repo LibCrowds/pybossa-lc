@@ -26,6 +26,9 @@ def get_overlap_ratio(r1, r2):
     r2_area = r2['w'] * r2['h']
     union = r1_area + r2_area - intersection
 
+    if not union:
+        return 0
+
     overlap = float(intersection) / float(union)
     return overlap
 

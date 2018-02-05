@@ -40,6 +40,13 @@ class TestIIIFAnnotationAnalysis(Test):
         overlap = iiif_annotation.get_overlap_ratio(r1, r2)
         assert_equal('{:.2f}'.format(overlap), '0.33')
 
+    def test_overlap_ratio_where_union_is_zero(self):
+        """Test for an overlap ratio where the union is zero."""
+        r1 = {'x': 0, 'y': 0, 'w': 100, 'h': 100}
+        r2 = {'x': 101, 'y': 0, 'w': 100, 'h': 100}
+        overlap = iiif_annotation.get_overlap_ratio(r1, r2)
+        assert_equal(overlap, 0)
+
     def test_rect_from_selection(self):
         """Test that we get the correct rect."""
         coords = dict(x=400, y=200, w=100, h=150)
