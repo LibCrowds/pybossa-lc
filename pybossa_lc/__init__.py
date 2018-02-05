@@ -32,7 +32,6 @@ class PyBossaLC(Plugin):
         """Load configuration settings."""
         app.config.from_object(default_settings)
 
-
     def setup_blueprints(self):
         """Setup blueprints."""
         from .api.analysis import BLUEPRINT as analysis
