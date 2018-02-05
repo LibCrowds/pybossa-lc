@@ -12,6 +12,7 @@ from pybossa.repositories import AnnouncementRepository
 from pybossa_lc import jobs
 from .fixtures import TemplateFixtures
 
+
 class TestJobs(Test):
 
     def setUp(self):

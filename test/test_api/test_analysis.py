@@ -6,7 +6,7 @@ from mock import patch, call
 from helper import web
 from default import with_context, db
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
-from pybossa.repositories import ResultRepository
+from pybossa.repositories import ResultRepository, UserRepository
 
 from pybossa_lc.api import analysis as analysis_api
 from pybossa_lc.analysis import z3950, iiif_annotation
@@ -17,17 +17,13 @@ class TestAnalysisApi(web.Helper):
     def setUp(self):
         super(TestAnalysisApi, self).setUp()
         self.result_repo = ResultRepository(db)
+        self.user_repo = UserRepository(db)
 
     @with_context
-    @patch('pybossa_lc.api.analysis.Queue.enqueue')
-    def test_z930_endpoint(self, mock_enqueue):
-        """Test the correct functions are triggered for the Z39.50 endpoint."""
+    @patch('pybossa_lc.api.analysis.enqueue_job')
+    def test_z3950_single_result_analysed(self, mock_enqueue):
+        """Test analysis triggered for a single Z39.50 result."""
         endpoint = "/libcrowds/analysis/z3950"
-        res = self.app_get_json(endpoint)
-        data = json.loads(res.data)
-        msg = "The Z39.50 endpoint is listening..."
-        assert data['message'] == msg
-
         project = ProjectFactory.create()
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
@@ -40,24 +36,40 @@ class TestAnalysisApi(web.Helper):
             'task_id': task.id
         }
         self.app_post_json(endpoint, data=payload)
-        payload['all'] = 1
-        self.app_post_json(endpoint, data=payload)
-        calls = [
-            call(z3950.analyse, timeout=600, result_id=result.id),
-            call(z3950.analyse, timeout=600, project_id=project.id)
-        ]
-        mock_enqueue.has_calls(calls)
+        job = dict(name=z3950.analyse,
+                   args=[],
+                   kwargs={'result_id': result.id},
+                   timeout=self.flask_app.config.get('TIMEOUT'),
+                   queue='high')
+        mock_enqueue.assert_called_once_with(job)
 
     @with_context
-    @patch('pybossa_lc.api.analysis.Queue.enqueue')
-    def test_iiif_endpoint(self, mock_enqueue):
-        """Test the correct functions are triggered for the IIIF endpoint."""
-        endpoint = "/libcrowds/analysis/iiif-annotation"
-        res = self.app_get_json(endpoint)
-        data = json.loads(res.data)
-        msg = "The IIIF Annotation endpoint is listening..."
-        assert data['message'] == msg
+    @patch('pybossa_lc.api.analysis.enqueue_job')
+    def test_z3950_all_results_analysed(self, mock_enqueue):
+        """Test analysis triggered for all Z39.50 results."""
+        endpoint = "/libcrowds/analysis/z3950"
+        self.register()
+        owner = self.user_repo.get(1)
+        project = ProjectFactory.create(owner=owner)
+        payload = {
+            'event': 'task_completed',
+            'project_short_name': project.short_name,
+            'project_id': project.id,
+            'all': 1
+        }
+        self.app_post_json(endpoint, data=payload)
+        job = dict(name=z3950.analyse_all,
+                   args=[],
+                   kwargs={'project_id': project.id},
+                   timeout=self.flask_app.config.get('TIMEOUT'),
+                   queue='high')
+        mock_enqueue.assert_called_once_with(job)
 
+    @with_context
+    @patch('pybossa_lc.api.analysis.enqueue_job')
+    def test_iiif_annotation_single_result_analysed(self, mock_enqueue):
+        """Test analysis triggered for a single IIIF Annotation result."""
+        endpoint = "/libcrowds/analysis/iiif-annotation"
         project = ProjectFactory.create()
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
@@ -70,13 +82,34 @@ class TestAnalysisApi(web.Helper):
             'task_id': task.id
         }
         self.app_post_json(endpoint, data=payload)
-        payload['all'] = 1
+        job = dict(name=iiif_annotation.analyse,
+                   args=[],
+                   kwargs={'result_id': result.id},
+                   timeout=self.flask_app.config.get('TIMEOUT'),
+                   queue='high')
+        mock_enqueue.assert_called_once_with(job)
+
+    @with_context
+    @patch('pybossa_lc.api.analysis.enqueue_job')
+    def test_iiif_annotation_all_results_analysed(self, mock_enqueue):
+        """Test analysis triggered for all IIIF Annotation results."""
+        endpoint = "/libcrowds/analysis/iiif-annotation"
+        self.register()
+        owner = self.user_repo.get(1)
+        project = ProjectFactory.create(owner=owner)
+        payload = {
+            'event': 'task_completed',
+            'project_short_name': project.short_name,
+            'project_id': project.id,
+            'all': 1
+        }
         self.app_post_json(endpoint, data=payload)
-        calls = [
-            call(iiif_annotation.analyse, timeout=600, result_id=result.id),
-            call(iiif_annotation.analyse, timeout=600, project_id=project.id)
-        ]
-        mock_enqueue.has_calls(calls)
+        job = dict(name=iiif_annotation.analyse_all,
+                   args=[],
+                   kwargs={'project_id': project.id},
+                   timeout=self.flask_app.config.get('TIMEOUT'),
+                   queue='high')
+        mock_enqueue.assert_called_once_with(job)
 
     @with_context
     def test_response_message(self):
