@@ -146,6 +146,12 @@ class TestAnalysisHelpers(Test):
         norm = helpers.normalise_transcription(':Oh, a word.', rules)
         assert_equal(norm, 'Oh, a word')
 
+    def test_date_conversion(self):
+        """Test date conversion."""
+        rules = dict(date_format='%Y-%m-%d', dayfirst=True)
+        norm = helpers.normalise_transcription('12/11/1984', rules)
+        assert_equal(norm, '1984-11-12')
+
     @with_context
     def test_n_answers_increased_when_task_complete(self):
         """Test n answers required for a task is updated."""

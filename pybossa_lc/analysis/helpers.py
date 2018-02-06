@@ -5,6 +5,7 @@ import math
 import numpy
 import string
 import pandas
+import dateutil
 from titlecase import titlecase
 from pybossa.jobs import project_export
 
@@ -121,6 +122,14 @@ def normalise_transcription(value, rules):
         normalised = " ".join(normalised.split()).replace(' ', '_')
     elif rules.get('whitespace') == 'full_stop':
         normalised = " ".join(normalised.split()).replace(' ', '.')
+
+    if rules.get('date_format'):
+        dayfirst = rules.get('dayfirst', False)
+        yearfirst = rules.get('yearfirst', False)
+        date = dateutil.parser.parse(normalised, dayfirst=dayfirst,
+                                     yearfirst=yearfirst)
+        fmt = rules.get('date_format')
+        normalised = date.strftime(fmt)
 
     if rules.get('trim_punctuation'):
         normalised = normalised.strip(string.punctuation)
