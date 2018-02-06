@@ -27,7 +27,7 @@ def _get_export_form(method, form_data=None):
     form = ExportForm(**form_data)
 
     if method == 'POST':
-        for field in data.get('export_fields', []):
+        for field in form_data.get('export_fields', []):
             form.export_fields.append_entry(field)
     return form
 
