@@ -126,8 +126,11 @@ def normalise_transcription(value, rules):
     if rules.get('date_format'):
         dayfirst = rules.get('dayfirst', False)
         yearfirst = rules.get('yearfirst', False)
-        date = dateutil.parser.parse(normalised, dayfirst=dayfirst,
-                                     yearfirst=yearfirst)
+        try:
+            date = dateutil.parser.parse(normalised, dayfirst=dayfirst,
+                                         yearfirst=yearfirst)
+        except ValueError:
+            return ''
         fmt = rules.get('date_format')
         normalised = date.strftime(fmt)
 
