@@ -184,5 +184,5 @@ def data(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(export_formats=export_fmts, form=form)
+    response = dict(export_formats=export_fmts, templates=templates, form=form)
     return handle_content_type(response)
