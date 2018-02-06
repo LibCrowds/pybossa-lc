@@ -139,7 +139,7 @@ class ExportFieldForm(Form):
     """A form for adding a field to the volume level exports."""
     header = TextField('Header')
     value = TextField('Value')
-    template_id = SelectField('Template')
+    template_id = TextField('Template ID')
 
 
 class ExportForm(Form):
