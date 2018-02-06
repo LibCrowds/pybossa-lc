@@ -159,7 +159,7 @@ def update_volume(short_name, volume_id):
 
 @login_required
 @BLUEPRINT.route('/<short_name>/exports', methods=['GET', 'POST'])
-def data(short_name):
+def exports(short_name):
     """Setup volume level data exports."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
