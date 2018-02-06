@@ -101,11 +101,14 @@ def get_analysis_rules(project_id):
 
 def normalise_transcription(value, rules):
     """Normalise value according to the specified analysis rules."""
+    print 'Rules: {}'.format(rules)
     if not rules:
         return value
 
     normalised = value
+    print rules.get('case')
     if rules.get('case') == 'title':
+        print 'normalising to title case'
         normalised = titlecase(normalised)
     elif rules.get('case') == 'lower':
         normalised = normalised.lower()

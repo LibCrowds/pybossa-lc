@@ -30,7 +30,11 @@ class PyBossaLC(Plugin):
 
     def configure(self):
         """Load configuration settings."""
-        app.config.from_object(default_settings)
+        settings = [key for key in dir(default_settings) if key.isupper() and
+                    not key.startswith('#')]
+        for s in settings:
+            if not app.config.get(s):
+                app.config[s] = getattr(default_settings, s)
 
     def setup_blueprints(self):
         """Setup blueprints."""

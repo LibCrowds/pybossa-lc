@@ -13,20 +13,23 @@ from .analysis import z3950, iiif_annotation
 
 def queue_startup_jobs():
     """Queue startup jobs."""
-    jobs = [
-        dict(name=check_for_missing_templates,
-             args=[],
-             kwargs={},
-             timeout=current_app.config.get('TIMEOUT'),
-             queue='high'),
-        dict(name=populate_empty_results,
-             args=[],
-             kwargs={},
-             timeout=current_app.config.get('TIMEOUT'),
-             queue='medium')
-    ]
-    for job in jobs:
-        enqueue_job(job)
+    extra_startup_tasks = current_app.config.get('EXTRA_STARTUP_TASKS')
+    if extra_startup_tasks.get('check_for_missing_templates'):
+        enqueue_job({
+            'name' : check_for_missing_templates,
+            'args': [],
+            'kwargs': {},
+            'timeout': current_app.config.get('TIMEOUT'),
+            'queue': 'high'
+        })
+    if extra_startup_tasks.get('populate_empty_results'):
+        enqueue_job({
+            'name' : populate_empty_results,
+            'args': [],
+            'kwargs': {},
+            'timeout': current_app.config.get('TIMEOUT'),
+            'queue': 'medium'
+        })
 
 
 def check_for_missing_templates():
