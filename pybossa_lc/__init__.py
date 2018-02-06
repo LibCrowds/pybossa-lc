@@ -25,7 +25,6 @@ class PyBossaLC(Plugin):
         self.configure()
         self.setup_blueprints()
         self.setup_iiif_importer()
-        self.remove_bad_volumes()
         queue_startup_jobs()
 
     def configure(self):
@@ -54,27 +53,3 @@ class PyBossaLC(Plugin):
     def setup_iiif_importer(self):
         """Setup the IIIF manifest importer."""
         importer._importers['iiif-annotation'] = BulkTaskIIIFImporter
-
-    def remove_bad_volumes(self):
-        """Remove volumes that don't comply with the correct data structure."""
-        if app.config.get('TESTING'):
-            return
-
-        categories = project_repo.get_all_categories()
-        required_keys = ['id', 'name', 'source']
-        for category in categories:
-            if not isinstance(category.info, dict):
-                category.info = {}
-
-            volumes = category.info.get('volumes', [])
-            if not isinstance(volumes, list):
-                volumes = []
-                print "Invalid volumes removed for {}".format(category.name)
-
-            valid_volumes = [v for v in volumes
-                             if all(key in v.keys() for key in required_keys)]
-            if len(valid_volumes) != len(volumes):
-                print "Invalid volumes removed for {}".format(category.name)
-
-            category.info['volumes'] = valid_volumes
-            project_repo.update_category(category)
