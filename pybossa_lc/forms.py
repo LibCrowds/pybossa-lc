@@ -145,6 +145,6 @@ class ExportFieldForm(Form):
 class ExportForm(Form):
     """A form for creating a volume level CSV export."""
     id = TextField(label=None, widget=HiddenInput())
-    filename = TextField('Filename', [validators.Required()])
+    name = TextField('Name', [validators.Required()])
     reference_header = TextField('Reference Header', [validators.Required()])
     export_fields = FieldList(FormField(ExportFieldForm))
