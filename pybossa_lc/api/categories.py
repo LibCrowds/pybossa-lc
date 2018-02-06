@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """API category module for pybossa-lc."""
 
+import json
 import time
 import uuid
 from flask import Blueprint, flash, request, abort, current_app, url_for
@@ -14,9 +15,21 @@ from pybossa.forms.forms import AvatarUploadForm
 
 from ..cache import templates as templates_cache
 from ..utils import get_enhanced_volumes, get_projects_with_unknown_volumes
-from ..forms import VolumeForm
+from ..forms import *
 
 BLUEPRINT = Blueprint('categories', __name__)
+
+
+def _get_export_form(method, form_data=None):
+    """Return the custom export format form."""
+    if not form_data:
+        form_data = {}
+    form = ExportForm(**form_data)
+
+    if method == 'POST':
+        for field in data.get('export_fields', []):
+            form.export_fields.append_entry(field)
+    return form
 
 
 @login_required
@@ -141,4 +154,35 @@ def update_volume(short_name, volume_id):
                 flash('You must provide a file', 'error')
 
     response = dict(form=form, upload_form=upload_form, category=category)
+    return handle_content_type(response)
+
+
+@login_required
+@BLUEPRINT.route('/<short_name>/exports', methods=['GET', 'POST'])
+def data(short_name):
+    """Setup volume level data exports."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    ensure_authorized_to('update', category)
+    templates = templates_cache.get_by_category_id(category.id)
+    export_fmts = category.info.get('export_formats', [])
+    form_data = json.loads(request.data) if request.data else {}
+    form = _get_export_form(request.method, form_data)
+
+    if request.method == 'POST' and form.validate():
+        export_fmt_id = str(uuid.uuid4())
+        new_export_fmt = dict(id=export_fmt_id,
+                              name=form.name.data,
+                              reference_header=form.reference_header.data,
+                              export_fields=form.export_fields.data)
+        export_fmts.append(new_export_fmt)
+        category.info['export_formats'] = export_fmts
+        project_repo.update_category(category)
+        flash("Export Format added", 'success')
+    elif request.method == 'POST':  # pragma: no cover
+        flash('Please correct the errors', 'error')
+
+    response = dict(export_formats=export_fmts, form=form)
     return handle_content_type(response)

@@ -133,3 +133,18 @@ class VolumeForm(Form):
                               UniqueVolumeField('name')])
     source = TextField('Source', [validators.Required(),
                                   UniqueVolumeField('source')])
+
+
+class ExportFieldForm(Form):
+    """A form for adding a field to the volume level exports."""
+    header = TextField('Header')
+    value = TextField('Value')
+    template_id = SelectField('Template')
+
+
+class ExportForm(Form):
+    """A form for creating a volume level CSV export."""
+    id = TextField(label=None, widget=HiddenInput())
+    filename = TextField('Filename', [validators.Required()])
+    reference_header = TextField('Reference Header', [validators.Required()])
+    export_fields = FieldList(FormField(ExportFieldForm))
