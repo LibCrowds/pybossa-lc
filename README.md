@@ -28,6 +28,18 @@ pip install -r requirements.txt
 
 The plugin will be available after you restart the server.
 
+## Configuration
+
+The following settings should be added to your main PYBOSSA configuration file:
+
+``` python
+# The user ID used to make automated announcements
+ANNOUNCEMENT_USER_ID = 1
+
+# Analyse any empty results when the application starts or restarts
+POPULATE_EMPTY_RESULTS_ON_STARTUP = True
+```
+
 ## Testing
 
 As this plugin relies on core functions of PYBOSSA the easiest way to test
