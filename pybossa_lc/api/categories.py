@@ -14,9 +14,11 @@ from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
 
 from ..cache import templates as templates_cache
-from ..utils import get_enhanced_volumes, get_projects_with_unknown_volumes
+from ..utils import *
 from ..forms import *
-from .. import json_volume_exporter, csv_volume_exporter
+from ..exporters.csv_volume_exporter import CsvVolumeExporter
+from ..exporters.json_volume_exporter import JsonVolumeExporter
+
 
 BLUEPRINT = Blueprint('categories', __name__)
 
@@ -172,9 +174,12 @@ def export_volume_data(short_name, volume_id):
     volumes = category.info.get('volumes', [])
 
     try:
-        volume = [v for v in volumes if v['id'] == volume_id][0]
+        volume_dict = [v for v in volumes if v['id'] == volume_id][0]
     except IndexError:
         abort(404)
+
+    volume_dict['category_id'] = category.id
+    volume = get_volume_object(volume_dict)
 
     ty = request.args.get('type')
     fmt = request.args.get('format')
@@ -187,12 +192,14 @@ def export_volume_data(short_name, volume_id):
     def respond_json(ty):
         if ty not in export_fmt_ids:
             return abort(404)
+        json_volume_exporter = JsonVolumeExporter()
         res = json_volume_exporter.response_zip(volume, ty)
         return res
 
     def respond_csv(ty):
         if ty not in export_fmt_ids:
             return abort(404)
+        csv_volume_exporter = CsvVolumeExporter()
         res = csv_volume_exporter.response_zip(volume, ty)
         return res
 

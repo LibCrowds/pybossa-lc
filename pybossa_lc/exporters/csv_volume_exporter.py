@@ -3,21 +3,18 @@
 
 import json
 import tempfile
-from collections import namedtuple
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from pybossa.exporter import Exporter
+from . import VolumeExporter
 from pybossa.core import uploader
 
 
-class CsvVolumeExporter(Exporter):
+class CsvVolumeExporter(VolumeExporter):
 
     def _respond_csv(self, ty, volume_id):
         return
 
-    def _make_zip(self, volume_dict, ty):
-        Volume = namedtuple('Volume', 'id name short_name category_id')
-        volume = Volume(**volume_dict)
+    def _make_zip(self, volume, ty):
         name = self._project_name_latin_encoded(volume)
         dataframe = self._respond_csv(ty, volume.id)
         if dataframe is not None:
@@ -41,9 +38,7 @@ class CsvVolumeExporter(Exporter):
             finally:
                 datafile.close()
 
-    def download_name(self, volume_dict, ty):
-        Volume = namedtuple('Volume', 'name short_name')
-        volume = Volume(**volume_dict)
+    def download_name(self, volume, ty):
         return super(CsvVolumeExporter, self).download_name(volume, ty, 'csv')
 
     def pregenerate_zip_files(self, category):

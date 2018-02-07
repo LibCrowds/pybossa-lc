@@ -1,8 +1,14 @@
 # -*- coding: utf8 -*-
 """Utils module for pybossa-lc."""
 
+from collections import namedtuple
 from pybossa.core import project_repo, announcement_repo
 from pybossa.cache.projects import overall_progress
+
+
+def get_volume_object(vol_dict):
+    """Return a volume object."""
+    return namedtuple('Volume', ' '.join(vol_dict.keys()))(**vol_dict)
 
 
 def get_enhanced_volumes(category):
