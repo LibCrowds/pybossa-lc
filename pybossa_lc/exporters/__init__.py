@@ -19,3 +19,7 @@ class VolumeExporter(Exporter):
         filename = '%s_%s_%s.zip' % (name, ty, _format)
         filename = secure_filename(filename)
         return filename
+
+    def _get_data(self, ty, volume_id, **kwargs):
+        """Get the volume export data."""
+        return [dict(test=123)]

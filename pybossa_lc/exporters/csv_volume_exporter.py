@@ -5,14 +5,17 @@ import json
 import tempfile
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from . import VolumeExporter
 from pybossa.core import uploader
+import pandas
+
+from . import VolumeExporter
 
 
 class CsvVolumeExporter(VolumeExporter):
 
     def _respond_csv(self, ty, volume_id):
-        return
+        export_data = self._get_data(ty, volume_id)
+        return pandas.DataFrame(export_data)
 
     def _make_zip(self, volume, ty):
         name = self._project_name_latin_encoded(volume)

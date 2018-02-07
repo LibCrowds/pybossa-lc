@@ -6,25 +6,24 @@ import tempfile
 from collections import namedtuple
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from . import VolumeExporter
 from pybossa.core import uploader
+
+from . import VolumeExporter
 
 
 class JsonVolumeExporter(VolumeExporter):
 
-    def gen_json(self, table, project_id):
-        pass
-
     def _respond_json(self, ty, volume_id):
-        return self.gen_json(ty, volume_id)
+        export_data = self._get_data(ty, volume_id)
+        return {'test': '123'}
 
     def _make_zip(self, volume, ty):
         name = self._project_name_latin_encoded(volume)
-        json_task_generator = self._respond_json(ty, volume.id)
-        if json_task_generator is not None:
+        json_data_generator = self._respond_json(ty, volume.id)
+        if json_data_generator is not None:
             datafile = tempfile.NamedTemporaryFile()
             try:
-                datafile.write(json.dumps(json_task_generator))
+                datafile.write(json.dumps(json_data_generator))
                 datafile.flush()
                 zipped_datafile = tempfile.NamedTemporaryFile()
                 try:
