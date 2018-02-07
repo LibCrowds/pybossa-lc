@@ -147,4 +147,4 @@ class ExportForm(Form):
     id = TextField(label=None, widget=HiddenInput())
     name = TextField('Name', [validators.Required()])
     reference_header = TextField('Reference Header', [validators.Required()])
-    export_fields = FieldList(FormField(ExportFieldForm))
+    fields = FieldList(FormField(ExportFieldForm))

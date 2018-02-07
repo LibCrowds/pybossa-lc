@@ -27,8 +27,8 @@ def _get_export_form(method, form_data=None):
     form = ExportForm(**form_data)
 
     if method == 'POST':
-        for field in form_data.get('export_fields', []):
-            form.export_fields.append_entry(field)
+        for field in form_data.get('fields', []):
+            form.fields.append_entry(field)
     return form
 
 
@@ -176,7 +176,7 @@ def exports(short_name):
         new_export_fmt = dict(id=export_fmt_id,
                               name=form.name.data,
                               reference_header=form.reference_header.data,
-                              export_fields=form.export_fields.data)
+                              fields=form.fields.data)
         export_fmts.append(new_export_fmt)
         category.info['export_formats'] = export_fmts
         project_repo.update_category(category)
