@@ -131,6 +131,9 @@ class VolumeForm(Form):
     category_id = IntegerField(label=None, widget=HiddenInput())
     name = TextField('Name', [validators.Required(),
                               UniqueVolumeField('name')])
+    short_name = TextField('Short Name', [validators.Required(),
+                                          pb_validator.NotAllowedChars(),
+                                          UniqueVolumeField('short_name')])
     source = TextField('Source', [validators.Required(),
                                   UniqueVolumeField('source')])
 

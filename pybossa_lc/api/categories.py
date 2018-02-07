@@ -70,6 +70,7 @@ def new_volume(short_name):
         new_vol = dict(id=volume_id,
                        source=form.source.data,
                        name=form.name.data,
+                       short_name=form.short_name.data,
                        media_url=None)
         volumes.append(new_vol)
         category.info['volumes'] = volumes
@@ -119,6 +120,7 @@ def update_volume(short_name, volume_id):
             form = VolumeForm(request.body)
             if form.validate():
                 volume['name'] = form.name.data
+                volume['short_name'] = form.short_name.data
                 volume['source'] = form.source.data
                 update()
                 flash('Volume updated', 'success')
