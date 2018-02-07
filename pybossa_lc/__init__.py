@@ -10,6 +10,7 @@ from pybossa.extensions import importer
 from pybossa.core import project_repo
 
 from . import default_settings
+from .extensions import *
 from .jobs import queue_startup_jobs
 
 __plugin__ = "PyBossaLC"
@@ -25,6 +26,7 @@ class PyBossaLC(Plugin):
         self.configure()
         self.setup_blueprints()
         self.setup_iiif_importer()
+        self.setup_exporters()
         queue_startup_jobs()
 
     def configure(self):
@@ -53,3 +55,12 @@ class PyBossaLC(Plugin):
     def setup_iiif_importer(self):
         """Setup the IIIF manifest importer."""
         importer._importers['iiif-annotation'] = BulkTaskIIIFImporter
+
+    def setup_exporters(self):
+        """Setup exporters."""
+        global csv_volume_exporter
+        global json_volume_exporter
+        from .exporters.csv_volume_exporter import CsvVolumeExporter
+        from .exporters.json_volume_exporter import JsonVolumeExporter
+        csv_volume_exporter = CsvVolumeExporter()
+        json_volume_exporter = JsonVolumeExporter()

@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 """Utils module for pybossa-lc."""
+
 from pybossa.core import project_repo, announcement_repo
 from pybossa.cache.projects import overall_progress
 

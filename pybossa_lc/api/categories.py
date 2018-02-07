@@ -16,6 +16,7 @@ from pybossa.forms.forms import AvatarUploadForm
 from ..cache import templates as templates_cache
 from ..utils import get_enhanced_volumes, get_projects_with_unknown_volumes
 from ..forms import *
+from .. import json_volume_exporter, csv_volume_exporter
 
 BLUEPRINT = Blueprint('categories', __name__)
 
@@ -155,6 +156,45 @@ def update_volume(short_name, volume_id):
 
     response = dict(form=form, upload_form=upload_form, category=category)
     return handle_content_type(response)
+
+
+@BLUEPRINT.route('/<short_name>/volumes/<volume_id>/export')
+def export_volume_data(short_name, volume_id):
+    """Export custom volume level data."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    export_fmts = category.info.get('export_formats', [])
+    export_fmt_ids = [fmt['id'] for fmt in export_fmts]
+    volumes = category.info.get('volumes', [])
+
+    try:
+        volume = [v for v in volumes if v['id'] == volume_id][0]
+    except IndexError:
+        abort(404)
+
+    ty = request.args.get('type')
+    fmt = request.args.get('format')
+    if not (fmt and ty):
+        abort(404)
+
+    if fmt not in export_fmts:
+        abort(415)
+
+    def respond_json(ty):
+        if ty not in export_fmt_ids:
+            return abort(404)
+        res = json_volume_exporter.response_zip(volume, ty)
+        return res
+
+    def respond_csv(ty):
+        if ty not in export_fmt_ids:
+            return abort(404)
+        res = csv_volume_exporter.response_zip(volume, ty)
+        return res
+
+    return {"json": respond_json, "csv": respond_csv}[fmt](ty)
 
 
 @login_required

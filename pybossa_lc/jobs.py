@@ -16,7 +16,7 @@ def queue_startup_jobs():
     extra_startup_tasks = current_app.config.get('EXTRA_STARTUP_TASKS')
     if extra_startup_tasks.get('check_for_missing_templates'):
         enqueue_job({
-            'name' : check_for_missing_templates,
+            'name': check_for_missing_templates,
             'args': [],
             'kwargs': {},
             'timeout': current_app.config.get('TIMEOUT'),
@@ -24,7 +24,7 @@ def queue_startup_jobs():
         })
     if extra_startup_tasks.get('populate_empty_results'):
         enqueue_job({
-            'name' : populate_empty_results,
+            'name': populate_empty_results,
             'args': [],
             'kwargs': {},
             'timeout': current_app.config.get('TIMEOUT'),
@@ -32,7 +32,7 @@ def queue_startup_jobs():
         })
     if extra_startup_tasks.get('remove_bad_volumes'):
         enqueue_job({
-            'name' : remove_bad_volumes,
+            'name': remove_bad_volumes,
             'args': [],
             'kwargs': {},
             'timeout': current_app.config.get('TIMEOUT'),
@@ -68,6 +68,7 @@ def populate_empty_results():
                 iiif_annotation.analyse_empty(project.id)
             elif presenter == 'z3950':
                 z3950.analyse_empty(project.id)
+
 
 def remove_bad_volumes():
     """Remove volumes that don't comply with the correct data structure."""
