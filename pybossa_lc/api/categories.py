@@ -181,7 +181,7 @@ def export_volume_data(short_name, volume_id):
     if not (fmt and ty):
         abort(404)
 
-    if fmt not in export_fmts:
+    if fmt not in ['csv', 'json']:
         abort(415)
 
     def respond_json(ty):
