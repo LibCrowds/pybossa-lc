@@ -186,3 +186,45 @@ def exports(short_name):
 
     response = dict(export_formats=export_fmts, templates=templates, form=form)
     return handle_content_type(response)
+
+
+@login_required
+@BLUEPRINT.route('/<short_name>/exports/<export_id>', methods=['GET', 'POST'])
+def update_export(short_name, export_id):
+    """Update a volume level data export."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    ensure_authorized_to('update', category)
+    templates = templates_cache.get_by_category_id(category.id)
+    export_fmts = category.info.get('export_formats', [])
+    try:
+        export_fmt = [fmt for fmt in export_fmts if fmt['id'] == export_id][0]
+    except IndexError:
+        abort(404)
+
+    form = _get_export_form(request.method, export_fmt)
+
+    if request.method == 'POST':
+        form_data = json.loads(request.data) if request.data else {}
+        form = _get_export_form(request.method, form_data)
+        if form.validate():
+            export_fmt['name'] = form.name.data
+            export_fmt['reference_header'] = form.reference_header.data
+            export_fmt['fields'] = form.fields.data
+
+            try:
+                idx = [i for i, fmt in enumerate(export_fmts)
+                       if fmt['id'] == export_id][0]
+            except IndexError:  # pragma: no cover
+                abort(404)
+            export_fmts[idx] = export_fmt
+            category.info['export_formats'] = export_fmts
+            project_repo.update_category(category)
+            flash('Export format updated', 'success')
+        else:
+            flash('Please correct the errors', 'error')
+
+    response = dict(export_formats=export_fmts, templates=templates, form=form)
+    return handle_content_type(response)
