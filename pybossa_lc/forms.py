@@ -28,7 +28,8 @@ class UniqueVolumeField(object):
         category = project_repo.get_category(category_id)
         volumes = category.info.get('volumes', [])
         exists = [vol for vol in volumes
-                  if vol[self.field_name] == form_field.data and
+                  if vol.get(self.field_name) and
+                  vol[self.field_name] == form_field.data and
                   (not vol_id or vol_id != vol['id'])]
 
         if exists:
