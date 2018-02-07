@@ -74,7 +74,7 @@ def remove_bad_volumes():
     """Remove volumes that don't comply with the correct data structure."""
     from pybossa.core import project_repo
     categories = project_repo.get_all_categories()
-    required = ['id', 'name', 'source']
+    required = ['id', 'name', 'source', 'short_name']
     for category in categories:
         if not isinstance(category.info, dict):
             category.info = {}
