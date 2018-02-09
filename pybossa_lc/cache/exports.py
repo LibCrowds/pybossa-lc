@@ -22,7 +22,7 @@ def get_by_id(export_fmt_id):
     return None
 
 
-def get_results_by_tmpl_and_volume(template_ids, volume_id):
+def get_results_by_tmpls_and_volume(template_ids, volume_id):
     """Return a dict of results against template IDs for a volume."""
     sql = text('''SELECT result.info AS result_info,
                project.info AS project_info
@@ -36,6 +36,6 @@ def get_results_by_tmpl_and_volume(template_ids, volume_id):
     data = []
     for row in results:
         export_row = dict(result_info=row.result_info,
-                          project_info=row.project.info)
+                          project_info=row.project_info)
         data.append(export_row)
     return data

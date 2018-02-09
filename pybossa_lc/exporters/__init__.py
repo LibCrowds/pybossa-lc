@@ -35,13 +35,13 @@ class VolumeExporter(Exporter):
 
     def _get_data(self, export_fmt_id, volume_id):
         """Get the volume data according to the custom export format."""
-        # results = volumes_cache.get_results_by_volume(volume_id)
         export_format = exports_cache.get_by_id(export_fmt_id)
         fields = export_format.get('fields', [])
         tmpl_ids = [field['template_id'] for field in fields
                     if field.get('template_id')]
-        tmpl_results = exports_cache.get_results_by_tmpl_and_volume(tmpl_ids,
-                                                                    volume_id)
+        tmpl_results = exports_cache.get_results_by_tmpls_and_volume(tmpl_ids,
+                                                                     volume_id)
+        for row in tmpl_results
         data = []
         print tmpl_results
 
