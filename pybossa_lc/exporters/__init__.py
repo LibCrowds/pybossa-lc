@@ -2,6 +2,7 @@
 """Volume exporter module for pybossa-lc."""
 
 import json
+import itertools
 from pybossa.core import db
 from sqlalchemy import text
 from pybossa.exporter import Exporter
@@ -66,7 +67,7 @@ class VolumeExporter(Exporter):
 
         return data
 
-    def _get_full_data(self, result, motivation):
+    def _get_annotations(self, result, motivation):
         """Parse a result to get the full annotations for a motivation."""
         if 'annotations' not in result['info']:
             return None
@@ -96,24 +97,38 @@ class VolumeExporter(Exporter):
         return target
 
 
-    def _get_data(self, motivation, volume_id):
+    def _get_data(self, motivation, volume_id, flat=False):
         """Get volume data for a task presenter type."""
-        final_data = {}
+        if not flat:
+            return volumes_cache.get_annotations(volume_id, motivation)
+
+        all_data = {}
         tmpl_results = volumes_cache.get_results(volume_id)
         for tmpl_id, data in tmpl_results.items():
-            tmpl_data = []
+            target_data = []
             for result in data['results']:
                 target = self._get_target(result)
                 simple_data = self._get_simple_data(result, motivation)
-                full_data = self._get_full_data(result, motivation)
+                annotations = self._get_annotations(result, motivation)
                 task_id = result['task_id']
                 parent_task_id = result['info'].get('parent_task_id', None)
-                tmpl_data.append({
+                target_data.append({
                     'task_id': task_id,
                     'parent_task_id': parent_task_id,
-                    'target': target,
+                    'template_id': tmpl_id,
                     'simple_data': simple_data,
-                    'full_data': full_data
+                    'annotations': annotations
                 })
-            final_data[tmpl_id] = tmpl_data
-        return final_data
+            all_data[target] = target_data
+
+        # Group annotations into a single list
+        if not flat:
+            all_annos = [value for value in all_data.values()]
+            print '---'
+            print all_annos
+            print '---'
+            return itertools.chain()
+
+        # Flatten simple annotation values with parent-child relationships
+        else:
+            return all_data
