@@ -10,7 +10,7 @@ from pybossa.cache import memoize, delete_memoized
 session = db.slave_session
 
 
-def get_results(volume_id):
+def get_tmpl_results(volume_id):
     """Return a dict of results data against template IDs for a volume."""
     sql = text('''SELECT result.id, result.task_id, result.task_run_ids,
                result.project_id, result.created, result.last_version,

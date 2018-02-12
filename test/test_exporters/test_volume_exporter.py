@@ -101,49 +101,38 @@ class TestVolumeExporter(Test):
             expected_data.append(anno2)
         assert_equal(data, expected_data)
 
-    # @with_context
-    # def test_flatten_data(self):
-    #     """Test flat table construction with no parent-child relationships."""
-    #     self.category.info = {
-    #         'volumes': self.volumes
-    #     }
-    #     self.project_repo.update_category(self.category)
-    #     volume_id = self.volumes[0]['id']
-    #     tmpl_id = self.tmpl['id']
-    #     UserFactory.create(info=dict(templates=[self.tmpl]))
-    #     project_info = dict(volume_id=volume_id, template_id=tmpl_id)
-    #     project = ProjectFactory.create(category=self.category,
-    #                                     info=project_info)
-    #     tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
-    #     expected_data = []
+    @with_context
+    def test_get_csv_data_without_parents(self):
+        """Test get CSV data with no parent-child relationships."""
+        self.category.info = {
+            'volumes': self.volumes
+        }
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
+        tmpl_id = self.tmpl['id']
+        UserFactory.create(info=dict(templates=[self.tmpl]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        project = ProjectFactory.create(category=self.category,
+                                        info=project_info)
+        tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
+        expected_data = []
 
-    #     for i, task in enumerate(tasks):
-    #         TaskRunFactory.create(task=task, project=project)
-    #         (anno1, tag, value,
-    #          source) = self.anno_fixtures.create_describing_anno(i, tag='foo')
-    #         (anno2, tag, value,
-    #          source) = self.anno_fixtures.create_describing_anno(i, tag='bar')
-    #         result = self.result_repo.get_by(task_id=task.id)
-    #         result.info = dict(annotations=[anno1, anno2])
-    #         self.result_repo.update(result)
+        for i, task in enumerate(tasks):
+            TaskRunFactory.create(task=task, project=project)
+            (anno1, tag, value,
+             source) = self.anno_fixtures.create_describing_anno(i, tag='foo')
+            (anno2, tag, value,
+             source) = self.anno_fixtures.create_describing_anno(i, tag='bar')
+            result = self.result_repo.get_by(task_id=task.id)
+            result.info = dict(annotations=[anno1, anno2])
+            self.result_repo.update(result)
 
-    #     data = self.volume_exporter._get_data('describing', volume_id)
-    #     expected_data = {tmpl_id: []}
-    #     for i, task in enumerate(tasks):
-    #         (anno1, tag1, value1,
-    #          source1) = self.anno_fixtures.create_describing_anno(i, tag='foo')
-    #         (anno2, tag2, value2,
-    #          source2) = self.anno_fixtures.create_describing_anno(i, tag='bar')
-    #         expected_data[tmpl_id].append({
-    #             'task_id': task.id,
-    #             'parent_task_id': None,
-    #             'target': source1,
-    #             'simple_data': {tag1: value1, tag2: value2},
-    #             'full_data': [anno1, anno2]
-    #         })
-    #     assert_dict_equal(data, expected_data)
-
-    # @with_context
-    # def test_flatten_data_with_parent_child_relationships(self):
-    #     """Test flat table construction with parent-child relationships."""
-    #     pass
+        data = self.volume_exporter._get_data('describing', volume_id,
+                                              flat=True)
+        expected_data = []
+        for i, task in enumerate(tasks):
+            (anno1, tag1, value1,
+             source1) = self.anno_fixtures.create_describing_anno(i, tag='foo')
+            (anno2, tag2, value2,
+             source2) = self.anno_fixtures.create_describing_anno(i, tag='bar')
+        assert_equal(data, expected_data)

@@ -34,7 +34,7 @@ class VolumeExporter(Exporter):
         return filename
 
     def _get_simple_data(self, result, motivation):
-        """Parse a result to get the annotation values for a motivation."""
+        """Parse a result to get simple annotation values for a motivation."""
         if 'annotations' not in result['info']:
             return None
 
@@ -67,14 +67,6 @@ class VolumeExporter(Exporter):
 
         return data
 
-    def _get_annotations(self, result, motivation):
-        """Parse a result to get the full annotations for a motivation."""
-        if 'annotations' not in result['info']:
-            return None
-
-        return [anno for anno in result['info']['annotations']
-                if anno['motivation'] == motivation]
-
     def _get_target(self, result):
         """Parse a result to get the Web Annotation target."""
         if 'annotations' not in result['info']:
@@ -98,37 +90,33 @@ class VolumeExporter(Exporter):
 
 
     def _get_data(self, motivation, volume_id, flat=False):
-        """Get volume data for a task presenter type."""
+        """Get volume data for a given annotation motivation."""
         if not flat:
             return volumes_cache.get_annotations(volume_id, motivation)
 
         all_data = {}
-        tmpl_results = volumes_cache.get_results(volume_id)
+        tmpl_results = volumes_cache.get_tmpl_results(volume_id)
         for tmpl_id, data in tmpl_results.items():
-            target_data = []
             for result in data['results']:
                 target = self._get_target(result)
                 simple_data = self._get_simple_data(result, motivation)
-                annotations = self._get_annotations(result, motivation)
                 task_id = result['task_id']
                 parent_task_id = result['info'].get('parent_task_id', None)
-                target_data.append({
+                target_row = all_data.get(target, [])
+                target_row.append({
                     'task_id': task_id,
                     'parent_task_id': parent_task_id,
                     'template_id': tmpl_id,
-                    'simple_data': simple_data,
-                    'annotations': annotations
+                    'data': simple_data
                 })
-            all_data[target] = target_data
+            all_data[target] = target_row
 
-        # Group annotations into a single list
-        if not flat:
-            all_annos = [value for value in all_data.values()]
-            print '---'
-            print all_annos
-            print '---'
-            return itertools.chain()
+        final_data = []
+        templates = templates_cache.get_all()
+        template_names = {tmpl['id']: tmpl['project']['name']
+                          for tmpl in templates}
+        for target_key, anno_data in all_data.items():
+            row = dict(target=target_key)
+            template = templates_cache.get_by_id(anno_data)
 
-        # Flatten simple annotation values with parent-child relationships
-        else:
-            return all_data
+        print final_data
