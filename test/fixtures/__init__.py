@@ -33,7 +33,7 @@ class AnnotationFixtures(object):
     @staticmethod
     def create_tagging_anno(suffix):
         """Create a tagging annotation."""
-        tag = "some_tag_{0}".format(suffix)
+        tag = "{0}_{1}".format(tag, suffix)
         value = "?xywh={0},{0},{0},{0}".format(suffix)
         source = "http://example.org/iiif/book1/canvas/p{0}".format(suffix)
         anno = {
@@ -57,9 +57,9 @@ class AnnotationFixtures(object):
         return anno, tag, value, source
 
     @staticmethod
-    def create_describing_anno(suffix):
+    def create_describing_anno(suffix, tag="tag"):
         """Create a describing annotation."""
-        tag = "some_tag_{}".format(suffix)
+        tag = "{0}_{1}".format(tag, suffix)
         value = "Some Value {}".format(suffix)
         source = "http://example.org/iiif/book1/canvas/p{}".format(suffix)
         anno = {
@@ -84,7 +84,6 @@ class AnnotationFixtures(object):
     @staticmethod
     def create_commenting_anno(suffix):
         """Create a commenting annotation."""
-        tag = "some_tag_{}".format(suffix)
         value = "Some Value {}".format(suffix)
         source = "http://example.org/iiif/book1/canvas/p{}".format(suffix)
         anno = {
@@ -97,4 +96,4 @@ class AnnotationFixtures(object):
             },
             "target": source
         }
-        return anno, tag, value, source
+        return anno, None, value, source
