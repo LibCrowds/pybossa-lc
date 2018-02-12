@@ -165,7 +165,6 @@ class TestAnalysisHelpers(Test):
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
         helpers.update_n_answers_required(task)
-        print task.n_answers
         assert_equal(task.n_answers, n_original_answers + 1)
         assert_equal(task.state, 'ongoing')
 
