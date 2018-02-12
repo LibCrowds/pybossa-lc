@@ -26,3 +26,75 @@ class TemplateFixtures(object):
     def create_template(self, task_tmpl=None, rules_tmpl=None):
         return dict(id=str(uuid.uuid4()), task=task_tmpl,
                     project=self.project_tmpl, rules=rules_tmpl)
+
+
+class AnnotationFixtures(object):
+
+    @staticmethod
+    def create_tagging_anno(suffix):
+        """Create a tagging annotation."""
+        tag = "some_tag_{0}".format(suffix)
+        value = "?xywh={0},{0},{0},{0}".format(suffix)
+        source = "http://example.org/iiif/book1/canvas/p{0}".format(suffix)
+        anno = {
+            "motivation": "tagging",
+            "body": [
+                {
+                    "type": "TextualBody",
+                    "purpose": "tagging",
+                    "value": tag
+                },
+            ],
+            "target": {
+                "source": source,
+                "selector": {
+                    "conformsTo": "http://www.w3.org/TR/media-frags/",
+                    "type": "FragmentSelector",
+                    "value": value
+                }
+            }
+        }
+        return anno, tag, value, source
+
+    @staticmethod
+    def create_describing_anno(suffix):
+        """Create a describing annotation."""
+        tag = "some_tag_{}".format(suffix)
+        value = "Some Value {}".format(suffix)
+        source = "http://example.org/iiif/book1/canvas/p{}".format(suffix)
+        anno = {
+            "motivation": "describing",
+            "body": [
+                {
+                    "type": "TextualBody",
+                    "purpose": "describing",
+                    "value": value,
+                    "format": "text/plain"
+                },
+                {
+                    "type": "TextualBody",
+                    "purpose": "tagging",
+                    "value": tag
+                }
+            ],
+            "target": source
+        }
+        return anno, tag, value, source
+
+    @staticmethod
+    def create_commenting_anno(suffix):
+        """Create a commenting annotation."""
+        tag = "some_tag_{}".format(suffix)
+        value = "Some Value {}".format(suffix)
+        source = "http://example.org/iiif/book1/canvas/p{}".format(suffix)
+        anno = {
+            "motivation": "commenting",
+            "body": {
+                "type": "TextualBody",
+                "purpose": "commenting",
+                "value": value,
+                "format": "text/plain"
+            },
+            "target": source
+        }
+        return anno, tag, value, source

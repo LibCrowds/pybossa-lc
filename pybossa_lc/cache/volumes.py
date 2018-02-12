@@ -10,20 +10,33 @@ from pybossa.cache import memoize, delete_memoized
 session = db.slave_session
 
 
-def get_results_by_volume(volume_id):
-    """Return all transcribed results by volume."""
+def get_results(volume_id):
+    """Return a dict of results data against template IDs for a volume."""
     sql = text('''SELECT result.id, result.task_id, result.task_run_ids,
-               result.project_id, result.last_version, result.created,
-               result.info
-               FROM result, project
-               WHERE (project.info->>'volume_id') = :volume_id
-               AND project.id = result.project_id;''')
-    data = session.execute(sql, dict(volume_id=volume_id))
-    results = []
-    for row in data:
-        result = dict(id=row.id, task_id=row.task_id,
-                      task_run_ids=row.task_run_ids, project_id=row.project_id,
-                      last_version=row.last_version, created=row.created,
+               result.project_id, result.created, result.last_version,
+               result.info,
+               project.info->'template_id' AS template_id,
+               category.info->'presenter' AS presenter
+               FROM result, project, category
+               WHERE result.project_id = project.id
+               AND project.category_id = category.id
+               AND project.info->'volume_id' @> :volume_id
+               ''')
+    results = session.execute(sql, dict(volume_id=json.dumps(volume_id)))
+    data = {}
+    for row in results:
+        tmpl_id = row.template_id
+        result = dict(id=row.id,
+                      task_id=row.task_id,
+                      task_run_ids=row.task_run_ids,
+                      project_id=row.project_id,
+                      created=row.created,
+                      last_version=row.last_version,
                       info=row.info)
-        results.append(result)
-    return results
+        data_row = data.get(tmpl_id, {})
+        results_data = data_row.get('results', [])
+        results_data.append(result)
+        data_row['results'] = results_data
+        data_row['presenter'] = row.presenter
+        data[tmpl_id] = data_row
+    return data

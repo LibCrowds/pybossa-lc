@@ -13,8 +13,8 @@ from . import VolumeExporter
 
 class CsvVolumeExporter(VolumeExporter):
 
-    def _respond_csv(self, ty, volume_id):
-        export_data = self._get_data(ty, volume_id)
+    def _respond_csv(self, motivation, volume_id):
+        export_data = self._get_data(motivation, volume_id)
         return pandas.DataFrame(export_data)
 
     def _make_zip(self, volume, ty):

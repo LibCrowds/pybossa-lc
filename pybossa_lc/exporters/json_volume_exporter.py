@@ -13,8 +13,8 @@ from . import VolumeExporter
 
 class JsonVolumeExporter(VolumeExporter):
 
-    def _respond_json(self, ty, volume_id):
-        export_data = self._get_data(ty, volume_id)
+    def _respond_json(self, motivation, volume_id):
+        export_data = self._get_data(motivation, volume_id)
         return {'test': '123'}
 
     def _make_zip(self, volume, ty):
