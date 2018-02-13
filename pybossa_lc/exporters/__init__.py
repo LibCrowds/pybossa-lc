@@ -100,17 +100,18 @@ class VolumeExporter(Exporter):
         for tmpl_id, data in tmpl_results.items():
             for result in data['results']:
                 target = self._get_target(result)
-                simple_data = self._get_simple_data(result, motivation)
-                task_id = result['task_id']
-                parent_task_id = result['info'].get('parent_task_id', None)
-                target_row = target_data.get(target, [])
-                target_row.append({
-                    'task_id': task_id,
-                    'parent_task_id': parent_task_id,
-                    'template_id': tmpl_id,
-                    'data': simple_data
-                })
-                target_data[target] = target_row
+                if target:
+                    simple_data = self._get_simple_data(result, motivation)
+                    task_id = result['task_id']
+                    parent_task_id = result['info'].get('parent_task_id', None)
+                    target_row = target_data.get(target, [])
+                    target_row.append({
+                        'task_id': task_id,
+                        'parent_task_id': parent_task_id,
+                        'template_id': tmpl_id,
+                        'data': simple_data
+                    })
+                    target_data[target] = target_row
 
         templates = templates_cache.get_all()
         template_names = {tmpl['id']: tmpl['project']['name']

@@ -72,8 +72,7 @@ def new_volume(short_name):
         new_vol = dict(id=volume_id,
                        source=form.source.data,
                        name=form.name.data,
-                       short_name=form.short_name.data,
-                       media_url=None)
+                       short_name=form.short_name.data)
         volumes.append(new_vol)
         category.info['volumes'] = volumes
         project_repo.update_category(category)
@@ -169,41 +168,33 @@ def export_volume_data(short_name, volume_id):
     if not category:  # pragma: no cover
         abort(404)
 
-    export_fmts = category.info.get('export_formats', [])
-    export_fmt_ids = [fmt['id'] for fmt in export_fmts]
     volumes = category.info.get('volumes', [])
-
     try:
         volume_dict = [v for v in volumes if v['id'] == volume_id][0]
     except IndexError:
         abort(404)
-
     volume_dict['category_id'] = category.id
     volume = get_volume_object(volume_dict)
 
-    ty = request.args.get('type')
+    motivation = request.args.get('type')
     fmt = request.args.get('format')
-    if not (fmt and ty):
+    if not (fmt and motivation):
         abort(404)
 
     if fmt not in ['csv', 'json']:
         abort(415)
 
-    def respond_json(ty):
-        if ty not in export_fmt_ids:
-            return abort(404)
+    def respond_json(motivation):
         json_volume_exporter = JsonVolumeExporter()
-        res = json_volume_exporter.response_zip(volume, ty)
+        res = json_volume_exporter.response_zip(volume, motivation)
         return res
 
-    def respond_csv(ty):
-        if ty not in export_fmt_ids:
-            return abort(404)
+    def respond_csv(motivation):
         csv_volume_exporter = CsvVolumeExporter()
-        res = csv_volume_exporter.response_zip(volume, ty)
+        res = csv_volume_exporter.response_zip(volume, motivation)
         return res
 
-    return {"json": respond_json, "csv": respond_csv}[fmt](ty)
+    return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
 
 
 @login_required

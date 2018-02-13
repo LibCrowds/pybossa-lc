@@ -14,12 +14,11 @@ from . import VolumeExporter
 class JsonVolumeExporter(VolumeExporter):
 
     def _respond_json(self, motivation, volume_id):
-        export_data = self._get_data(motivation, volume_id)
-        return {'test': '123'}
+        return self._get_data(motivation, volume_id)
 
     def _make_zip(self, volume, ty):
         name = self._project_name_latin_encoded(volume)
-        json_data_generator = self._respond_json(ty, volume.id)
+        json_data_generator = self._respond_json(volume.id, ty)
         if json_data_generator is not None:
             datafile = tempfile.NamedTemporaryFile()
             try:
@@ -40,11 +39,13 @@ class JsonVolumeExporter(VolumeExporter):
             finally:
                 datafile.close()
 
-    def download_name(self, volume, ty):
+    def download_name(self, volume, motivation):
         return super(JsonVolumeExporter, self).download_name(volume, ty,
                                                              'json')
 
     def pregenerate_zip_files(self, category):
         print "%d (json)" % category.id
         for volume in category.info.get('volumes', []):
-            self._make_zip(volume, volume.name)
+            self._make_zip(volume, 'tagging')
+            self._make_zip(volume, 'describing')
+            self._make_zip(volume, 'commenting')

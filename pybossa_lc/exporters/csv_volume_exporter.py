@@ -13,13 +13,13 @@ from . import VolumeExporter
 
 class CsvVolumeExporter(VolumeExporter):
 
-    def _respond_csv(self, motivation, volume_id):
-        export_data = self._get_data(motivation, volume_id)
+    def _respond_csv(self, volume_id, motivation):
+        export_data = self._get_data(motivation, volume_id, flat=True)
         return pandas.DataFrame(export_data)
 
     def _make_zip(self, volume, ty):
         name = self._project_name_latin_encoded(volume)
-        dataframe = self._respond_csv(ty, volume.id)
+        dataframe = self._respond_csv(volume.id, ty)
         if dataframe is not None:
             datafile = tempfile.NamedTemporaryFile()
             try:
@@ -47,4 +47,6 @@ class CsvVolumeExporter(VolumeExporter):
     def pregenerate_zip_files(self, category):
         print "%d (csv)" % category.id
         for volume in category.info.get('volumes', []):
-            self._make_zip(volume, volume.name)
+            self._make_zip(volume, 'tagging')
+            self._make_zip(volume, 'describing')
+            self._make_zip(volume, 'commenting')
