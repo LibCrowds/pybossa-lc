@@ -70,7 +70,8 @@ def analyse_all(analysis_func, project_id):
     results = result_repo.filter_by(project_id=project_id)
     for result in results:
         analysis_func(result.id)
-    project_export(project.id)
+    if results:
+        project_export(project.id)
 
 
 def analyse_empty(analysis_func, project_id):
@@ -81,7 +82,8 @@ def analyse_empty(analysis_func, project_id):
     empty_results = [r for r in results if not r.info]
     for result in empty_results:
         analysis_func(result.id)
-    project_export(project.id)
+    if empty_results:
+        project_export(project.id)
 
 
 def get_analysis_rules(project_id):
