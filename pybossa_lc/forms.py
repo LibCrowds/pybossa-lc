@@ -105,7 +105,7 @@ class AnalysisRulesForm(Form):
     target_from_select_parent = BooleanField()
     date_format = BooleanField()
     dayfirst = BooleanField()
-    yearfield = BooleanField()
+    yearfirst = BooleanField()
 
 
 class ProjectForm(Form):

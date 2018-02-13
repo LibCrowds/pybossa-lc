@@ -21,7 +21,9 @@ class TemplateFixtures(object):
         self.z3950_tmpl = dict(database=z3950_db, institutions=['OCLC'])
         self.rules_tmpl = dict(concatenate=False, trim_punctuation=False,
                                whitespace='', case='',
-                               target_from_select_parent=False)
+                               target_from_select_parent=False,
+                               date_format=True, dayfirst=True,
+                               yearfirst=False)
 
     def create_template(self, task_tmpl=None, rules_tmpl=None):
         return dict(id=str(uuid.uuid4()), task=task_tmpl,
