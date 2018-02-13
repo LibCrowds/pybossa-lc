@@ -103,6 +103,9 @@ class AnalysisRulesForm(Form):
     trim_punctuation = BooleanField()
     concatenate = BooleanField()
     target_from_select_parent = BooleanField()
+    date_format = BooleanField()
+    dayfirst = BooleanField()
+    yearfield = BooleanField()
 
 
 class ProjectForm(Form):
