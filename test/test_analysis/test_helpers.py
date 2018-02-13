@@ -148,13 +148,13 @@ class TestAnalysisHelpers(Test):
 
     def test_date_conversion(self):
         """Test date conversion."""
-        rules = dict(date_format='%Y-%m-%d', dayfirst=True)
-        norm = helpers.normalise_transcription('12/11/1984', rules)
-        assert_equal(norm, '1984-11-12')
+        rules = dict(date_format=True, dayfirst=True)
+        norm = helpers.normalise_transcription('19/11/1984', rules)
+        assert_equal(norm, '1984-11-19')
 
     def test_date_conversion_with_invalid_date(self):
         """Test date conversion with invalid date."""
-        rules = dict(date_format='%Y-%m-%d', dayfirst=True)
+        rules = dict(date_format=True, dayfirst=True)
         norm = helpers.normalise_transcription('Not a date', rules)
         assert_equal(norm, '')
 

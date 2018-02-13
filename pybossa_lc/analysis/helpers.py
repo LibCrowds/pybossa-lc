@@ -131,7 +131,7 @@ def normalise_transcription(value, rules):
         except ValueError:
             return ''
         fmt = rules.get('date_format')
-        normalised = date.strftime(fmt)
+        normalised = date.strftime('%Y-%m-%d')
 
     if rules.get('trim_punctuation'):
         normalised = normalised.strip(string.punctuation)
