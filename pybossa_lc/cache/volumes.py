@@ -32,7 +32,7 @@ def get_tmpl_results(volume_id):
                       project_id=row.project_id,
                       created=row.created,
                       last_version=row.last_version,
-                      info=row.info)
+                      info=row.info or {})
         data_row = data.get(tmpl_id, {})
         results_data = data_row.get('results', [])
         results_data.append(result)

@@ -94,7 +94,8 @@ class VolumeExporter(Exporter):
         if not flat:
             return volumes_cache.get_annotations(volume_id, motivation)
 
-        all_data = {}
+        # Collate annotation data for each target
+        target_data = {}
         tmpl_results = volumes_cache.get_tmpl_results(volume_id)
         for tmpl_id, data in tmpl_results.items():
             for result in data['results']:
@@ -102,21 +103,42 @@ class VolumeExporter(Exporter):
                 simple_data = self._get_simple_data(result, motivation)
                 task_id = result['task_id']
                 parent_task_id = result['info'].get('parent_task_id', None)
-                target_row = all_data.get(target, [])
+                target_row = target_data.get(target, [])
                 target_row.append({
                     'task_id': task_id,
                     'parent_task_id': parent_task_id,
                     'template_id': tmpl_id,
                     'data': simple_data
                 })
-            all_data[target] = target_row
+                target_data[target] = target_row
 
-        final_data = []
         templates = templates_cache.get_all()
         template_names = {tmpl['id']: tmpl['project']['name']
                           for tmpl in templates}
-        for target_key, anno_data in all_data.items():
-            row = dict(target=target_key)
-            template = templates_cache.get_by_id(anno_data)
 
-        print final_data
+        # Merge annotations for each row
+        merged_data = {}
+        for target, anno_data in target_data.items():
+            row = dict(target=target)
+            for anno in anno_data:
+                template = templates_cache.get_by_id(anno['template_id'])
+                for tag, value in anno['data'].items():
+                    if not template:
+                        header = "Unknown Template | {}".format(tag)
+                    else:
+                        tmpl_name = template['project']['name']
+                        header = "{} | {}".format(tmpl_name, tag)
+                    row[header] = value
+
+            merged_data[target] = row
+        final_data = merged_data.values()
+
+        # Ensure same keys exist in all rows
+        keys_lists = [row.keys() for row in final_data]
+        keys = list(set(itertools.chain(*keys_lists)))
+        for row in final_data:
+            for key in keys:
+                row[key] = row.get(key, None)
+
+        # Return sorted by target
+        return sorted(final_data, key=lambda x: x['target'])

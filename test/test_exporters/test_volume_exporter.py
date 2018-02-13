@@ -2,6 +2,7 @@
 """Test volume exporter."""
 
 import uuid
+import itertools
 from nose.tools import *
 from default import Test, db, with_context
 from factories import CategoryFactory, ProjectFactory, TaskFactory
@@ -46,8 +47,8 @@ class TestVolumeExporter(Test):
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
-        expected_data = []
 
+        expected_data = []
         for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (annotation, tag, value,
@@ -55,18 +56,14 @@ class TestVolumeExporter(Test):
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[annotation])
             self.result_repo.update(result)
+            expected_data.append(annotation)
 
         data = self.volume_exporter._get_data('describing', volume_id)
-        expected_data = []
-        for i, task in enumerate(tasks):
-            (annotation, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i)
-            expected_data.append(annotation)
         assert_equal(data, expected_data)
 
     @with_context
     def test_get_json_data_with_multiple_annotations(self):
-        """Test get JSON data with multiple annotations for one project."""
+        """Test get JSON data with multiple annotations."""
         self.category.info = {
             'volumes': self.volumes
         }
@@ -78,32 +75,23 @@ class TestVolumeExporter(Test):
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
-        expected_data = []
 
+        expected_data = []
         for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
-            (anno1, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i, tag='foo')
-            (anno2, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i, tag='bar')
+            (anno, tag, value,
+             source) = self.anno_fixtures.create_describing_anno(i)
             result = self.result_repo.get_by(task_id=task.id)
-            result.info = dict(annotations=[anno1, anno2])
+            result.info = dict(annotations=[anno])
             self.result_repo.update(result)
+            expected_data.append(anno)
 
         data = self.volume_exporter._get_data('describing', volume_id)
-        expected_data = []
-        for i, task in enumerate(tasks):
-            (anno1, tag1, value1,
-             source1) = self.anno_fixtures.create_describing_anno(i, tag='foo')
-            (anno2, tag2, value2,
-             source2) = self.anno_fixtures.create_describing_anno(i, tag='bar')
-            expected_data.append(anno1)
-            expected_data.append(anno2)
         assert_equal(data, expected_data)
 
     @with_context
-    def test_get_csv_data_without_parents(self):
-        """Test get CSV data with no parent-child relationships."""
+    def test_get_csv_data_with_multiple_annotations(self):
+        """Test get CSV data with multiple annotations."""
         self.category.info = {
             'volumes': self.volumes
         }
@@ -115,24 +103,28 @@ class TestVolumeExporter(Test):
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
-        expected_data = []
 
+        expected_data = []
         for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
-            (anno1, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i, tag='foo')
-            (anno2, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i, tag='bar')
+            (anno, tag, value,
+             source) = self.anno_fixtures.create_describing_anno(i)
             result = self.result_repo.get_by(task_id=task.id)
-            result.info = dict(annotations=[anno1, anno2])
+            result.info = dict(annotations=[anno])
             self.result_repo.update(result)
+            header = "{} | {}".format(self.tmpl['project']['name'], tag)
+            expected_data.append({
+                'target': source, header: value
+            })
+
+        # Ensure same keys exist in all rows
+        keys_lists = [row.keys() for row in expected_data]
+        keys = list(set(itertools.chain(*keys_lists)))
+        for row in expected_data:
+            for key in keys:
+                row[key] = row.get(key, None)
 
         data = self.volume_exporter._get_data('describing', volume_id,
                                               flat=True)
-        expected_data = []
-        for i, task in enumerate(tasks):
-            (anno1, tag1, value1,
-             source1) = self.anno_fixtures.create_describing_anno(i, tag='foo')
-            (anno2, tag2, value2,
-             source2) = self.anno_fixtures.create_describing_anno(i, tag='bar')
+        expected_data = sorted(expected_data, key=lambda x: x['target'])
         assert_equal(data, expected_data)
