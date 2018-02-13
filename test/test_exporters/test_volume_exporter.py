@@ -3,6 +3,7 @@
 
 import uuid
 import itertools
+from flatten_json import flatten
 from nose.tools import *
 from default import Test, db, with_context
 from factories import CategoryFactory, ProjectFactory, TaskFactory
@@ -49,10 +50,10 @@ class TestVolumeExporter(Test):
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for i, task in enumerate(tasks):
+        for task in tasks:
             TaskRunFactory.create(task=task, project=project)
             (annotation, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i)
+             source) = self.anno_fixtures.create('describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[annotation])
             self.result_repo.update(result)
@@ -77,10 +78,10 @@ class TestVolumeExporter(Test):
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for i, task in enumerate(tasks):
+        for task in tasks:
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i)
+             source) = self.anno_fixtures.create('describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
             self.result_repo.update(result)
@@ -105,17 +106,60 @@ class TestVolumeExporter(Test):
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for i, task in enumerate(tasks):
+        for task in tasks:
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create_describing_anno(i)
+             source) = self.anno_fixtures.create('describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
             self.result_repo.update(result)
-            header = "{} | {}".format(self.tmpl['project']['name'], tag)
             expected_data.append({
-                'target': source, header: value
+                'target': source, tag: value
             })
+
+        # Ensure same keys exist in all rows
+        keys_lists = [row.keys() for row in expected_data]
+        keys = list(set(itertools.chain(*keys_lists)))
+        for row in expected_data:
+            for key in keys:
+                row[key] = row.get(key, None)
+
+        data = self.volume_exporter._get_data('describing', volume_id,
+                                              flat=True)
+        expected_data = sorted(expected_data, key=lambda x: x['target'])
+        assert_equal(data, expected_data)
+
+    @with_context
+    def test_get_csv_data_with_same_tags_for_the_same_target(self):
+        """Test get CSV data with multiple tags for the same tags."""
+        self.category.info = {
+            'volumes': self.volumes
+        }
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
+        tmpl_id = self.tmpl['id']
+        UserFactory.create(info=dict(templates=[self.tmpl]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        project = ProjectFactory.create(category=self.category,
+                                        info=project_info)
+        tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
+
+        tag_values = []
+        for task in tasks:
+            TaskRunFactory.create(task=task, project=project)
+            (anno, tag, value,
+             source) = self.anno_fixtures.create('describing', tag="foo",
+                                                 target="example.com")
+            result = self.result_repo.get_by(task_id=task.id)
+            result.info = dict(annotations=[anno])
+            self.result_repo.update(result)
+            tag_values.append(value)
+
+        row = flatten({
+            'target': 'example.com',
+            'foo': tag_values
+        })
+        expected_data = [row]
 
         # Ensure same keys exist in all rows
         keys_lists = [row.keys() for row in expected_data]

@@ -39,7 +39,7 @@ class JsonVolumeExporter(VolumeExporter):
             finally:
                 datafile.close()
 
-    def download_name(self, volume, motivation):
+    def download_name(self, volume, ty):
         return super(JsonVolumeExporter, self).download_name(volume, ty,
                                                              'json')
 

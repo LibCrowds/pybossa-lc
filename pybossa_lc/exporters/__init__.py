@@ -3,6 +3,7 @@
 
 import json
 import itertools
+from flatten_json import flatten
 from pybossa.core import db
 from sqlalchemy import text
 from pybossa.exporter import Exporter
@@ -122,16 +123,17 @@ class VolumeExporter(Exporter):
         for target, anno_data in target_data.items():
             row = dict(target=target)
             for anno in anno_data:
-                template = templates_cache.get_by_id(anno['template_id'])
                 for tag, value in anno['data'].items():
-                    if not template:
-                        header = "Unknown Template | {}".format(tag)
+                    if tag in row:
+                        tag_row = row[tag]
+                        if isinstance(tag_row, list):
+                            tag_row.append(value)
+                            row[tag] = tag_row
+                        else:
+                            row[tag] = [row[tag], value]
                     else:
-                        tmpl_name = template['project']['name']
-                        header = "{} | {}".format(tmpl_name, tag)
-                    row[header] = value
-
-            merged_data[target] = row
+                        row[tag] = value
+            merged_data[target] = flatten(row)
         final_data = merged_data.values()
 
         # Ensure same keys exist in all rows
