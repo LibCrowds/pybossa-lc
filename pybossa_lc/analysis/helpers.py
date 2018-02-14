@@ -106,7 +106,7 @@ def get_analysis_rules(project_id):
 
 def normalise_transcription(value, rules):
     """Normalise value according to the specified analysis rules."""
-    if not rules:
+    if not rules or not value:
         return value
 
     normalised = value
