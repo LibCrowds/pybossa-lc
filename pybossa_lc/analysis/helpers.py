@@ -133,7 +133,7 @@ def normalise_transcription(value, rules):
         yearfirst = rules.get('yearfirst', False)
         try:
             ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
-                                        yearfirst=yearfirst)
+                                       yearfirst=yearfirst)
         except (ValueError, TypeError):
             return ''
         normalised = ts.isoformat()[:10]
