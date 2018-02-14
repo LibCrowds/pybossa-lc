@@ -110,14 +110,14 @@ def normalise_transcription(value, rules):
         return value
 
     normalised = value
-    if rules.get('case') == 'title':
+    if rules.get('case') == 'title' and isinstance(normalised, str):
         normalised = titlecase(normalised.lower())
     elif rules.get('case') == 'lower':
         normalised = normalised.lower()
     elif rules.get('case') == 'upper':
         normalised = normalised.upper()
 
-    if rules.get('whitespace') == 'normalise':
+    if rules.get('whitespace') == 'normalise' and isinstance(normalised, str):
         normalised = " ".join(normalised.split())
     elif rules.get('whitespace') == 'underscore':
         normalised = " ".join(normalised.split()).replace(' ', '_')
@@ -134,7 +134,7 @@ def normalise_transcription(value, rules):
             return ''
         normalised = ts.isoformat()[:10]
 
-    if rules.get('trim_punctuation'):
+    if rules.get('trim_punctuation') and isinstance(normalised, str):
         normalised = normalised.strip(string.punctuation)
     return normalised
 
