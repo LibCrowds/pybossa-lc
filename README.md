@@ -33,11 +33,19 @@ The plugin will be available after you restart the server.
 The following settings should be added to your main PYBOSSA configuration file:
 
 ``` python
+# SPA server name
+SPA_SERVER_NAME = 'http://example.com'
+
 # The user ID used to make automated announcements
 ANNOUNCEMENT_USER_ID = 1
 
-# Analyse any empty results when the application starts or restarts
-POPULATE_EMPTY_RESULTS_ON_STARTUP = True
+# Additional startup tasks
+EXTRA_STARTUP_TASKS = {
+    'check_for_missing_templates': False,
+    'populate_empty_results': False,
+    'reanalyse_all_results': False,
+    'remove_bad_volumes': False
+}
 ```
 
 ## Testing
