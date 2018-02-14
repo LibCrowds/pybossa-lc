@@ -71,7 +71,7 @@ def analyse_all(analysis_func, project_id):
     project = project_repo.get(project_id)
     results = result_repo.filter_by(project_id=project_id)
     for result in results:
-        analysis_func(result.id)
+        analysis_func(result.id, analyse_all=True)
     if results:
         project_export(project.id)
 

@@ -8,7 +8,7 @@ MATCH_PERCENTAGE = 60
 VALID_KEYS = ['oclc', 'shelfmark', 'control_number', 'reference', 'comments']
 
 
-def analyse(result_id):
+def analyse(result_id, analyse_all=False):
     """Analyse Z39.50 results."""
     from pybossa.core import result_repo
     result = result_repo.get(result_id)
@@ -36,15 +36,15 @@ def analyse(result_id):
         result.info = new_info
         result_repo.update(result)
 
-    # Don't update if info field populated (ie. answer already verified)
-    if result.info:
+    # Don't update if info field populated and analyse_all=False
+    if result.info and not analyse_all:
         return
 
     # Filter the valid task run keys
     df = helpers.get_task_run_df(result.task_id)
     df = df.loc[:, df.columns.isin(VALID_KEYS)]
 
-    # Rename old keys from task runs
+    # Rename old task run keys
     df = df.rename(columns={
         'oclc': 'control_number',
         'shelfmark': 'reference'
