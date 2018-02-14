@@ -106,42 +106,41 @@ def get_analysis_rules(project_id):
 
 def normalise_transcription(value, rules):
     """Normalise value according to the specified analysis rules."""
-    if not rules or not value:
+    if not rules or not isinstance(value, basestring):
         return value
 
     normalised = value
-    if isinstance(normalised, str):
 
-        # Normalise case
-        if rules.get('case') == 'title':
-            normalised = titlecase(normalised.lower())
-        elif rules.get('case') == 'lower':
-            normalised = normalised.lower()
-        elif rules.get('case') == 'upper':
-            normalised = normalised.upper()
+    # Normalise case
+    if rules.get('case') == 'title':
+        normalised = titlecase(normalised.lower())
+    elif rules.get('case') == 'lower':
+        normalised = normalised.lower()
+    elif rules.get('case') == 'upper':
+        normalised = normalised.upper()
 
-        # Normalise whitespace
-        if rules.get('whitespace') == 'normalise':
-            normalised = " ".join(normalised.split())
-        elif rules.get('whitespace') == 'underscore':
-            normalised = " ".join(normalised.split()).replace(' ', '_')
-        elif rules.get('whitespace') == 'full_stop':
-            normalised = " ".join(normalised.split()).replace(' ', '.')
+    # Normalise whitespace
+    if rules.get('whitespace') == 'normalise':
+        normalised = " ".join(normalised.split())
+    elif rules.get('whitespace') == 'underscore':
+        normalised = " ".join(normalised.split()).replace(' ', '_')
+    elif rules.get('whitespace') == 'full_stop':
+        normalised = " ".join(normalised.split()).replace(' ', '.')
 
-        # Normalise dates
-        if rules.get('date_format'):
-            dayfirst = rules.get('dayfirst', False)
-            yearfirst = rules.get('yearfirst', False)
-            try:
-                ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
-                                           yearfirst=yearfirst)
-            except (ValueError, TypeError):
-                return ''
-            normalised = ts.isoformat()[:10]
+    # Normalise dates
+    if rules.get('date_format'):
+        dayfirst = rules.get('dayfirst', False)
+        yearfirst = rules.get('yearfirst', False)
+        try:
+            ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
+                                        yearfirst=yearfirst)
+        except (ValueError, TypeError):
+            return ''
+        normalised = ts.isoformat()[:10]
 
-        # Normalise punctuation
-        if rules.get('trim_punctuation') and isinstance(normalised, str):
-            normalised = normalised.strip(string.punctuation)
+    # Normalise punctuation
+    if rules.get('trim_punctuation'):
+        normalised = normalised.strip(string.punctuation)
     return normalised
 
 
