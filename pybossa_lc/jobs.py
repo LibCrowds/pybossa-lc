@@ -30,6 +30,14 @@ def queue_startup_jobs():
             'timeout': current_app.config.get('TIMEOUT'),
             'queue': 'medium'
         })
+    if extra_startup_tasks.get('reanalyse_all_results'):
+        enqueue_job({
+            'name': reanalyse_all_results,
+            'args': [],
+            'kwargs': {},
+            'timeout': current_app.config.get('TIMEOUT'),
+            'queue': 'medium'
+        })
     if extra_startup_tasks.get('remove_bad_volumes'):
         enqueue_job({
             'name': remove_bad_volumes,
@@ -68,6 +76,20 @@ def populate_empty_results():
                 iiif_annotation.analyse_empty(project.id)
             elif presenter == 'z3950':
                 z3950.analyse_empty(project.id)
+
+
+def reanalyse_all_results():
+    """Reanalyse all results"""
+    from pybossa.core import project_repo
+    categories = project_repo.get_all_categories()
+    for category in categories:
+        presenter = category.info.get('presenter')
+        cat_projects = project_repo.filter_by(category_id=category.id)
+        for project in cat_projects:
+            if presenter == 'iiif-annotation':
+                iiif_annotation.analyse_all(project.id)
+            elif presenter == 'z3950':
+                z3950.analyse_all(project.id)
 
 
 def remove_bad_volumes():
