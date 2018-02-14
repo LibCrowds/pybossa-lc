@@ -94,53 +94,43 @@ class VolumeExporter(Exporter):
         if not flat:
             return volumes_cache.get_annotations(volume_id, motivation)
 
-        # Collate annotation data for each target
-        target_data = {}
+        tmpls = templates_cache.get_all()
+        tmpl_names = {tmpl['id']: tmpl['project']['name'] for tmpl in tmpls}
+
+        data = {}
         tmpl_results = volumes_cache.get_tmpl_results(volume_id)
-        for tmpl_id, data in tmpl_results.items():
-            for result in data['results']:
+        for tmpl_id, results in tmpl_results.items():
+            tmpl_name = tmpl_names[tmpl_id]
+            for result in results:
                 target = self._get_target(result)
                 if target:
                     simple_data = self._get_simple_data(result, motivation)
-                    task_id = result['task_id']
-                    parent_task_id = result['info'].get('parent_task_id', None)
-                    target_row = target_data.get(target, [])
-                    target_row.append({
-                        'task_id': task_id,
-                        'parent_task_id': parent_task_id,
-                        'template_id': tmpl_id,
-                        'data': simple_data
-                    })
-                    target_data[target] = target_row
+                    target_data = data.get(target, {})
+                    tmpl_data = target_data.get(tmpl_name, {})
+                    for key in simple_data:
+                        values = tmpl_data.get(key, [])
+                        values.append(simple_data[key])
+                        tmpl_data[key] = values
+                    target_data[tmpl_name] = tmpl_data
 
-        templates = templates_cache.get_all()
-        template_names = {tmpl['id']: tmpl['project']['name']
-                          for tmpl in templates}
+                    # Add share URLs
+                    share_urls = target_data.get('share_url', [])
+                    share_urls.append(result['share_url'])
+                    target_data['share_url'] = list(set(share_urls))
 
-        # Merge annotations for each row
-        merged_data = {}
-        for target, anno_data in target_data.items():
+                    # Add task state
+                    current_state = result.get('task_state')
+                    if current_state != 'ongoing':
+                        target_data['task_state'] = result['task_state']
+
+                    data[target] = target_data
+
+        flat_data = []
+        for target in data:
             row = dict(target=target)
-            for anno in anno_data:
-                for tag, value in anno['data'].items():
-                    if tag in row:
-                        tag_row = row[tag]
-                        if isinstance(tag_row, list):
-                            tag_row.append(value)
-                            row[tag] = tag_row
-                        else:
-                            row[tag] = [row[tag], value]
-                    else:
-                        row[tag] = value
-            merged_data[target] = flatten(row)
-        final_data = merged_data.values()
-
-        # Ensure same keys exist in all rows
-        keys_lists = [row.keys() for row in final_data]
-        keys = list(set(itertools.chain(*keys_lists)))
-        for row in final_data:
-            for key in keys:
-                row[key] = row.get(key, None)
+            row.update(flatten(data[target]))
+            flat_data.append(row)
 
         # Return sorted by target
-        return sorted(final_data, key=lambda x: x['target'])
+        print flat_data
+        return sorted(flat_data, key=lambda x: x['target'])

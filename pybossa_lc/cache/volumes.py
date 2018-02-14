@@ -11,20 +11,22 @@ session = db.slave_session
 
 
 def get_tmpl_results(volume_id):
-    """Return a dict of results data against template IDs for a volume."""
+    """Return a enhanced results data against template IDs for a volume."""
     sql = text('''SELECT result.id, result.task_id, result.task_run_ids,
                result.project_id, result.created, result.last_version,
                result.info,
                project.info->'template_id' AS template_id,
-               category.info->'presenter' AS presenter
-               FROM result, project, category
+               task.info->'shareUrl' AS share_url,
+               task.state AS task_state
+               FROM result, project, category, task
                WHERE result.project_id = project.id
+               AND task.id = result.task_id
                AND project.category_id = category.id
                AND project.info->'volume_id' @> :volume_id
                ''')
-    results = session.execute(sql, dict(volume_id=json.dumps(volume_id)))
+    db_results = session.execute(sql, dict(volume_id=json.dumps(volume_id)))
     data = {}
-    for row in results:
+    for row in db_results:
         tmpl_id = row.template_id
         result = dict(id=row.id,
                       task_id=row.task_id,
@@ -32,13 +34,12 @@ def get_tmpl_results(volume_id):
                       project_id=row.project_id,
                       created=row.created,
                       last_version=row.last_version,
+                      task_state=row.task_state,
+                      share_url=row.share_url,
                       info=row.info or {})
-        data_row = data.get(tmpl_id, {})
-        results_data = data_row.get('results', [])
-        results_data.append(result)
-        data_row['results'] = results_data
-        data_row['presenter'] = row.presenter
-        data[tmpl_id] = data_row
+        tmpl_results = data.get(tmpl_id, [])
+        tmpl_results.append(result)
+        data[tmpl_id] = tmpl_results
     return data
 
 
