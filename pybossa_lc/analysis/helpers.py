@@ -6,6 +6,8 @@ import numpy
 import string
 import pandas
 import dateutil
+import dateutil.parser
+from datetime import datetime
 from titlecase import titlecase
 from pybossa.jobs import project_export
 
@@ -109,7 +111,7 @@ def normalise_transcription(value, rules):
 
     normalised = value
     if rules.get('case') == 'title':
-        normalised = titlecase(normalised)
+        normalised = titlecase(normalised.lower())
     elif rules.get('case') == 'lower':
         normalised = normalised.lower()
     elif rules.get('case') == 'upper':
@@ -126,12 +128,11 @@ def normalise_transcription(value, rules):
         dayfirst = rules.get('dayfirst', False)
         yearfirst = rules.get('yearfirst', False)
         try:
-            date = dateutil.parser.parse(normalised, dayfirst=dayfirst,
-                                         yearfirst=yearfirst)
-        except ValueError:
+            ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
+                                    yearfirst=yearfirst)
+        except (ValueError, TypeError):
             return ''
-        fmt = rules.get('date_format')
-        normalised = date.strftime('%Y-%m-%d')
+        normalised = ts.isoformat()[:10]
 
     if rules.get('trim_punctuation'):
         normalised = normalised.strip(string.punctuation)
