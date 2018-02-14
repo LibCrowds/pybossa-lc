@@ -13,6 +13,7 @@ from pybossa.repositories import ResultRepository, ProjectRepository
 from ..fixtures import TemplateFixtures, AnnotationFixtures
 from pybossa_lc.exporters import VolumeExporter
 
+
 class TestVolumeExporter(Test):
 
     def setUp(self):
@@ -220,13 +221,15 @@ class TestVolumeExporter(Test):
         expected_data = []
         results_data = {}
         target = "example.com"
+
         def create_task_runs(motivation, annotag, project, tasks):
             tag_values = []
             for i, task in enumerate(tasks):
                 TaskRunFactory.create(task=task, project=project)
                 (anno, tag, value,
-                source) = self.anno_fixtures.create(motivation,
-                                                    target=target, tag=annotag)
+                 source) = self.anno_fixtures.create(motivation,
+                                                     target=target,
+                                                     tag=annotag)
                 result = self.result_repo.get_by(task_id=task.id)
                 result.info = dict(annotations=[anno])
                 self.result_repo.update(result)

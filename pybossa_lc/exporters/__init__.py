@@ -89,7 +89,6 @@ class VolumeExporter(Exporter):
             target = temp_target
         return target
 
-
     def _get_data(self, motivation, volume_id, flat=False):
         """Get volume data for a given annotation motivation."""
         if not flat:

@@ -34,7 +34,6 @@ class TemplateFixtures(object):
 
 class AnnotationFixtures(object):
 
-
     def create(self, motivation, tag=None, target=None, value=None):
         n = random.randint(1, 10)
         tag = tag or "tag_{}".format(n)
