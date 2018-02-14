@@ -110,32 +110,38 @@ def normalise_transcription(value, rules):
         return value
 
     normalised = value
-    if rules.get('case') == 'title' and isinstance(normalised, str):
-        normalised = titlecase(normalised.lower())
-    elif rules.get('case') == 'lower':
-        normalised = normalised.lower()
-    elif rules.get('case') == 'upper':
-        normalised = normalised.upper()
+    if isinstance(normalised, str):
 
-    if rules.get('whitespace') == 'normalise' and isinstance(normalised, str):
-        normalised = " ".join(normalised.split())
-    elif rules.get('whitespace') == 'underscore':
-        normalised = " ".join(normalised.split()).replace(' ', '_')
-    elif rules.get('whitespace') == 'full_stop':
-        normalised = " ".join(normalised.split()).replace(' ', '.')
+        # Normalise case
+        if rules.get('case') == 'title':
+            normalised = titlecase(normalised.lower())
+        elif rules.get('case') == 'lower':
+            normalised = normalised.lower()
+        elif rules.get('case') == 'upper':
+            normalised = normalised.upper()
 
-    if rules.get('date_format'):
-        dayfirst = rules.get('dayfirst', False)
-        yearfirst = rules.get('yearfirst', False)
-        try:
-            ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
-                                       yearfirst=yearfirst)
-        except (ValueError, TypeError):
-            return ''
-        normalised = ts.isoformat()[:10]
+        # Normalise whitespace
+        if rules.get('whitespace') == 'normalise':
+            normalised = " ".join(normalised.split())
+        elif rules.get('whitespace') == 'underscore':
+            normalised = " ".join(normalised.split()).replace(' ', '_')
+        elif rules.get('whitespace') == 'full_stop':
+            normalised = " ".join(normalised.split()).replace(' ', '.')
 
-    if rules.get('trim_punctuation') and isinstance(normalised, str):
-        normalised = normalised.strip(string.punctuation)
+        # Normalise dates
+        if rules.get('date_format'):
+            dayfirst = rules.get('dayfirst', False)
+            yearfirst = rules.get('yearfirst', False)
+            try:
+                ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
+                                           yearfirst=yearfirst)
+            except (ValueError, TypeError):
+                return ''
+            normalised = ts.isoformat()[:10]
+
+        # Normalise punctuation
+        if rules.get('trim_punctuation') and isinstance(normalised, str):
+            normalised = normalised.strip(string.punctuation)
     return normalised
 
 
