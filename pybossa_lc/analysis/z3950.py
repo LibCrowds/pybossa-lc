@@ -90,7 +90,6 @@ def analyse(result_id, _all=False):
     # Check for any comments (which might signify further checks required)
     comments = [comment for comment in df['comments'].tolist() if comment]
     if comments:
-        print comments
         for value in comments:
             comment_anno = helpers.create_commenting_anno(target, value)
             new_annotations.append(comment_anno)
