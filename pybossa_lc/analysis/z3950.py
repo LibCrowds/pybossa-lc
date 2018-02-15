@@ -47,10 +47,12 @@ def analyse(result_id, _all=False):
                                                       old_info['comments'])
         ctrl_anno = helpers.create_describing_anno(target,
                                                    old_info['control_number'],
-                                                   'control_number')
+                                                   'control_number',
+                                                   modified=True)
         ref_anno = helpers.create_describing_anno(target,
                                                   old_info['reference'],
-                                                  'reference')
+                                                  'reference',
+                                                  modified=True)
         new_annotations = [comment_anno, ctrl_anno, ref_anno]
         result.info = dict(annotations=new_annotations)
         result_repo.update(result)

@@ -246,9 +246,9 @@ class TestZ3950Analysis(Test):
     @with_context
     @patch("pybossa_lc.analysis.z3950.helpers.create_describing_anno")
     @patch("pybossa_lc.analysis.z3950.helpers.create_commenting_anno")
-    def test_bad_headers_from_old_module_fixed(self, mock_create_comment_anno,
-                                               mock_create_desc_anno):
-        """Test that bad headers from the old analysis module are fixed."""
+    def test_results_from_old_module_stored(self, mock_create_comment_anno,
+                                            mock_create_desc_anno):
+        """Test that any results from the old analysis module are stored."""
         mock_create_desc_anno.return_value = {}
         mock_create_comment_anno.return_value = {}
         project = ProjectFactory.create()
@@ -285,10 +285,16 @@ class TestZ3950Analysis(Test):
         assert_equal(len(result.info['annotations']), 3)
         desc_call_args_list = mock_create_desc_anno.call_args_list
         comment_call_args_list = mock_create_comment_anno.call_args_list
-        print comment_call_args_list
         assert_equal(len(desc_call_args_list), 2)
-        assert call(target, ref, 'reference') in desc_call_args_list
-        assert call(target, ctrl_n, 'control_number') in desc_call_args_list
+        print desc_call_args_list
+        assert (
+            call(target, ref, 'reference', modified=True)
+            in desc_call_args_list
+        )
+        assert (
+            call(target, ctrl_n, 'control_number', modified=True)
+            in desc_call_args_list
+        )
         assert call(target, comment) in comment_call_args_list
 
     @with_context

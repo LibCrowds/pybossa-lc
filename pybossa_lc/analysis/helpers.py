@@ -236,7 +236,7 @@ def create_tagging_anno(target, value):
     return anno
 
 
-def create_describing_anno(target, value, tag):
+def create_describing_anno(target, value, tag, modified=False):
     """Create a Web Annotation with the describing motivation."""
     anno = get_anno_base('describing')
     anno['target'] = target
@@ -253,6 +253,8 @@ def create_describing_anno(target, value, tag):
             "value": tag
         }
     ]
+    if modified:
+        anno['body'][0]['modified'] = get_xsd_datetime()
     return anno
 
 
