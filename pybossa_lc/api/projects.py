@@ -209,7 +209,8 @@ def handle_valid_project_form(form, template, volume, category,
 
     if success:
         auditlogger.add_log_entry(None, project, current_user)
-        task_repo.update_tasks_redundancy(project, 3)
+        n_answers = template['project'].get('min_answers', 3)
+        task_repo.update_tasks_redundancy(project, n_answers)
         return redirect_content_type(url_for('home.home'))
 
 
