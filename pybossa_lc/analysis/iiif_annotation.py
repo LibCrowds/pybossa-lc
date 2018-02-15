@@ -169,7 +169,7 @@ def update_selector(anno, rect):
     anno['modified'] = datetime.datetime.now().isoformat()
 
 
-def analyse(result_id, analyse_all=False):
+def analyse(result_id, _all=False):
     """Analyse a IIIF Annotation result."""
     from pybossa.core import result_repo, task_repo
     result = result_repo.get(result_id)

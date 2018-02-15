@@ -8,63 +8,83 @@ MATCH_PERCENTAGE = 60
 VALID_KEYS = ['oclc', 'shelfmark', 'control_number', 'reference', 'comments']
 
 
-def analyse(result_id, analyse_all=False):
+def get_old_info(result_info):
+    """Return any info stored in the old analysis module format."""
+    old_keys = ['oclc', 'shelfmark', 'oclc-option', 'shelfmark-option',
+                'comments-option']
+    old_info = None
+    if result_info and any(key in result_info for key in old_keys):
+
+        def replace_old_key(old_key, new_key):
+            old = result_info.get(old_key)
+            old_analysed = result_info.get('{}-option'.format(old_key))
+            new = result_info.get(new_key)
+            return old_analysed if old_analysed else new if new else old
+
+        old_info = {
+            'control_number': replace_old_key('oclc', 'control_number'),
+            'reference': replace_old_key('shelfmark', 'reference'),
+            'comments': replace_old_key('comments', 'comments'),
+        }
+    return old_info
+
+
+def analyse(result_id, _all=False):
     """Analyse Z39.50 results."""
     from pybossa.core import result_repo
     result = result_repo.get(result_id)
+    annotations = []
+    target = helpers.get_task_target(result.task_id)
 
     # Update old method of verification
     if result.info == 'Unverified':
         result.info = {}
 
-    # Fix any bad keys from previous analysis module
-    old_keys = ['oclc', 'shelfmark', 'oclc-option', 'shelfmark-option',
-                'comments-option']
-    if result.info and any(key in result.info for key in old_keys):
-
-        def replace_old_key(old_key, new_key):
-            old = result.info.get(old_key)
-            old_analysed = result.info.get('{}-option'.format(old_key))
-            new = result.info.get(new_key)
-            return new if new else old_analysed if old_analysed else old
-
-        new_info = {
-            'control_number': replace_old_key('oclc', 'control_number'),
-            'reference': replace_old_key('shelfmark', 'reference'),
-            'comments': replace_old_key('comments', 'comments'),
-        }
-        result.info = new_info
+    # Store any old info as it may already have been manually verified
+    old_info = get_old_info(result.info)
+    if old_info:
+        comment_anno = helpers.create_commenting_anno(target,
+                                                      old_info['comments'])
+        ctrl_anno = helpers.create_describing_anno(target,
+                                                   old_info['control_number'],
+                                                   'control_number')
+        ref_anno = helpers.create_describing_anno(target,
+                                                  old_info['reference'],
+                                                  'reference')
+        annotations = [comment_anno, ctrl_anno, ref_anno]
+        result.info = dict(annotations=annotations)
         result_repo.update(result)
+        return
 
-    # Don't update if info field populated and analyse_all=False
-    if result.info and not analyse_all:
+    # Don't update if info field populated and _all=False
+    if result.info and not _all:
         return
 
     # Filter the valid task run keys
     df = helpers.get_task_run_df(result.task_id)
     df = df.loc[:, df.columns.isin(VALID_KEYS)]
 
-    # Rename old task run keys
-    df = df.rename(columns={
-        'oclc': 'control_number',
-        'shelfmark': 'reference'
-    })
+    # Replace deprecated keys
+    df = helpers.replace_df_keys(df, oclc='control_number',
+                                 shelfmark='reference')
 
     # Verify that the required columns exist
     required_keys = ['control_number', 'reference', 'comments']
     if not all(key in df for key in required_keys):
         raise ValueError('Missing required keys')
 
-    # Initialise the result with empty values
-    result.info = {k: "" for k in df.keys()}
-
     # Assume last version for now
     result.last_version = True
 
     # Check for any comments (which might signify further checks required)
-    if not helpers.drop_empty_rows(df['comments']).empty:
-        result_repo.update(result)
+    comments = [comment for comment in df['comments'].tolist() if comment]
+    if comments:
+        for value in comments:
+            comment_anno = helpers.create_commenting_anno(target, value)
+            annotations.append(comment_anno)
+        result.info = dict(annotations=annotations)
         result.last_version = False
+        result_repo.update(result)
         return
 
     # With no comments, focus on control_number and reference
@@ -86,14 +106,19 @@ def analyse(result_id, analyse_all=False):
     # Store most common answers for each key if match percentage met
     if has_answers and has_matches:
         control_number = df['control_number'].value_counts().idxmax()
-        result.info['control_number'] = control_number
         reference = df['reference'].value_counts().idxmax()
-        result.info['reference'] = reference
+        ctrl_anno = helpers.create_describing_anno(target, control_number,
+                                                   'control_number')
+        ref_anno = helpers.create_describing_anno(target, reference,
+                                                  'reference')
+        annotations.append(ctrl_anno)
+        annotations.append(ref_anno)
 
     # Mark for further checking if match percentage not met
     elif has_answers:
         result.last_version = False
 
+    result.info = dict(annotations=annotations)
     result_repo.update(result)
 
 
