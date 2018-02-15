@@ -146,7 +146,7 @@ class TestProjectsApi(web.Helper):
                          short_name='bar',
                          template_id=tmpl['id'],
                          volume_id=vol['id'],
-                         parent_id='')
+                         parent_id='None')
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
         msg = 'The project was generated with 1 task.'
@@ -181,7 +181,7 @@ class TestProjectsApi(web.Helper):
                          short_name='bar',
                          template_id=tmpl['id'],
                          volume_id=vol['id'],
-                         parent_id='')
+                         parent_id='None')
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
         msg = 'The project was generated with 1 task.'
