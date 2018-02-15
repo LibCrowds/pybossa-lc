@@ -12,7 +12,8 @@ class TemplateFixtures(object):
                                    placeholder='', inputType='text')
         self.project_tmpl = dict(name='My Project Type', tutorial='Do stuff',
                                  description='This project is amazing',
-                                 category_id=category.id)
+                                 category_id=category.id, min_answers=3,
+                                 max_answers=5)
         self.iiif_select_tmpl = dict(tag='title', mode='select',
                                      guidance='Do it now', objective='Mark up')
         self.iiif_transcribe_tmpl = dict(tag='title', mode='transcribe',
