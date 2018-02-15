@@ -33,7 +33,7 @@ def analyse(result_id, _all=False):
     """Analyse Z39.50 results."""
     from pybossa.core import result_repo
     result = result_repo.get(result_id)
-    annotations = []
+    new_annotations = []
     target = helpers.get_task_target(result.task_id)
 
     # Update old method of verification
@@ -51,14 +51,23 @@ def analyse(result_id, _all=False):
         ref_anno = helpers.create_describing_anno(target,
                                                   old_info['reference'],
                                                   'reference')
-        annotations = [comment_anno, ctrl_anno, ref_anno]
-        result.info = dict(annotations=annotations)
+        new_annotations = [comment_anno, ctrl_anno, ref_anno]
+        result.info = dict(annotations=new_annotations)
         result_repo.update(result)
         return
 
     # Don't update if info field populated and _all=False
     if result.info and not _all:
         return
+
+    # Check for any manually modified annotations
+    old_annos = [] if not result.info else result.info.get('annotations', [])
+    mod_ctrl = helpers.get_modified_annos(old_annos, 'control_number')
+    if mod_ctrl:
+        new_annotations += mod_ctrl
+    mod_ref = helpers.get_modified_annos(old_annos, 'reference')
+    if mod_ref:
+        new_annotations += mod_ref
 
     # Filter the valid task run keys
     df = helpers.get_task_run_df(result.task_id)
@@ -79,15 +88,13 @@ def analyse(result_id, _all=False):
     # Check for any comments (which might signify further checks required)
     comments = [comment for comment in df['comments'].tolist() if comment]
     if comments:
+        print comments
         for value in comments:
             comment_anno = helpers.create_commenting_anno(target, value)
-            annotations.append(comment_anno)
-        result.info = dict(annotations=annotations)
+            new_annotations.append(comment_anno)
         result.last_version = False
-        result_repo.update(result)
-        return
 
-    # With no comments, focus on control_number and reference
+    # With comments handled, focus on control_number and reference
     df = df[['control_number', 'reference']]
 
     # Check if there are any non-empty answers
@@ -107,18 +114,21 @@ def analyse(result_id, _all=False):
     if has_answers and has_matches:
         control_number = df['control_number'].value_counts().idxmax()
         reference = df['reference'].value_counts().idxmax()
-        ctrl_anno = helpers.create_describing_anno(target, control_number,
-                                                   'control_number')
-        ref_anno = helpers.create_describing_anno(target, reference,
-                                                  'reference')
-        annotations.append(ctrl_anno)
-        annotations.append(ref_anno)
+        if not mod_ctrl:
+            ctrl_anno = helpers.create_describing_anno(target, control_number,
+                                                       'control_number')
+            new_annotations.append(ctrl_anno)
+
+        if not mod_ref:
+            ref_anno = helpers.create_describing_anno(target, reference,
+                                                      'reference')
+            new_annotations.append(ref_anno)
 
     # Mark for further checking if match percentage not met
     elif has_answers:
         result.last_version = False
 
-    result.info = dict(annotations=annotations)
+    result.info = dict(annotations=new_annotations)
     result_repo.update(result)
 
 

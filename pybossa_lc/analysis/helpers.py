@@ -252,3 +252,21 @@ def create_describing_anno(target, value, tag):
         }
     ]
     return anno
+
+
+def get_modified_annos(anno_list, tag):
+    """Check for a manually modified describing annotation."""
+    matches = []
+    for anno in anno_list:
+        if anno['motivation'] != 'describing':
+            continue
+
+        tag_matches = [body for body in anno['body']
+                       if body['purpose'] == 'tagging' and
+                       body['value'] == tag]
+        modified = [body for body in anno['body']
+                    if body['purpose'] == 'describing' and
+                    'modified' in body]
+        if tag_matches and modified:
+            matches.append(anno)
+    return matches
