@@ -164,9 +164,11 @@ def replace_df_keys(df, **kwargs):
     if not kwargs:
         return df
     df = df.rename(columns=kwargs)
-    def sjoin(x): return ';'.join(x[x.notnull()].astype(str))
-    df = df.groupby(level=0, axis=1).apply(lambda x: x.apply(sjoin, axis=1))
-    return df
+
+    def sjoin(x):
+        return ';'.join(x[x.notnull()].astype(str))
+
+    return df.groupby(level=0, axis=1).apply(lambda x: x.apply(sjoin, axis=1))
 
 
 def get_task_target(task_id):
