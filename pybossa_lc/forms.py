@@ -61,8 +61,8 @@ class ProjectTemplateForm(Form):
     description = TextField('Description', [validators.Required()])
     tutorial = TextAreaField('Tutorial')
     category_id = SelectField('Category', coerce=int)
-    min_answers = IntegerField('Min Answers')
-    max_answers = IntegerField('Max Answers')
+    min_answers = IntegerField('Min Answers', [validators.Required()])
+    max_answers = IntegerField('Max Answers', [validators.Required()])
 
 
 class IIIFAnnotationTemplateForm(Form):
