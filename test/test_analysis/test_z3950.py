@@ -286,7 +286,6 @@ class TestZ3950Analysis(Test):
         desc_call_args_list = mock_create_desc_anno.call_args_list
         comment_call_args_list = mock_create_comment_anno.call_args_list
         assert_equal(len(desc_call_args_list), 2)
-        print desc_call_args_list
         assert (
             call(target, ref, 'reference', modified=True)
             in desc_call_args_list
