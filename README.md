@@ -5,12 +5,13 @@
 > A PYBOSSA plugin for managing LibCrowds projects.
 
 The plugin is designed to work in conjunction with the
-[LibCrowds frontend](https://github.com/LibCrowds/libcrowds). It contains
+[LibCrowds frontend](https://github.com/LibCrowds/libcrowds) and contains
 functions for generating LibCrowds projects and analysing their results.
 
-While some of this could be handled purely via the API it's important that we
-keep the content of the project templates etc. in sync, so some forms are
-provided for project creation and management via a system of templates.
+Key features:
+
+- Analyses data and stores final results as Web Annotations
+- Handles generation of projects from templates and volumes
 
 For details of how project creation and results analysis works in LibCrowds,
 see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
