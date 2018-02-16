@@ -15,7 +15,7 @@ from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis import z3950
 
 
-class TestZ3950Analysis(Test):
+class TestZ3950Analyst(Test):
 
     def setUp(self):
         super(TestZ3950Analysis, self).setUp()

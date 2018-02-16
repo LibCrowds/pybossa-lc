@@ -3,18 +3,55 @@
 
 import numpy
 import pandas
+from mock import patch, call
 from freezegun import freeze_time
-from factories import TaskFactory, TaskRunFactory
-from default import Test, with_context
+from factories import TaskFactory, TaskRunFactory, ProjectFactory, UserFactory
+from default import db, Test, with_context
 from nose.tools import *
+from pybossa.core import result_repo
+from pybossa.repositories import ResultRepository
 
-from pybossa_lc.analysis import helpers
+from pybossa_lc.analysis import Analyst
 
 
-class TestAnalysisHelpers(Test):
+class TestAnalyst(Test):
 
     def setUp(self):
-        super(TestAnalysisHelpers, self).setUp()
+        super(TestAnalyst, self).setUp()
+        Analyst.__abstractmethods__ = frozenset()
+        self.analyst = Analyst()
+        self.result_repo = ResultRepository(db)
+
+    @with_context
+    @patch("pybossa_lc.analysis.Analyst.analyse")
+    def test_analyse_all(self, mock_analyse):
+        """Test that all results are analysed."""
+        project = ProjectFactory()
+        tasks = TaskFactory.create_batch(2, project=project, n_answers=1)
+        for task in tasks:
+            TaskRunFactory.create(task=task)
+        result = self.result_repo.get_by(task_id=tasks[0].id)
+        result.info = dict(annotations=[{}])
+        self.result_repo.update(result)
+        self.analyst.analyse_all(project.id)
+        expected = [call(t.id) for t in tasks]
+        assert_equal(mock_analyse.call_args_list, expected)
+
+    @with_context
+    @patch("pybossa_lc.analysis.Analyst.analyse")
+    def test_analyse_empty(self, mock_analyse):
+        """Test that all results are analysed."""
+        project = ProjectFactory()
+        tasks = TaskFactory.create_batch(2, project=project, n_answers=1)
+        for task in tasks:
+            TaskRunFactory.create(task=task)
+        result = self.result_repo.get_by(task_id=tasks[0].id)
+        result.info = dict(annotations=[{}])
+        self.result_repo.update(result)
+        all_results = self.result_repo.filter_by(project_id=project.id)
+        self.analyst.analyse_empty(project.id)
+        expected = [call(r.task_id) for r in all_results if not r.info]
+        assert_equal(mock_analyse.call_args_list, expected)
 
     @with_context
     def test_key_dropped(self):
@@ -25,7 +62,7 @@ class TestAnalysisHelpers(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         excluded = ['foo']
-        df = helpers.drop_keys(df, excluded)
+        df = self.analyst.drop_keys(df, excluded)
         assert 'foo' not in df.keys(), "foo should be dropped"
         assert 'bar' in df.keys(), "bar should not be dropped"
 
@@ -38,7 +75,7 @@ class TestAnalysisHelpers(Test):
             'foo': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        df = helpers.drop_empty_rows(df)
+        df = self.analyst.drop_empty_rows(df)
         assert df['foo'].tolist() == ['bar'], "empty row should be dropped"
 
     @with_context
@@ -49,7 +86,7 @@ class TestAnalysisHelpers(Test):
             'baz': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        df = helpers.drop_empty_rows(df)
+        df = self.analyst.drop_empty_rows(df)
         expected = {'foo': {0: 'bar'}, 'baz': {0: None}}
         assert df.to_dict() == expected, "partial rows should not be dropped"
 
@@ -61,7 +98,7 @@ class TestAnalysisHelpers(Test):
             'baz': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        has_matches = helpers.has_n_matches(df, 2, 100)
+        has_matches = self.analyst.has_n_matches(df, 2, 100)
         assert not has_matches, "the check for matches should fail"
 
     @with_context
@@ -72,7 +109,7 @@ class TestAnalysisHelpers(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         df = df.replace('', numpy.nan)
-        has_matches = helpers.has_n_matches(df, 2, 100)
+        has_matches = self.analyst.has_n_matches(df, 2, 100)
         assert not has_matches, "the check for matches should fail"
 
     @with_context
@@ -84,7 +121,7 @@ class TestAnalysisHelpers(Test):
             'foo': 'bar'
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        has_matches = helpers.has_n_matches(df, 2, 100)
+        has_matches = self.analyst.has_n_matches(df, 2, 100)
         assert has_matches, "the check for matches should pass"
 
     @with_context
@@ -92,7 +129,7 @@ class TestAnalysisHelpers(Test):
         """Test the task run dataframe is built correctly."""
         info = {'foo': 'bar'}
         taskrun = TaskRunFactory.create(info=info)
-        df = helpers.get_task_run_df(taskrun.task_id)
+        df = self.analyst.get_task_run_df(taskrun.task_id)
         assert df['foo'].tolist() == [info['foo']], "tr info key should match"
         assert df['info'].tolist() == [info], "info should equal task run info"
 
@@ -101,62 +138,62 @@ class TestAnalysisHelpers(Test):
         """Test that protected info keys are prefixed."""
         info = {'foo': 'bar', 'info': 'baz'}
         taskrun = TaskRunFactory.create(info=info)
-        df = helpers.get_task_run_df(taskrun.task_id)
+        df = self.analyst.get_task_run_df(taskrun.task_id)
         msg = "info key should be transformed to _info"
         assert df['_info'].tolist() == [info['info']], msg
 
     def test_titlecase_normalisation(self):
         """Test titlecase normalisation."""
         rules = dict(case='title')
-        norm = helpers.normalise_transcription('Some words', rules)
+        norm = self.analyst.normalise_transcription('Some words', rules)
         assert_equal(norm, 'Some Words')
 
     def test_lowercase_normalisation(self):
         """Test lowercase normalisation."""
         rules = dict(case='lower')
-        norm = helpers.normalise_transcription('Some words', rules)
+        norm = self.analyst.normalise_transcription('Some words', rules)
         assert_equal(norm, 'some words')
 
     def test_uppercase_normalisation(self):
         """Test uppercase normalisation."""
         rules = dict(case='upper')
-        norm = helpers.normalise_transcription('Some words', rules)
+        norm = self.analyst.normalise_transcription('Some words', rules)
         assert_equal(norm, 'SOME WORDS')
 
     def test_whitespace_normalisation(self):
         """Test whitespace normalisation."""
         rules = dict(whitespace='normalise')
-        norm = helpers.normalise_transcription(' Two  Words', rules)
+        norm = self.analyst.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two Words')
 
     def test_whitespace_replace_underscore(self):
         """Test replacing whitespace with underscore normalisation."""
         rules = dict(whitespace='underscore')
-        norm = helpers.normalise_transcription(' Two  Words', rules)
+        norm = self.analyst.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two_Words')
 
     def test_whitespace_replace_full_stop(self):
         """Test replacing whitespace with full stop normalisation."""
         rules = dict(whitespace='full_stop')
-        norm = helpers.normalise_transcription(' Two  Words', rules)
+        norm = self.analyst.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two.Words')
 
     def test_trim_punctuation_normalisation(self):
         """Test trim punctuation normalisation."""
         rules = dict(trim_punctuation=True)
-        norm = helpers.normalise_transcription(':Oh, a word.', rules)
+        norm = self.analyst.normalise_transcription(':Oh, a word.', rules)
         assert_equal(norm, 'Oh, a word')
 
     def test_date_conversion(self):
         """Test date conversion."""
         rules = dict(date_format=True, dayfirst=True)
-        norm = helpers.normalise_transcription('19/11/1984', rules)
+        norm = self.analyst.normalise_transcription('19/11/1984', rules)
         assert_equal(norm, '1984-11-19')
 
     def test_date_conversion_with_invalid_date(self):
         """Test date conversion with invalid date."""
         rules = dict(date_format=True, dayfirst=True)
-        norm = helpers.normalise_transcription('Not a date', rules)
+        norm = self.analyst.normalise_transcription('Not a date', rules)
         assert_equal(norm, '')
 
     @with_context
@@ -165,7 +202,7 @@ class TestAnalysisHelpers(Test):
         n_original_answers = 1
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
-        helpers.update_n_answers_required(task)
+        self.analyst.update_n_answers_required(task)
         assert_equal(task.n_answers, n_original_answers + 1)
         assert_equal(task.state, 'ongoing')
 
@@ -175,7 +212,7 @@ class TestAnalysisHelpers(Test):
         n_original_answers = 2
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
-        helpers.update_n_answers_required(task)
+        self.analyst.update_n_answers_required(task)
         assert_equal(task.n_answers, n_original_answers)
         assert_equal(task.state, 'ongoing')
 
@@ -185,35 +222,35 @@ class TestAnalysisHelpers(Test):
         n_original_answers = 3
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create_batch(n_original_answers, task=task)
-        helpers.update_n_answers_required(task, max_answers=n_original_answers)
+        self.analyst.update_n_answers_required(task, max_answers=n_original_answers)
         assert_equal(task.n_answers, n_original_answers)
         assert_equal(task.state, 'completed')
 
     def test_overlap_ratio_is_1_with_equal_rects(self):
         """Test for an overlap ratio of 1."""
         rect = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
-        overlap = helpers.get_overlap_ratio(rect, rect)
+        overlap = self.analyst.get_overlap_ratio(rect, rect)
         assert_equal(overlap, 1)
 
     def test_overlap_ratio_is_0_with_adjacent_rects(self):
         """Test for an overlap ratio of 0."""
         r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         r2 = {'x': 100, 'y': 201, 'w': 100, 'h': 100}
-        overlap = helpers.get_overlap_ratio(r1, r2)
+        overlap = self.analyst.get_overlap_ratio(r1, r2)
         assert_equal(overlap, 0)
 
     def test_overlap_ratio_with_partially_overlapping_rects(self):
         """Test for an overlap ratio of 0.33."""
         r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         r2 = {'x': 150, 'y': 100, 'w': 100, 'h': 100}
-        overlap = helpers.get_overlap_ratio(r1, r2)
+        overlap = self.analyst.get_overlap_ratio(r1, r2)
         assert_equal('{:.2f}'.format(overlap), '0.33')
 
     def test_overlap_ratio_where_union_is_zero(self):
         """Test for an overlap ratio where the union is zero."""
         r1 = {'x': 0, 'y': 0, 'w': 100, 'h': 100}
         r2 = {'x': 101, 'y': 0, 'w': 100, 'h': 100}
-        overlap = helpers.get_overlap_ratio(r1, r2)
+        overlap = self.analyst.get_overlap_ratio(r1, r2)
         assert_equal(overlap, 0)
 
     def test_rect_from_selection(self):
@@ -228,7 +265,7 @@ class TestAnalysisHelpers(Test):
                 }
             }
         }
-        rect = helpers.get_rect_from_selection_anno(fake_anno)
+        rect = self.analyst.get_rect_from_selection_anno(fake_anno)
         assert_dict_equal(rect, coords)
 
     def test_rect_from_selection_with_floats(self):
@@ -243,10 +280,62 @@ class TestAnalysisHelpers(Test):
                 }
             }
         }
-        rect = helpers.get_rect_from_selection_anno(fake_anno)
+        rect = self.analyst.get_rect_from_selection_anno(fake_anno)
         assert_dict_equal(rect, {'x': 400, 'y': 200, 'w': 101, 'h': 151})
 
     @freeze_time("19-11-1984")
     def test_get_xsd_datetime(self):
-        ts = helpers.get_xsd_datetime()
+        """Test that a timestamp is returned in the correct format."""
+        ts = self.analyst.get_xsd_datetime()
         assert_equal(ts, '1984-11-19T00:00:00Z')
+
+    @with_context
+    def test_get_project_template(self):
+        """Test that the correct template is returned."""
+        fake_templates = [
+            {'id': 'foo', 'name': 'bar'},
+            {'id': 'baz', 'name': 'qux'}
+        ]
+        user_info = dict(templates=fake_templates)
+        project_info = dict(template_id=fake_templates[0]['id'])
+        UserFactory.create(info=user_info)
+        project = ProjectFactory(info=project_info)
+        returned_tmpl = self.analyst.get_project_template(project.id)
+        assert_equal(returned_tmpl, fake_templates[0])
+
+    @with_context
+    @raises(ValueError)
+    def test_get_invalid_project_template(self):
+        """Test that getting an invalid template throws an error."""
+        fake_templates = [{'id': 'foo'}]
+        user_info = dict(templates=fake_templates)
+        project_info = dict(template_id='bar')
+        UserFactory.create(info=user_info)
+        project = ProjectFactory(info=project_info)
+        self.analyst.get_project_template(project.id)
+
+    @with_context
+    @raises(ValueError)
+    def test_get_non_existant_project_template(self):
+        """Test that getting a non-existant template throws an error."""
+        project = ProjectFactory()
+        self.analyst.get_project_template(project.id)
+
+    def test_dataframe_keys_replaced(self):
+        """Test that dataframe keys are replaced and columns merged."""
+        data = [
+            {
+                'foo': 'bar',
+                'baz': 'qux'
+            },
+            {
+                'foo': 'bar',
+                'quux': 'corge'
+            }
+        ]
+        old_df = pandas.DataFrame(data, range(len(data)))
+        new_df = self.analyst.replace_df_keys(old_df, quux='baz')
+        assert_equal(new_df.to_dict(), {
+            'foo': 'bar',
+            ''
+        })

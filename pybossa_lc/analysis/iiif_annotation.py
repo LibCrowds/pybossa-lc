@@ -13,8 +13,8 @@ N_MATCHING_TRANSCRIPTIONS = 2
 
 class IIIFAnnotationAnalyst(Analyst):
 
-    def __init__(self, project_id):
-        super(IIIFAnnotationAnalyst, self).__init__(project_id)
+    def __init__(self):
+        super(IIIFAnnotationAnalyst, self).__init__()
 
     def get_transcribed_fields(self, anno):
         """Return all transcribed fields from the body of an annotation."""
@@ -139,7 +139,7 @@ class IIIFAnnotationAnalyst(Analyst):
         # Process transcriptions
         final_transcriptions = []
         if transcriptions:
-            tmpl = self.get_project_template()
+            tmpl = self.get_project_template(result.project_id)
             rules = tmpl.get('rules')
 
             merged_transcriptions = self.merge_transcriptions(transcriptions, rules)

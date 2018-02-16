@@ -12,8 +12,8 @@ VALID_KEYS = ['oclc', 'shelfmark', 'control_number', 'reference', 'comments']
 
 class Z3950Analyst(Analyst):
 
-    def __init__(self, project_id):
-        super(Z3950Analyst, self).__init__(project_id)
+    def __init__(self):
+        super(Z3950Analyst, self).__init__()
 
     def get_old_info(self, result_info):
         """Return any info stored in the old analysis module format."""
@@ -104,7 +104,7 @@ class Z3950Analyst(Analyst):
         has_answers = not df.empty
 
         # Apply normalisation rules to reference
-        tmpl = self.get_project_template()
+        tmpl = self.get_project_template(result.project_id)
         rules = tmpl.get('rules')
         norm_func = self.normalise_transcription
         df['reference'] = df['reference'].apply(lambda x: norm_func(x, rules))

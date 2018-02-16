@@ -1,6 +1,11 @@
 # -*- coding: utf8 -*-
-"""Analysis module for pybossa-lc."""
+"""Analyst module for pybossa-lc.
 
+Provides an abstract base class with methods common to each specific analyst
+type. One subclass should be provided for each type of task presenter.
+"""
+
+import six
 import math
 import numpy
 import string
@@ -10,36 +15,36 @@ import dateutil.parser
 from datetime import datetime
 from titlecase import titlecase
 from flask import current_app
+from abc import ABCMeta, abstractmethod
 from pybossa.jobs import project_export
-from pybossa.core import task_repo, project_repo, result_repo
 
 from ..cache import templates as templates_cache
 
+@six.add_metaclass(ABCMeta)
+class Analyst():
 
-class Analyst(object):
-
-    def __init__(self, project_id):
-        self.project = project_repo.get(project_id)
-
+    @abstractmethod
     def analyse(self, result_id):
-        raise NotImplementedError("Must override analyse")
+        pass
 
-    def analyse_all(self, analysis_func):
+    def analyse_all(self, project_id):
         """Analyse all results for a project."""
-        results = result_repo.filter_by(project_id=self.project.id)
+        from pybossa.core import result_repo
+        results = result_repo.filter_by(project_id=project_id)
         for result in results:
             self.analyse(result.id)
         if results:
-            project_export(self.project.id)
+            project_export(project_id)
 
-    def analyse_empty(self, analysis_func):
+    def analyse_empty(self, project_id):
         """Analyse all empty results for a project."""
-        results = result_repo.filter_by(project_id=self.project.id)
+        from pybossa.core import result_repo
+        results = result_repo.filter_by(project_id=project_id)
         empty_results = [r for r in results if not r.info]
         for result in empty_results:
             self.analyse(result.id)
         if empty_results:
-            project_export(self.project.id)
+            project_export(project_id)
 
     def drop_keys(self, task_run_df, keys):
         """Drop keys from the info fields of a task run dataframe."""
@@ -70,6 +75,7 @@ class Analyst(object):
 
     def get_task_run_df(self, task_id):
         """Load an Array of task runs into a dataframe."""
+        from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task_id)
         data = [self.explode_info(tr) for tr in task_runs]
         index = [tr.__dict__['id'] for tr in task_runs]
@@ -88,9 +94,11 @@ class Analyst(object):
                     item_data[k] = item_data['info'][k]
         return item_data
 
-    def get_project_template(self):
+    def get_project_template(self, project_id):
         """Return the project's template."""
-        template_id = self.project.info.get('template_id')
+        from pybossa.core import project_repo
+        project = project_repo.get(project_id)
+        template_id = project.info.get('template_id')
         if not template_id:
             raise ValueError('Invalid project template')
 
@@ -100,47 +108,60 @@ class Analyst(object):
 
         return tmpl
 
+    def normalise_case(self, value, rules):
+        """Normalise the case of a string."""
+        if rules.get('case') == 'title':
+            return titlecase(value.lower())
+        elif rules.get('case') == 'lower':
+            return value.lower()
+        elif rules.get('case') == 'upper':
+            return value.upper()
+        return value
+
+    def normalise_whitespace(self, value, rules):
+        """Normalise the whitespace of a string."""
+        if rules.get('whitespace') == 'normalise':
+            return " ".join(value.split())
+        elif rules.get('whitespace') == 'underscore':
+            return " ".join(value.split()).replace(' ', '_')
+        elif rules.get('whitespace') == 'full_stop':
+            return " ".join(value.split()).replace(' ', '.')
+        return value
+
+    def normalise_dates(self, value, rules):
+        """Normalise a date string."""
+        if rules.get('date_format'):
+            dayfirst = rules.get('dayfirst', False)
+            yearfirst = rules.get('yearfirst', False)
+            try:
+                ts = dateutil.parser.parse(value, dayfirst=dayfirst,
+                                          yearfirst=yearfirst)
+            except (ValueError, TypeError):
+                return ''
+            return ts.isoformat()[:10]
+        return value
+
+    def normalise_punctuation(self, value, rules):
+        """Normalise string punctuation."""
+        if rules.get('trim_punctuation'):
+            return value.strip(string.punctuation)
+        return value
+
     def normalise_transcription(self, value, rules):
         """Normalise value according to the specified analysis rules."""
         if not rules or not isinstance(value, basestring):
             return value
 
         normalised = value
-
-        # Normalise case
-        if rules.get('case') == 'title':
-            normalised = titlecase(normalised.lower())
-        elif rules.get('case') == 'lower':
-            normalised = normalised.lower()
-        elif rules.get('case') == 'upper':
-            normalised = normalised.upper()
-
-        # Normalise whitespace
-        if rules.get('whitespace') == 'normalise':
-            normalised = " ".join(normalised.split())
-        elif rules.get('whitespace') == 'underscore':
-            normalised = " ".join(normalised.split()).replace(' ', '_')
-        elif rules.get('whitespace') == 'full_stop':
-            normalised = " ".join(normalised.split()).replace(' ', '.')
-
-        # Normalise dates
-        if rules.get('date_format'):
-            dayfirst = rules.get('dayfirst', False)
-            yearfirst = rules.get('yearfirst', False)
-            try:
-                ts = dateutil.parser.parse(normalised, dayfirst=dayfirst,
-                                          yearfirst=yearfirst)
-            except (ValueError, TypeError):
-                return ''
-            normalised = ts.isoformat()[:10]
-
-        # Normalise punctuation
-        if rules.get('trim_punctuation'):
-            normalised = normalised.strip(string.punctuation)
+        normalised = self.normalise_case(normalised, rules)
+        normalised = self.normalise_whitespace(normalised, rules)
+        normalised = self.normalise_dates(normalised, rules)
+        normalised = self.normalise_punctuation(normalised, rules)
         return normalised
 
     def update_n_answers_required(self, task, max_answers=10):
         """Update number of answers required for a task."""
+        from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task.id)
         n_task_runs = len(task_runs)
         if task.n_answers < max_answers:
@@ -160,10 +181,12 @@ class Analyst(object):
         def sjoin(x):
             return ';'.join(x[x.notnull()].astype(str))
 
-        return df.groupby(level=0, axis=1).apply(lambda x: x.apply(sjoin, axis=1))
+        return df.groupby(level=0, axis=1).apply(lambda x: x.apply(sjoin,
+                                                                   axis=1))
 
     def get_task_target(self, task_id):
         """Get the target for different types of task."""
+        from pybossa.core import task_repo
         task = task_repo.get_task(task_id)
         if 'target' in task.info:  # IIF Annotation tasks
             return task.info['target']

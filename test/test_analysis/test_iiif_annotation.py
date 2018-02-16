@@ -15,7 +15,7 @@ from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis import iiif_annotation
 
 
-class TestIIIFAnnotationAnalysis(Test):
+class TestIIIFAnnotationAnalyst(Test):
 
     def setUp(self):
         super(TestIIIFAnnotationAnalysis, self).setUp()
