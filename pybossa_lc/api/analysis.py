@@ -8,8 +8,8 @@ from pybossa.core import project_repo, result_repo
 from pybossa.auth import ensure_authorized_to
 from pybossa.jobs import enqueue_job
 
-from ..analysis import z3950, iiif_annotation
-
+from ..analysis.z3950 import Z3950Analyst
+from ..analysis.iiif_annotation import IIIFAnnotationAnalyst
 
 BLUEPRINT = Blueprint('analysis', __name__)
 
@@ -101,7 +101,20 @@ def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
     if request.method == 'GET':
         return respond('The Z39.50 endpoint is listening...')
-    return analyse(z3950.analyse, z3950.analyse_all, z3950.analyse_empty)
+
+    def z3950_analyse(project_id, result_id):
+        analyst = Z3950Analyst(project_id)
+        analyst.analyse(result_id)
+
+    def z3950_analyse_all(project_id):
+        analyst = Z3950Analyst(project_id)
+        analyst.analyse_all()
+
+    def z3950_analyse_empty(project_id):
+        analyst = Z3950Analyst(project_id)
+        analyst.analyse_empty()
+
+    return analyse(z3950_analyse, z3950_analyse_all, z3950_analyse_empty)
 
 
 @csrf.exempt
@@ -110,5 +123,18 @@ def iiif_annotation_analysis():
     """Endpoint for IIIF Annotation webhooks."""
     if request.method == 'GET':
         return respond('The IIIF Annotation endpoint is listening...')
-    return analyse(iiif_annotation.analyse, iiif_annotation.analyse_all,
-                   iiif_annotation.analyse_empty)
+
+    def iiif_annotation_analyse(project_id, result_id):
+        analyst = IIIFAnnotationAnalyst(project_id)
+        analyst.analyse(result_id)
+
+    def iiif_annotation_analyse_all(project_id):
+        analyst = IIIFAnnotationAnalyst(project_id)
+        analyst.analyse_all()
+
+    def iiif_annotation_analyse_empty(project_id):
+        analyst = IIIFAnnotationAnalyst(project_id)
+        analyst.analyse_empty()
+
+    return analyse(iiif_annotation_analyse, iiif_annotation_analyse_all,
+                   iiif_annotation_analyse_empty)
