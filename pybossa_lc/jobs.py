@@ -8,7 +8,8 @@ from pybossa.model.announcement import Announcement
 from pybossa.jobs import enqueue_job
 
 from .cache import templates as templates_cache
-from .analysis import z3950, iiif_annotation
+from .analysis.z3950 import Z3950Analyst
+from .analysis.iiif_annotation import IIIFAnnotationAnalyst
 
 
 def queue_startup_jobs():
@@ -73,9 +74,11 @@ def populate_empty_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             if presenter == 'iiif-annotation':
-                iiif_annotation.analyse_empty(project.id)
+                analyst = IIIFAnnotationAnalyst(project.id)
+                analyst.analyse_empty()
             elif presenter == 'z3950':
-                z3950.analyse_empty(project.id)
+                analyst = Z3950Analyst(project.id)
+                analyst.analyse_empty()
 
 
 def reanalyse_all_results():
@@ -87,9 +90,11 @@ def reanalyse_all_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             if presenter == 'iiif-annotation':
-                iiif_annotation.analyse_all(project.id)
+                analyst = IIIFAnnotationAnalyst(project.id)
+                analyst.analyse_all()
             elif presenter == 'z3950':
-                z3950.analyse_all(project.id)
+                analyst = Z3950Analyst(project.id)
+                analyst.analyse_all()
 
 
 def remove_bad_volumes():
