@@ -84,7 +84,6 @@ def merge_transcriptions(annos, rules):
         if tag not in data:
             data[tag] = {}
         data[tag][value] = dict(annotation=anno, count=count)
-        anno['modified'] = datetime.datetime.now().isoformat()
 
     reduced = {}
     for tag in data:
