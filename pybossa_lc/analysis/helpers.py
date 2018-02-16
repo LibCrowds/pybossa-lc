@@ -72,7 +72,7 @@ def analyse_all(analysis_func, project_id):
     project = project_repo.get(project_id)
     results = result_repo.filter_by(project_id=project_id)
     for result in results:
-        analysis_func(result.id, _all=True)
+        analysis_func(result.id)
     if results:
         project_export(project.id)
 
@@ -89,20 +89,20 @@ def analyse_empty(analysis_func, project_id):
         project_export(project.id)
 
 
-def get_analysis_rules(project_id):
-    """Return the project template's analysis rules."""
+def get_project_template(project_id):
+    """Return the project's template."""
     from pybossa.core import project_repo
     from ..cache import templates as templates_cache
     project = project_repo.get(project_id)
     template_id = project.info.get('template_id')
     if not template_id:
-        return None
+        raise ValueError('Invalid project template')
 
     tmpl = templates_cache.get_by_id(template_id)
     if not tmpl:  # pragma: no-cover
-        return None
+        raise ValueError('Invalid project template')
 
-    return tmpl.get('rules')
+    return tmpl
 
 
 def normalise_transcription(value, rules):
@@ -183,7 +183,7 @@ def get_task_target(task_id):
 
 def get_xsd_datetime():
     """Return timestamp expressed in the UTC xsd:datetime format."""
-    return datetime.utcnow().isoformat()[:-7] + 'Z'
+    return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def get_anno_generator():
@@ -274,3 +274,80 @@ def get_modified_annos(anno_list, tag):
         if tag_matches and modified:
             matches.append(anno)
     return matches
+
+
+def get_rect_from_selection_anno(anno):
+    """Return a rectangle from a selection annotation."""
+    media_frag = anno['target']['selector']['value']
+    regions = media_frag.split('=')[1].split(',')
+    return {
+        'x': int(round(float(regions[0]))),
+        'y': int(round(float(regions[1]))),
+        'w': int(round(float(regions[2]))),
+        'h': int(round(float(regions[3])))
+    }
+
+
+def get_overlap_ratio(r1, r2):
+    """Return the overlap ratio of two rectangles."""
+    r1x2 = r1['x'] + r1['w']
+    r2x2 = r2['x'] + r2['w']
+    r1y2 = r1['y'] + r1['h']
+    r2y2 = r2['y'] + r2['h']
+
+    x_overlap = max(0, min(r1x2, r2x2) - max(r1['x'], r2['x']))
+    y_overlap = max(0, min(r1y2, r2y2) - max(r1['y'], r2['y']))
+    intersection = x_overlap * y_overlap
+
+    r1_area = r1['w'] * r1['h']
+    r2_area = r2['w'] * r2['h']
+    union = r1_area + r2_area - intersection
+
+    if not union:
+        return 0
+
+    overlap = float(intersection) / float(union)
+    return overlap
+
+
+def merge_rects(r1, r2):
+    """Merge two rectangles."""
+    return {
+        'x': min(r1['x'], r2['x']),
+        'y': min(r1['y'], r2['y']),
+        'w': max(r1['x'] + r1['w'], r2['x'] + r2['w']) - r2['x'],
+        'h': max(r1['y'] + r1['h'], r2['y'] + r2['h']) - r2['y']
+    }
+
+
+def update_selector(anno, rect):
+    """Update a media frag selector."""
+    frag = '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'], rect['w'],
+                                          rect['h'])
+    anno['target']['selector']['value'] = frag
+    anno['modified'] = get_xsd_datetime()
+
+
+def cluster_tagging_annotations(anno_list):
+    """Return clustered tagging annotations."""
+    clusters = []
+    merge_ratio = 0.5
+    tagging_annos = [anno for anno in anno_list
+                     if anno['motivation'] == 'tagging']
+
+    for anno in tagging_annos:
+        r1 = get_rect_from_selection_anno(anno)
+        matched = False
+        for cluster in clusters:
+            r2 = get_rect_from_selection_anno(cluster)
+            overlap_ratio = get_overlap_ratio(r1, r2)
+            if overlap_ratio > merge_ratio:
+                matched = True
+                r3 = merge_rects(r1, r2)
+                update_selector(cluster, r3)
+
+        if not matched:
+            update_selector(anno, r1)  # still update to round rect params
+            clusters.append(anno)
+
+    return clusters

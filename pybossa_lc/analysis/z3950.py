@@ -29,7 +29,7 @@ def get_old_info(result_info):
     return old_info
 
 
-def analyse(result_id, _all=False):
+def analyse(result_id):
     """Analyse Z39.50 results."""
     from pybossa.core import result_repo
     result = result_repo.get(result_id)
@@ -56,10 +56,6 @@ def analyse(result_id, _all=False):
         new_annotations = [comment_anno, ctrl_anno, ref_anno]
         result.info = dict(annotations=new_annotations)
         result_repo.update(result)
-        return
-
-    # Don't update if info field populated and _all=False
-    if result.info and not _all:
         return
 
     # Check for any manually modified annotations
@@ -103,7 +99,8 @@ def analyse(result_id, _all=False):
     has_answers = not df.empty
 
     # Apply normalisation rules to reference
-    rules = helpers.get_analysis_rules(result.project_id)
+    tmpl = helpers.get_project_template(result.project_id)
+    rules = tmpl.get('rules')
     norm_func = helpers.normalise_transcription
     df['reference'] = df['reference'].apply(lambda x: norm_func(x, rules))
 

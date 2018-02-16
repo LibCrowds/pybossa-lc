@@ -39,8 +39,13 @@ class TestZ3950Analysis(Test):
         })
 
     @with_context
-    def test_empty_results(self):
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
+    def test_empty_results(self, mock_get_tmpl):
         """Test that an empty result is updated correctly."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         task = TaskFactory.create(n_answers=1, project=project, info={})
         TaskRunFactory.create(task=task, info={
@@ -57,10 +62,16 @@ class TestZ3950Analysis(Test):
 
     @with_context
     @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
     @patch("pybossa_lc.analysis.z3950.helpers.create_commenting_anno")
-    def test_comment_annotation_created(self, mock_create_comment_anno):
+    def test_comment_annotation_created(self, mock_create_comment_anno,
+                                        mock_get_tmpl):
         """Test that a comment annotation is created."""
         mock_create_comment_anno.return_value = {}
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         comment = 'Some comment'
         target = "example.com"
@@ -78,10 +89,16 @@ class TestZ3950Analysis(Test):
         mock_create_comment_anno.assert_called_once_with(target, comment)
 
     @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
     @patch("pybossa_lc.analysis.z3950.helpers.create_describing_anno")
-    def test_results_with_matching_answers(self, mock_create_desc_anno):
+    def test_results_with_matching_answers(self, mock_create_desc_anno,
+                                           mock_get_tmpl):
         """Test that results with matching answers are updated correctly."""
         mock_create_desc_anno.return_value = {}
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         n_answers = 3
         target = "example.com"
@@ -107,10 +124,16 @@ class TestZ3950Analysis(Test):
         assert call(target, ctrl_n, 'control_number') in call_args_list
 
     @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
     @patch("pybossa_lc.analysis.z3950.helpers.create_describing_anno")
-    def test_results_with_deprecated_keys(self, mock_create_desc_anno):
+    def test_results_with_deprecated_keys(self, mock_create_desc_anno,
+                                          mock_get_tmpl):
         """Test that deprecated keys are converted."""
         mock_create_desc_anno.return_value = {}
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         n_answers = 3
         target = "example.com"
@@ -136,8 +159,13 @@ class TestZ3950Analysis(Test):
         assert call(target, ctrl_n, 'control_number') in call_args_list
 
     @with_context
-    def test_results_with_non_matching_answers(self):
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
+    def test_results_with_non_matching_answers(self, mock_get_tmpl):
         """Test results with non-matching answers are updated correctly."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         n_answers = 3
         task = TaskFactory.create(n_answers=n_answers, project=project,
@@ -223,9 +251,15 @@ class TestZ3950Analysis(Test):
         assert call(target, ctrl_n, 'control_number') in call_args_list
 
     @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
     @patch("pybossa_lc.analysis.z3950.helpers.create_describing_anno")
-    def test_old_unverified_key_cleared(self, mock_create_desc_anno):
+    def test_old_unverified_key_cleared(self, mock_create_desc_anno,
+                                        mock_get_tmpl):
         """Test that the old Unverified key is cleared."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         n_answers = 3
         task = TaskFactory.create(n_answers=n_answers, project=project,
@@ -280,7 +314,7 @@ class TestZ3950Analysis(Test):
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         result.info = verified_answer
         self.result_repo.update(result)
-        z3950.analyse(result.id, _all=True)
+        z3950.analyse(result.id)
         assert_equal(result.last_version, True)
         assert_equal(len(result.info['annotations']), 3)
         desc_call_args_list = mock_create_desc_anno.call_args_list
@@ -297,56 +331,16 @@ class TestZ3950Analysis(Test):
         assert call(target, comment) in comment_call_args_list
 
     @with_context
-    def test_result_not_auto_updated_if_info_field_already_populated(self):
-        """Test that a result is not updated if the info field is not empty."""
-        project = ProjectFactory.create()
-        n_answers = 3
-        task = TaskFactory.create(n_answers=n_answers, project=project,
-                                  info={})
-        TaskRunFactory.create_batch(n_answers, task=task, info={
-            'control_number': '123',
-            'reference': 'abc',
-            'comments': ''
-        })
-        original_answer = dict(annotations=[])
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        result.info = original_answer
-        self.result_repo.update(result)
-        z3950.analyse(result.id)
-        assert_equal(result.last_version, True)
-        assert_dict_equal(result.info, original_answer)
-
-    @with_context
-    @patch("pybossa_lc.analysis.z3950.helpers.create_commenting_anno")
-    def test_result_updated_if_all_is_true(self, mock_create_comment_anno):
-        """Test that a result is updated if info populated and _all=True."""
-        mock_create_comment_anno.return_value = True
-        project = ProjectFactory.create()
-        n_answers = 1
-        target = "example.com"
-        comment = 'foo'
-        task_info = dict(target=target)
-        task = TaskFactory.create(n_answers=n_answers, project=project,
-                                  info=task_info)
-        TaskRunFactory.create_batch(n_answers, task=task, info={
-            'control_number': '',
-            'reference': '',
-            'comments': comment
-        })
-        original_answer = dict(annotations=[])
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        result.info = original_answer
-        self.result_repo.update(result)
-        z3950.analyse(result.id, _all=True)
-        assert_equal(result.last_version, False)
-        assert_equal(len(result.info['annotations']), 1)
-        mock_create_comment_anno.assert_called_once_with(target, comment)
-
-    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
     @patch("pybossa_lc.analysis.z3950.helpers.create_describing_anno")
-    def test_modified_annotations_are_not_updated(self, mock_create_desc_anno):
+    def test_modified_annotations_are_not_updated(self, mock_create_desc_anno,
+                                                  mock_get_tmpl):
         """Test that a manually modified result is not updated."""
         mock_create_desc_anno.return_value = {}
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         n_answers = 3
         target = "example.com"
@@ -383,7 +377,7 @@ class TestZ3950Analysis(Test):
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         result.info = original_answer
         self.result_repo.update(result)
-        z3950.analyse(result.id, _all=True)
+        z3950.analyse(result.id)
         assert_equal(result.last_version, True)
         assert_equal(len(result.info['annotations']), 2)
         mock_create_desc_anno.assert_called_once_with(target, ref, 'reference')

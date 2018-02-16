@@ -6,10 +6,12 @@ import pandas
 from nose.tools import *
 from freezegun import freeze_time
 from mock import patch, call
-from factories import TaskFactory, TaskRunFactory, ProjectFactory
+from factories import TaskFactory, TaskRunFactory, ProjectFactory, UserFactory
+from factories import CategoryFactory
 from default import Test, with_context, db
 from pybossa.repositories import ResultRepository, TaskRepository
 
+from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis import iiif_annotation
 
 
@@ -19,63 +21,6 @@ class TestIIIFAnnotationAnalysis(Test):
         super(TestIIIFAnnotationAnalysis, self).setUp()
         self.result_repo = ResultRepository(db)
         self.task_repo = TaskRepository(db)
-
-    def test_overlap_ratio_is_1_with_equal_rects(self):
-        """Test for an overlap ratio of 1."""
-        rect = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
-        overlap = iiif_annotation.get_overlap_ratio(rect, rect)
-        assert_equal(overlap, 1)
-
-    def test_overlap_ratio_is_0_with_adjacent_rects(self):
-        """Test for an overlap ratio of 0."""
-        r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
-        r2 = {'x': 100, 'y': 201, 'w': 100, 'h': 100}
-        overlap = iiif_annotation.get_overlap_ratio(r1, r2)
-        assert_equal(overlap, 0)
-
-    def test_overlap_ratio_with_partially_overlapping_rects(self):
-        """Test for an overlap ratio of 0.33."""
-        r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
-        r2 = {'x': 150, 'y': 100, 'w': 100, 'h': 100}
-        overlap = iiif_annotation.get_overlap_ratio(r1, r2)
-        assert_equal('{:.2f}'.format(overlap), '0.33')
-
-    def test_overlap_ratio_where_union_is_zero(self):
-        """Test for an overlap ratio where the union is zero."""
-        r1 = {'x': 0, 'y': 0, 'w': 100, 'h': 100}
-        r2 = {'x': 101, 'y': 0, 'w': 100, 'h': 100}
-        overlap = iiif_annotation.get_overlap_ratio(r1, r2)
-        assert_equal(overlap, 0)
-
-    def test_rect_from_selection(self):
-        """Test that we get the correct rect."""
-        coords = dict(x=400, y=200, w=100, h=150)
-        coords_str = '{0},{1},{2},{3}'.format(coords['x'], coords['y'],
-                                              coords['w'], coords['h'])
-        fake_anno = {
-            'target': {
-                'selector': {
-                    'value': '?xywh={}'.format(coords_str)
-                }
-            }
-        }
-        rect = iiif_annotation.get_rect_from_selection(fake_anno)
-        assert_dict_equal(rect, coords)
-
-    def test_rect_from_selection_with_floats(self):
-        """Test that we get the correct rect with rounded coordinates."""
-        coords = dict(x=400.001, y=200.499, w=100.501, h=150.999)
-        coords_str = '{0},{1},{2},{3}'.format(coords['x'], coords['y'],
-                                              coords['w'], coords['h'])
-        fake_anno = {
-            'target': {
-                'selector': {
-                    'value': '?xywh={}'.format(coords_str)
-                }
-            }
-        }
-        rect = iiif_annotation.get_rect_from_selection(fake_anno)
-        assert_dict_equal(rect, {'x': 400, 'y': 200, 'w': 101, 'h': 151})
 
     @with_context
     def test_empty_result_updated(self):
@@ -95,7 +40,7 @@ class TestIIIFAnnotationAnalysis(Test):
                                               coords['w'], coords['h'])
         tr_info = [{
             'motivation': 'tagging',
-            'modified': '1984-11-19T00:00:00',
+            'modified': '1984-11-19T00:00:00Z',
             'target': {
                 'selector': {
                     'value': '?xywh={}'.format(coords_str)
@@ -116,7 +61,7 @@ class TestIIIFAnnotationAnalysis(Test):
         task = TaskFactory.create(n_answers=2)
         TaskRunFactory.create(task=task, info=[{
             'motivation': 'tagging',
-            'modified': '1984-11-19T00:00:00',
+            'modified': '1984-11-19T00:00:00Z',
             'target': {
                 'selector': {
                     'value': '?xywh=100,100,100,100'
@@ -125,7 +70,7 @@ class TestIIIFAnnotationAnalysis(Test):
         }])
         TaskRunFactory.create(task=task, info=[{
             'motivation': 'tagging',
-            'modified': '1984-11-19T00:00:00',
+            'modified': '1984-11-19T00:00:00Z',
             'target': {
                 'selector': {
                     'value': '?xywh=110,110,90,90'
@@ -138,7 +83,7 @@ class TestIIIFAnnotationAnalysis(Test):
             'annotations': [
                 {
                     'motivation': 'tagging',
-                    'modified': '1984-11-19T00:00:00',
+                    'modified': '1984-11-19T00:00:00Z',
                     'target': {
                         'selector': {
                             'value': '?xywh=100,100,100,100'
@@ -228,7 +173,7 @@ class TestIIIFAnnotationAnalysis(Test):
         task = TaskFactory.create(n_answers=2)
         tr_info = [{
             "motivation": "describing",
-            "modified": "1984-11-19T00:00:00",
+            "modified": "1984-11-19T00:00:00Z",
             "target": {
                 "selector": {
                     "value": "?xywh=100,100,100,100"

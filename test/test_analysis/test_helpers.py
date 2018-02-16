@@ -3,6 +3,7 @@
 
 import numpy
 import pandas
+from freezegun import freeze_time
 from factories import TaskFactory, TaskRunFactory
 from default import Test, with_context
 from nose.tools import *
@@ -187,3 +188,65 @@ class TestAnalysisHelpers(Test):
         helpers.update_n_answers_required(task, max_answers=n_original_answers)
         assert_equal(task.n_answers, n_original_answers)
         assert_equal(task.state, 'completed')
+
+    def test_overlap_ratio_is_1_with_equal_rects(self):
+        """Test for an overlap ratio of 1."""
+        rect = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
+        overlap = helpers.get_overlap_ratio(rect, rect)
+        assert_equal(overlap, 1)
+
+    def test_overlap_ratio_is_0_with_adjacent_rects(self):
+        """Test for an overlap ratio of 0."""
+        r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
+        r2 = {'x': 100, 'y': 201, 'w': 100, 'h': 100}
+        overlap = helpers.get_overlap_ratio(r1, r2)
+        assert_equal(overlap, 0)
+
+    def test_overlap_ratio_with_partially_overlapping_rects(self):
+        """Test for an overlap ratio of 0.33."""
+        r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
+        r2 = {'x': 150, 'y': 100, 'w': 100, 'h': 100}
+        overlap = helpers.get_overlap_ratio(r1, r2)
+        assert_equal('{:.2f}'.format(overlap), '0.33')
+
+    def test_overlap_ratio_where_union_is_zero(self):
+        """Test for an overlap ratio where the union is zero."""
+        r1 = {'x': 0, 'y': 0, 'w': 100, 'h': 100}
+        r2 = {'x': 101, 'y': 0, 'w': 100, 'h': 100}
+        overlap = helpers.get_overlap_ratio(r1, r2)
+        assert_equal(overlap, 0)
+
+    def test_rect_from_selection(self):
+        """Test that we get the correct rect."""
+        coords = dict(x=400, y=200, w=100, h=150)
+        coords_str = '{0},{1},{2},{3}'.format(coords['x'], coords['y'],
+                                              coords['w'], coords['h'])
+        fake_anno = {
+            'target': {
+                'selector': {
+                    'value': '?xywh={}'.format(coords_str)
+                }
+            }
+        }
+        rect = helpers.get_rect_from_selection_anno(fake_anno)
+        assert_dict_equal(rect, coords)
+
+    def test_rect_from_selection_with_floats(self):
+        """Test that we get the correct rect with rounded coordinates."""
+        coords = dict(x=400.001, y=200.499, w=100.501, h=150.999)
+        coords_str = '{0},{1},{2},{3}'.format(coords['x'], coords['y'],
+                                              coords['w'], coords['h'])
+        fake_anno = {
+            'target': {
+                'selector': {
+                    'value': '?xywh={}'.format(coords_str)
+                }
+            }
+        }
+        rect = helpers.get_rect_from_selection_anno(fake_anno)
+        assert_dict_equal(rect, {'x': 400, 'y': 200, 'w': 101, 'h': 151})
+
+    @freeze_time("19-11-1984")
+    def test_get_xsd_datetime(self):
+        ts = helpers.get_xsd_datetime()
+        assert_equal(ts, '1984-11-19T00:00:00Z')
