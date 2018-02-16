@@ -42,6 +42,7 @@ class TestIIIFAnnotationAnalysis(Test):
             'motivation': 'tagging',
             'modified': '1984-11-19T00:00:00Z',
             'target': {
+                'source': 'example.com',
                 'selector': {
                     'value': '?xywh={}'.format(coords_str)
                 }
@@ -63,6 +64,7 @@ class TestIIIFAnnotationAnalysis(Test):
             'motivation': 'tagging',
             'modified': '1984-11-19T00:00:00Z',
             'target': {
+                'source': 'example.com',
                 'selector': {
                     'value': '?xywh=100,100,100,100'
                 }
@@ -72,6 +74,7 @@ class TestIIIFAnnotationAnalysis(Test):
             'motivation': 'tagging',
             'modified': '1984-11-19T00:00:00Z',
             'target': {
+                'source': 'example.com',
                 'selector': {
                     'value': '?xywh=110,110,90,90'
                 }
@@ -85,6 +88,7 @@ class TestIIIFAnnotationAnalysis(Test):
                     'motivation': 'tagging',
                     'modified': '1984-11-19T00:00:00Z',
                     'target': {
+                        'source': 'example.com',
                         'selector': {
                             'value': '?xywh=100,100,100,100'
                         }
@@ -168,13 +172,20 @@ class TestIIIFAnnotationAnalysis(Test):
 
     @with_context
     @freeze_time("19-11-1984")
-    def test_matching_transcription_annotations_stored(self):
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
+    def test_matching_transcription_annotations_stored(self, mock_get_tmpl):
         """Test that matching transcriptions are stored."""
-        task = TaskFactory.create(n_answers=2)
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
+        project = ProjectFactory.create()
+        task = TaskFactory.create(project=project, n_answers=2)
         tr_info = [{
             "motivation": "describing",
             "modified": "1984-11-19T00:00:00Z",
             "target": {
+                "source": "example.com",
                 "selector": {
                     "value": "?xywh=100,100,100,100"
                 }
@@ -201,10 +212,16 @@ class TestIIIFAnnotationAnalysis(Test):
 
     @with_context
     @freeze_time("19-11-1984")
-    def test_redundancy_increased_when_transcriptions_not_matching(self):
+    @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
+    def test_redundancy_increased(self, mock_get_tmpl):
         """Test that redundancy is updated for non-matching transcriptions."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        mock_get_tmpl.return_value = tmpl
+        project = ProjectFactory.create()
         n_answers = 2
-        task = TaskFactory.create(n_answers=n_answers)
+        task = TaskFactory.create(project=project, n_answers=n_answers)
         title1 = 'The Devils to Pay'
         title2 = 'The Devil to Pay'
         fake_anno1 = {
