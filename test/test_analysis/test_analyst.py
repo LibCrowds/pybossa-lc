@@ -330,12 +330,12 @@ class TestAnalyst(Test):
             },
             {
                 'foo': 'bar',
-                'quux': 'corge'
+                'quux': 'qux'
             }
         ]
         old_df = pandas.DataFrame(data, range(len(data)))
         new_df = self.analyst.replace_df_keys(old_df, quux='baz')
-        assert_equal(new_df.to_dict(), {
-            'foo': 'bar',
-            ''
+        assert_dict_equal(new_df.to_dict(), {
+            'foo': {0: 'bar', 1: 'bar'},
+            'baz': {0: 'qux', 1: 'qux'}
         })
