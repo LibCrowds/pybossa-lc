@@ -1,17 +1,10 @@
 # -*- coding: utf8 -*-
-"""Test IIIF Annotation analysis."""
+"""Test IIIF Annotation analyst."""
 
-import numpy
 import pandas
 from nose.tools import *
-from freezegun import freeze_time
-from mock import patch, call
-from factories import TaskFactory, TaskRunFactory, ProjectFactory, UserFactory
-from factories import CategoryFactory
-from default import Test, with_context, db
-from pybossa.repositories import ResultRepository, TaskRepository
+from default import Test
 
-from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis.iiif_annotation import IIIFAnnotationAnalyst
 
 
@@ -19,18 +12,105 @@ class TestIIIFAnnotationAnalyst(Test):
 
     def setUp(self):
         super(TestIIIFAnnotationAnalyst, self).setUp()
-        self.result_repo = ResultRepository(db)
-        self.task_repo = TaskRepository(db)
         self.iiif_analyst = IIIFAnnotationAnalyst()
+        self.comments = ['Some comment']
+        self.tags = {
+            'foo': [
+                dict(x=100, y=100, w=100, h=100),
+                dict(x=200, y=200, w=200, h=200)
+            ],
+            'bar': [
+                dict(x=300, y=300, w=300, h=300)
+            ]
+        }
+        transcription_data = {
+            'foo': ['bar', 'baz'],
+            'qux': ['quux', 'quuz']
+        }
+        self.transcriptions_df = pandas.DataFrame(transcription_data)
 
-    @with_context
-    def test_empty_result_updated(self):
-        """Test that an empty result is updated correctly."""
-        task = TaskFactory.create(n_answers=1)
-        TaskRunFactory.create(task=task, info=[])
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.iiif_analyst.analyse(result.id)
-        assert_dict_equal(result.info, {'annotations': []})
+        comment_annos = []
+        for comment in self.comments:
+            comment_annos.append({
+                'motivation': 'commenting',
+                'body': {
+                    'type': 'TextualBody',
+                    'value': comment,
+                    'purpose': 'commenting',
+                    'format': 'text/plain'
+                },
+                'target': 'example.com'
+            })
+
+        tagging_annos = []
+        for tag, rect_list in self.tags.items():
+            for rect in rect_list:
+                tagging_annos.append({
+                    'motivation': 'tagging',
+                    'body': {
+                        'type': 'TextualBody',
+                        'purpose': 'tagging',
+                        'value': tag
+                    },
+                    'target': {
+                        'source': 'example.com',
+                        'selector': {
+                            'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                            'type': 'FragmentSelector',
+                            'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                                    rect['y'],
+                                                                    rect['w'],
+                                                                    rect['h'])
+                        }
+                    }
+                })
+
+        transcription_annos = []
+        for tag, value_list in transcription_data.items():
+            for value in value_list:
+                transcription_annos.append({
+                    'motivation': 'describing',
+                    'body': [
+                        {
+                            'type': 'TextualBody',
+                            'purpose': 'tagging',
+                            'value': tag
+                        },
+                        {
+                            'type': 'TextualBody',
+                            'purpose': 'describing',
+                            'value': value,
+                            'format': 'text/plain'
+                        }
+                    ],
+                    'target': 'example.com'
+                })
+
+        self.data = {
+            'info': [
+                comment_annos,
+                tagging_annos,
+                transcription_annos
+            ]
+        }
+
+    def test_get_comments(self):
+        """Test IIIF Annotation comments are returned."""
+        task_run_df = pandas.DataFrame(self.data)
+        comments = self.iiif_analyst.get_comments(task_run_df)
+        assert_equal(comments, self.comments)
+
+    def test_get_tags(self):
+        """Test IIIF Annotation tags are returned."""
+        task_run_df = pandas.DataFrame(self.data)
+        tags = self.iiif_analyst.get_tags(task_run_df)
+        assert_dict_equal(tags, self.tags)
+
+    def test_get_transcriptions_df(self):
+        """Test IIIF Annotation transcriptions are returned."""
+        task_run_df = pandas.DataFrame(self.data)
+        df = self.iiif_analyst.get_transcriptions_df(task_run_df)
+        assert_dict_equal(df.to_dict(), self.transcriptions_df.to_dict())
 
     # @with_context
     # @freeze_time("19-11-1984")
@@ -97,35 +177,6 @@ class TestIIIFAnnotationAnalyst(Test):
     #             }
     #         ]
     #     })
-
-    # @with_context
-    # @patch('pybossa_lc.analysis.iiif_annotation.analyse', return_value=True)
-    # def test_all_results_analysed(self, mock_analyse):
-    #     """Test all IIIF Annotation results analysed."""
-    #     project = ProjectFactory.create()
-    #     task1 = TaskFactory.create(project=project, n_answers=1)
-    #     task2 = TaskFactory.create(project=project, n_answers=1)
-    #     TaskRunFactory.create(task=task1)
-    #     TaskRunFactory.create(task=task2)
-    #     results = self.result_repo.filter_by(project_id=project.id)
-    #     calls = [call(r.id) for r in results]
-    #     iiif_annotation.analyse_all(project.id)
-    #     assert mock_analyse.has_calls(calls, any_order=True)
-
-    # @with_context
-    # @patch('pybossa_lc.analysis.iiif_annotation.analyse', return_value=True)
-    # def test_empty_results_analysed(self, mock_analyse):
-    #     """Test empty IIIF Annotation results analysed."""
-    #     project = ProjectFactory.create()
-    #     task1 = TaskFactory.create(project=project, n_answers=1)
-    #     task2 = TaskFactory.create(project=project, n_answers=1)
-    #     TaskRunFactory.create(task=task1)
-    #     TaskRunFactory.create(task=task2)
-    #     results = self.result_repo.filter_by(project_id=project.id)
-    #     results[0].info = dict(foo='bar')
-    #     self.result_repo.update(results[0])
-    #     iiif_annotation.analyse_empty(project.id)
-    #     mock_analyse.assert_called_once_with(results[1].id)
 
     # def test_merge_transcriptions(self):
     #     """Test that the most common transcriptions are merged."""

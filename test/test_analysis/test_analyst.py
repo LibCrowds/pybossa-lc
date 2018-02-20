@@ -146,12 +146,20 @@ class TestAnalyst(Test):
         assert_equal(has_matches, True)
 
     @with_context
-    def test_dataframe_built_correctly(self):
-        """Test the task run dataframe is built correctly."""
+    def test_get_dataframe_with_dict(self):
+        """Test the task run dataframe with a dict as the info."""
         info = {'foo': 'bar'}
         taskrun = TaskRunFactory.create(info=info)
         df = self.analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['foo'].tolist(), [info['foo']])
+        assert_equal(df['info'].tolist(), [info])
+
+    @with_context
+    def test_get_dataframe_with_list(self):
+        """Test the task run dataframe with a list as the info."""
+        info = [{'foo': 'bar'}, {'baz': 'qux'}]
+        taskrun = TaskRunFactory.create(info=info)
+        df = self.analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['info'].tolist(), [info])
 
     @with_context
