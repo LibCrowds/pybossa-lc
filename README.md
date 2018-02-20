@@ -10,8 +10,8 @@ functions for generating LibCrowds projects and analysing their results.
 
 Key features:
 
-- Analyses data and stores final results as Web Annotations
-- Handles generation of projects from templates and volumes
+- Analyses task run data and stores final results as Web Annotations
+- Defines a templating system for configuring and generating projects
 
 For details of how project creation and results analysis works in LibCrowds,
 see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
@@ -28,6 +28,10 @@ pip install -r requirements.txt
 ```
 
 The plugin will be available after you restart the server.
+
+If your database is already populated when installing this plugin you may
+need to run the migration functions in [cli](cli); see each module and
+it's associated docstring for details.
 
 ## Configuration
 

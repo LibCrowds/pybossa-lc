@@ -3,6 +3,7 @@
 six
 titlecase
 
+click
 nose
 rednose
 freezegun
