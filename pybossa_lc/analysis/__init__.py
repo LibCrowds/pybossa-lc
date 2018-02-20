@@ -23,9 +23,78 @@ from ..cache import templates as templates_cache
 @six.add_metaclass(ABCMeta)
 class Analyst():
 
+    def __init__(self):
+        self.required_keys = []
+
     @abstractmethod
-    def analyse(self, result_id):
+    def get_comments(self, task_run_df):
+        """Return a list of comments."""
         pass
+
+    @abstractmethod
+    def get_tags(self, task_run_df):
+        """Return a dict of tags against fragment selectors."""
+        pass
+
+    @abstractmethod
+    def get_transcriptions_df(self, task_run_df):
+        """Return a dataframe of transcriptions."""
+        pass
+
+    def analyse(self, result_id):
+        """Analyse a result."""
+        from pybossa.core import result_repo
+        result = result_repo.get(result_id)
+        task_run_df = self.get_task_run_df(result.task_id)
+        tmpl = self.get_project_template(result.project_id)
+        target = self.get_task_target(result.task_id)
+        annotations = []
+
+        # Verify that required keys exist
+        if not all(key in task_run_df for key in self.required_keys):
+            raise ValueError('Missing required keys')
+
+        # Handle comments
+        comments = self.get_comments(task_run_df)
+        for value in comments:
+            comment_anno = self.create_commenting_anno(target, value)
+            annotations.append(comment_anno)
+
+        # Handle tags
+        tags = self.get_tags(task_run_df)
+
+        # Handle transcriptions
+        df = self.get_transcriptions_df(task_run_df)
+        df = self.drop_empty_rows(df)
+        has_answers = not df.empty
+
+        # Apply normalisation rules
+        rules = tmpl.get('rules')
+        norm_func = self.normalise_transcription
+        df = df.applymap(lambda x: norm_func(x, rules))
+
+        # Check for min matches
+        min_answers = tmpl.get('project', {}).get('min_answers', 1)
+        has_matches = self.has_n_matches(min_answers, df)
+
+        # Store most common answers for each key
+        if has_answers and has_matches:
+            old_annos = []
+            if isinstance(result.info, dict):
+                old_annos = result.info.get('annotations', [])
+
+            for column in df:
+                value = df[column].value_counts().idxmax()
+                modified_annos = self.get_modified_annos(old_annos, column)
+                if modified_annos:
+                    annotations += modified_annos
+                else:
+                    anno = self.create_describing_anno(target, value, column)
+                    annotations.append(anno)
+
+        result.last_version = True
+        result.info = dict(annotations=annotations)
+        result_repo.update(result)
 
     def analyse_all(self, project_id):
         """Analyse all results for a project."""
@@ -61,15 +130,11 @@ class Analyst():
         task_run_df = task_run_df.dropna(how='all')
         return task_run_df
 
-    def has_n_matches(self, task_run_df, n_task_runs, match_percentage):
-        """Check if n percent of answers match for each key."""
-        required = int(math.ceil(n_task_runs * (match_percentage / 100.0)))
-
-        # Replace NaN with the empty string
+    def has_n_matches(self, min_answers, task_run_df):
+        """Check if minimum matching answers for each key."""
         task_run_df = task_run_df.replace(numpy.nan, '')
-
         for k in task_run_df.keys():
-            if task_run_df[k].value_counts().max() < required:
+            if task_run_df[k].value_counts().max() < min_answers:
                 return False
         return True
 
@@ -216,8 +281,7 @@ class Analyst():
             "motivation": motivation,
             "created": ts_now,
             "generated": ts_now,
-            "generator": self.get_anno_generator(),
-            "modified": ts_now
+            "generator": self.get_anno_generator()
         }
 
     def create_commenting_anno(self, target, value):

@@ -6,11 +6,13 @@ import pandas
 from mock import patch, call
 from freezegun import freeze_time
 from factories import TaskFactory, TaskRunFactory, ProjectFactory, UserFactory
+from factories import CategoryFactory
 from default import db, Test, with_context
 from nose.tools import *
 from pybossa.core import result_repo
 from pybossa.repositories import ResultRepository
 
+from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis import Analyst
 
 
@@ -21,6 +23,22 @@ class TestAnalyst(Test):
         Analyst.__abstractmethods__ = frozenset()
         self.analyst = Analyst()
         self.result_repo = ResultRepository(db)
+
+    def create_task_with_context(self, n_answers, target=None):
+        """Create a category, project and tasks."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        tmpl['project']['min_answers'] = n_answers
+        tmpl['rules'] = dict(case='title', whitespace='full_stop',
+                             trim_punctuation=True)
+        user_info = dict(templates=[tmpl])
+        UserFactory.create(info=user_info)
+        project_info = dict(template_id=tmpl['id'])
+        project = ProjectFactory.create(category=category, info=project_info)
+        task_info = dict(target=target)
+        return TaskFactory.create(n_answers=n_answers, project=project,
+                                  info=task_info)
 
     @with_context
     @patch("pybossa_lc.analysis.Analyst.analyse")
@@ -63,8 +81,8 @@ class TestAnalyst(Test):
         df = pandas.DataFrame(data, range(len(data)))
         excluded = ['foo']
         df = self.analyst.drop_keys(df, excluded)
-        assert 'foo' not in df.keys(), "foo should be dropped"
-        assert 'bar' in df.keys(), "bar should not be dropped"
+        assert_not_in('foo', df.keys())
+        assert_in('bar', df.keys())
 
     @with_context
     def test_empty_rows_dropped(self):
@@ -76,7 +94,7 @@ class TestAnalyst(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         df = self.analyst.drop_empty_rows(df)
-        assert df['foo'].tolist() == ['bar'], "empty row should be dropped"
+        assert_equals(df['foo'].tolist(), ['bar'])
 
     @with_context
     def test_partial_rows_not_dropped(self):
@@ -88,29 +106,31 @@ class TestAnalyst(Test):
         df = pandas.DataFrame(data, range(len(data)))
         df = self.analyst.drop_empty_rows(df)
         expected = {'foo': {0: 'bar'}, 'baz': {0: None}}
-        assert df.to_dict() == expected, "partial rows should not be dropped"
+        assert_dict_equal(df.to_dict(), expected)
 
     @with_context
     def test_match_fails_when_percentage_not_met(self):
-        """Test False is returned when match percentage not met."""
+        """Test False is returned when min answers not met."""
         data = [{
             'foo': 'bar',
             'baz': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        has_matches = self.analyst.has_n_matches(df, 2, 100)
-        assert not has_matches, "the check for matches should fail"
+        min_answers = 2
+        has_matches = self.analyst.has_n_matches(min_answers, df)
+        assert_equal(has_matches, False)
 
     @with_context
     def test_match_fails_when_nan_cols(self):
-        """Test False is returned when NaN columns."""
+        """Test False is returned when NaN columns only."""
         data = [{
             'foo': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
         df = df.replace('', numpy.nan)
-        has_matches = self.analyst.has_n_matches(df, 2, 100)
-        assert not has_matches, "the check for matches should fail"
+        min_answers = 2
+        has_matches = self.analyst.has_n_matches(min_answers, df)
+        assert_equal(has_matches, False)
 
     @with_context
     def test_match_succeeds_when_percentage_met(self):
@@ -121,8 +141,9 @@ class TestAnalyst(Test):
             'foo': 'bar'
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        has_matches = self.analyst.has_n_matches(df, 2, 100)
-        assert has_matches, "the check for matches should pass"
+        min_answers = 2
+        has_matches = self.analyst.has_n_matches(min_answers, df)
+        assert_equal(has_matches, True)
 
     @with_context
     def test_dataframe_built_correctly(self):
@@ -130,8 +151,8 @@ class TestAnalyst(Test):
         info = {'foo': 'bar'}
         taskrun = TaskRunFactory.create(info=info)
         df = self.analyst.get_task_run_df(taskrun.task_id)
-        assert df['foo'].tolist() == [info['foo']], "tr info key should match"
-        assert df['info'].tolist() == [info], "info should equal task run info"
+        assert_equal(df['foo'].tolist(), [info['foo']])
+        assert_equal(df['info'].tolist(), [info])
 
     @with_context
     def test_protected_keys_prefixed_when_exploded(self):
@@ -139,8 +160,7 @@ class TestAnalyst(Test):
         info = {'foo': 'bar', 'info': 'baz'}
         taskrun = TaskRunFactory.create(info=info)
         df = self.analyst.get_task_run_df(taskrun.task_id)
-        msg = "info key should be transformed to _info"
-        assert df['_info'].tolist() == [info['info']], msg
+        assert_equal(df['_info'].tolist(), [info['info']])
 
     def test_titlecase_normalisation(self):
         """Test titlecase normalisation."""
@@ -339,3 +359,212 @@ class TestAnalyst(Test):
             'foo': {0: 'bar', 1: 'bar'},
             'baz': {0: 'qux', 1: 'qux'}
         })
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_project_template')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_describing_anno")
+    def test_modified_annotations_are_not_updated(self,
+                                                  mock_create_desc_anno,
+                                                  mock_get_tmpl,
+                                                  mock_get_tags,
+                                                  mock_get_transcriptions_df,
+                                                  mock_get_comments):
+        """Test that a manually modified result is not updated."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        n_answers = 3
+        tmpl['project']['min_answers'] = n_answers
+        mock_get_tmpl.return_value = tmpl
+        project = ProjectFactory.create()
+        target = 'example.com'
+        current_value = 'foo'
+        current_tag = 'bar'
+        new_value = 'baz'
+        new_tag = 'qux'
+        task_info = dict(target=target)
+        task = TaskFactory.create(n_answers=n_answers, project=project,
+                                  info=task_info)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            new_value: new_value,
+            current_tag: current_value
+        })
+        original_answer = dict(annotations=[
+            {
+                "motivation": "describing",
+                "body": [
+                    {
+                        "type": "TextualBody",
+                        "purpose": "describing",
+                        "value": current_value,
+                        "format": "text/plain",
+                        "modified": "2015-01-29T09:00:00Z"
+                    },
+                    {
+                        "type": "TextualBody",
+                        "purpose": "tagging",
+                        "value": current_tag
+                    }
+                ]
+            }
+        ])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        result.info = original_answer
+        self.result_repo.update(result)
+        data = {
+            new_tag: [new_value] * n_answers,
+            current_tag: [current_value] * n_answers
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        mock_create_desc_anno.return_value = {}
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 2)
+        mock_create_desc_anno.assert_called_once_with(target, new_value,
+                                                      new_tag)
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_describing_anno")
+    def test_transcriptions_are_normalised(self,
+                                           mock_create_desc_anno,
+                                           mock_get_tags,
+                                           mock_get_transcriptions_df,
+                                           mock_get_comments):
+        """Test transcriptions are normalised according to set rules."""
+        n_answers = 3
+        target = 'example.com'
+        tag = 'foo'
+        task = self.create_task_with_context(n_answers, target)
+        data = {
+            tag: ['OR 123  456.', 'Or.123.456. ', 'or 123 456']
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        mock_create_desc_anno.return_value = {}
+        for value in data[tag]:
+            TaskRunFactory.create(task=task, info={
+                tag: value
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        expected = 'Or.123.456'
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 1)
+        mock_create_desc_anno.assert_called_once_with(target, expected, tag)
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    def test_empty_results(self,
+                           mock_get_tags,
+                           mock_get_transcriptions_df,
+                           mock_get_comments):
+        """Test that an empty result is updated correctly."""
+        n_answers = 3
+        task = self.create_task_with_context(n_answers)
+        tag = 'foo'
+        data = {
+            tag: [''] * n_answers
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        for value in data[tag]:
+            TaskRunFactory.create(task=task, info={
+                tag: value
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(result.info, {
+            'annotations': []
+        })
+
+    @with_context
+    @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_commenting_anno")
+    def test_comment_annotation_created(self,
+                                        mock_create_comment_anno,
+                                        mock_get_tags,
+                                        mock_get_transcriptions_df,
+                                        mock_get_comments):
+        """Test that a comment annotation is created."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
+        comment = 'foo'
+        mock_get_comments.return_value = [comment]
+        mock_create_comment_anno.return_value = {}
+        TaskRunFactory.create_batch(n_answers, task=task, info={})
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 1)
+        mock_create_comment_anno.assert_called_once_with(target, comment)
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_describing_anno")
+    def test_with_matching_transcriptions(self,
+                                          mock_create_desc_anno,
+                                          mock_get_tags,
+                                          mock_get_transcriptions_df,
+                                          mock_get_comments):
+        """Test that results with matching transcriptions."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
+        tag1 = 'Foo'
+        tag2 = 'Bar'
+        val1 = 'Baz'
+        val2 = 'Qux'
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            tag1: val1,
+            tag2: val2
+        })
+        data = {
+            tag1: [val1] * n_answers,
+            tag2: [val2] * n_answers
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        mock_create_desc_anno.return_value = {}
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 2)
+        call_args_list = mock_create_desc_anno.call_args_list
+        assert_equal(len(call_args_list), 2)
+        assert_in(call(target, val1, tag1), call_args_list)
+        assert_in(call(target, val2, tag2), call_args_list)
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    def test_results_with_non_matching_answers(self,
+                                               mock_get_tags,
+                                               mock_get_transcriptions_df,
+                                               mock_get_comments):
+        """Test results with non-matching answers are updated correctly."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
+        tag1 = 'foo'
+        tag2 = 'bar'
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info={
+                tag1: i,
+                tag2: i
+            })
+        data = {
+            tag1: range(n_answers),
+            tag2: range(n_answers)
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(result.info['annotations'], [])

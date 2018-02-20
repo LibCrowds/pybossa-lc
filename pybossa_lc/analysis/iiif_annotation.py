@@ -16,6 +16,18 @@ class IIIFAnnotationAnalyst(Analyst):
     def __init__(self):
         super(IIIFAnnotationAnalyst, self).__init__()
 
+    def get_comments(self, task_run_df):
+        """Return a list of comments."""
+        return []
+
+    def get_tags(self, task_run_df):
+        """Return a dict of tags against fragment selectors."""
+        return {}
+
+    def get_transcriptions_df(self, task_run_df):
+        """Return a dataframe of transcriptions."""
+        return {}
+
     def get_transcribed_fields(self, anno):
         """Return all transcribed fields from the body of an annotation."""
         fields = {}
@@ -118,6 +130,9 @@ class IIIFAnnotationAnalyst(Analyst):
                 'value': selector
             }
         }
+
+    def get_data(self, result):
+        pass
 
     def analyse(self, result_id):
         """Analyse a IIIF Annotation result."""
