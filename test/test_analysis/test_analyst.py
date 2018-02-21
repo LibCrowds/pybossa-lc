@@ -576,3 +576,118 @@ class TestAnalyst(Test):
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         self.analyst.analyse(result.id)
         assert_equal(result.info['annotations'], [])
+
+    @with_context
+    @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
+    def test_equal_regions_combined(self,
+                                    mock_create_tagging_anno,
+                                    mock_get_tags,
+                                    mock_get_transcriptions_df,
+                                    mock_get_comments):
+        """Test that equal regions are combined."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
+        rect = dict(x=400, y=200, w=100, h=150)
+        tag = 'foo'
+        mock_get_tags.return_value = {
+            tag: [rect] * n_answers
+        }
+        mock_create_tagging_anno.return_value = {}
+        expected_target = {
+            'source': target,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
+                                                        rect['w'], rect['h'])
+            }
+        }
+        TaskRunFactory.create_batch(n_answers, task=task)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 1)
+        mock_create_tagging_anno.assert_called_once_with(expected_target, tag)
+
+    @with_context
+    @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
+    def test_similar_regions_combined(self,
+                                      mock_create_tagging_anno,
+                                      mock_get_tags,
+                                      mock_get_transcriptions_df,
+                                      mock_get_comments):
+        """Test that similar regions are combined."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
+        rect1 = dict(x=90, y=100, w=110, h=90)
+        rect2 = dict(x=100, y=110, w=90, h=100)
+        rect3 = dict(x=110, y=90, w=100, h=110)
+        tag = 'foo'
+        mock_get_tags.return_value = {
+            tag: [rect1, rect2, rect3]
+        }
+        mock_create_tagging_anno.return_value = {}
+        expected_target = {
+            'source': target,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh=100,100,100,100'
+            }
+        }
+        TaskRunFactory.create_batch(n_answers, task=task)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 1)
+        mock_create_tagging_anno.assert_called_once_with(expected_target, tag)
+
+    @with_context
+    @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
+    def test_different_regions_not_combined(self,
+                                      mock_create_tagging_anno,
+                                      mock_get_tags,
+                                      mock_get_transcriptions_df,
+                                      mock_get_comments):
+        """Test that different regions are not combined."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
+        tag = 'foo'
+        rect1 = dict(x=10, y=10, w=10, h=10)
+        rect2 = dict(x=100, y=100, w=100, h=100)
+        rect3 = dict(x=200, y=200, w=200, h=200)
+        rects = [rect1, rect2, rect3]
+        mock_get_tags.return_value = {
+            tag: rects
+        }
+        mock_create_tagging_anno.return_value = {}
+        expected_targets = [{
+            'source': target,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
+                                                        rect['w'], rect['h'])
+            }
+        } for rect in rects]
+        TaskRunFactory.create_batch(n_answers, task=task)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        assert_equal(len(result.info['annotations']), 3)
+        call_args_list = mock_create_tagging_anno.call_args_list
+        expected_calls = [call(expected_targets[i], tag)
+                          for  i in range(n_answers)]
+        assert_equal(call_args_list, expected_calls)

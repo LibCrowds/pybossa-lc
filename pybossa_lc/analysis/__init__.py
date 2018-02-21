@@ -62,6 +62,12 @@ class Analyst():
 
         # Handle tags
         tags = self.get_tags(task_run_df)
+        for tag, rects in tags.items():
+            clusters = self.cluster_rects(rects)
+            for cluster in clusters:
+                fragment_target = self.create_fragment_target(target, cluster)
+                tagging_anno = self.create_tagging_anno(fragment_target, tag)
+                annotations.append(tagging_anno)
 
         # Handle transcriptions
         df = self.get_transcriptions_df(task_run_df)
@@ -262,6 +268,18 @@ class Analyst():
         """Return timestamp expressed in the UTC xsd:datetime format."""
         return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
+    def create_fragment_target(self, target, rect):
+        """Return a fragment target."""
+        return {
+            'source': target,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
+                                                        rect['w'], rect['h'])
+            }
+        }
+
     def get_anno_generator(self):
         """Return a reference to the LibCrowds software."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
@@ -386,34 +404,23 @@ class Analyst():
             'h': max(r1['y'] + r1['h'], r2['y'] + r2['h']) - r2['y']
         }
 
-    def update_selector(self, anno, rect):
-        """Update a media frag selector."""
-        frag = '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'], rect['w'],
-                                              rect['h'])
-        anno['target']['selector']['value'] = frag
-        anno['modified'] = self.get_xsd_datetime()
-
-    def cluster_tagging_annotations(self, anno_list):
-        """Return clustered tagging annotations."""
+    def cluster_rects(self, rects):
+        """Return clustered rectangles."""
         clusters = []
         merge_ratio = 0.5
-        tagging_annos = [anno for anno in anno_list
-                        if anno['motivation'] == 'tagging']
 
-        for anno in tagging_annos:
-            r1 = self.get_rect_from_selection_anno(anno)
+        for rect in rects:
+            r1 = rect
             matched = False
             for cluster in clusters:
-                r2 = self.get_rect_from_selection_anno(cluster)
+                r2 = cluster
                 overlap_ratio = self.get_overlap_ratio(r1, r2)
                 if overlap_ratio > merge_ratio:
                     matched = True
                     r3 = self.merge_rects(r1, r2)
-                    self.update_selector(cluster, r3)
+                    cluster = r3
 
             if not matched:
-                # still update to round rect params
-                self.update_selector(anno, r1)
-                clusters.append(anno)
+                clusters.append(rect)
 
         return clusters
