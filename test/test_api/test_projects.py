@@ -107,7 +107,7 @@ class TestProjectsApi(web.Helper):
     def test_project_creation_unauthorised_as_anon(self):
         """Test that a project is unauthorised for anonymous users."""
         category = CategoryFactory()
-        endpoint = '/libcrowds/projects/{}/new'.format(category.short_name)
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
         res = self.app_post_json(endpoint)
         assert_equal(res.status_code, 401)
 
@@ -117,7 +117,7 @@ class TestProjectsApi(web.Helper):
         self.register()
         self.signin()
         category = CategoryFactory(info=dict(presenter='foo'))
-        endpoint = '/libcrowds/projects/{}/new'.format(category.short_name)
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
         res = self.app_post_json(endpoint)
         res_data = json.loads(res.data)
         msg = 'Invalid task presenter, please contact an administrator'
@@ -141,7 +141,7 @@ class TestProjectsApi(web.Helper):
         self.project_repo.update_category(category)
         self.user_repo.update(user)
 
-        endpoint = '/libcrowds/projects/{}/new'.format(category.short_name)
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
                          template_id=tmpl['id'],
@@ -176,7 +176,7 @@ class TestProjectsApi(web.Helper):
         self.project_repo.update_category(category)
         self.user_repo.update(user)
 
-        endpoint = '/libcrowds/projects/{}/new'.format(category.short_name)
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
                          template_id=tmpl['id'],

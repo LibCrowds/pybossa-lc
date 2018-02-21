@@ -23,7 +23,7 @@ class TestAnalysisApi(web.Helper):
     @patch('pybossa_lc.api.analysis.enqueue_job')
     def test_z3950_single_result_analysed(self, mock_enqueue):
         """Test analysis triggered for a single Z39.50 result."""
-        endpoint = "/libcrowds/analysis/z3950"
+        endpoint = "/lc/analysis/z3950"
         project = ProjectFactory.create()
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
@@ -47,7 +47,7 @@ class TestAnalysisApi(web.Helper):
     @patch('pybossa_lc.api.analysis.enqueue_job')
     def test_z3950_all_results_analysed(self, mock_enqueue):
         """Test analysis triggered for all Z39.50 results."""
-        endpoint = "/libcrowds/analysis/z3950"
+        endpoint = "/lc/analysis/z3950"
         self.register()
         owner = self.user_repo.get(1)
         project = ProjectFactory.create(owner=owner)
@@ -69,7 +69,7 @@ class TestAnalysisApi(web.Helper):
     @patch('pybossa_lc.api.analysis.enqueue_job')
     def test_iiif_annotation_single_result_analysed(self, mock_enqueue):
         """Test analysis triggered for a single IIIF Annotation result."""
-        endpoint = "/libcrowds/analysis/iiif-annotation"
+        endpoint = "/lc/analysis/iiif-annotation"
         project = ProjectFactory.create()
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
@@ -93,7 +93,7 @@ class TestAnalysisApi(web.Helper):
     @patch('pybossa_lc.api.analysis.enqueue_job')
     def test_iiif_annotation_all_results_analysed(self, mock_enqueue):
         """Test analysis triggered for all IIIF Annotation results."""
-        endpoint = "/libcrowds/analysis/iiif-annotation"
+        endpoint = "/lc/analysis/iiif-annotation"
         self.register()
         owner = self.user_repo.get(1)
         project = ProjectFactory.create(owner=owner)

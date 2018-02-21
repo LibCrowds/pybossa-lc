@@ -33,7 +33,7 @@ class TestCategoryApi(web.Helper):
         tmpl = self.tmpl_fixtures.create_template()
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
-        endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
+        endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         assert_equal(data['templates'], [tmpl])
@@ -50,7 +50,7 @@ class TestCategoryApi(web.Helper):
         self.user_repo.update(user)
 
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-        endpoint = '/libcrowds/users/{}/templates/{}'.format(user.name,
+        endpoint = '/lc/users/{}/templates/{}'.format(user.name,
                                                              tmpl['id'])
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
@@ -64,7 +64,7 @@ class TestCategoryApi(web.Helper):
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         tmpl = self.tmpl_fixtures.create_template()
 
-        endpoint = '/libcrowds/users/{}/templates'.format(Fixtures.name)
+        endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
         res = self.app_post_json(endpoint, data=tmpl['project'],
                                  follow_redirects=True)
         data = json.loads(res.data)
@@ -78,7 +78,7 @@ class TestCategoryApi(web.Helper):
         assert_dict_equal(templates[0], expected)
 
         # Check redirect to update page
-        next_url = '/libcrowds/users/{0}/templates/{1}'.format(Fixtures.name,
+        next_url = '/lc/users/{0}/templates/{1}'.format(Fixtures.name,
                                                                tmpl_id)
         assert_equal(data['next'], next_url)
 
@@ -94,7 +94,7 @@ class TestCategoryApi(web.Helper):
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
-        url_base = '/libcrowds/users/{}/templates/{}'
+        url_base = '/lc/users/{}/templates/{}'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
         res = self.app_post_json(endpoint, data=tmpl['project'])
 
@@ -119,7 +119,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='iiif-annotation')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/task'
+        url_base = '/lc/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
         res = self.app_post_json(endpoint,
@@ -146,7 +146,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='iiif-annotation')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/task'
+        url_base = '/lc/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
         res = self.app_post_json(endpoint,
@@ -172,7 +172,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='z3950')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/task'
+        url_base = '/lc/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
 
         res = self.app_post_json(endpoint, data=self.tmpl_fixtures.z3950_tmpl)
@@ -199,7 +199,7 @@ class TestCategoryApi(web.Helper):
 
         tmpl['task']['mode'] = 'transcribe'
         tmpl['task']['fields_schema'] = []
-        url_base = '/libcrowds/users/{}/templates/{}/task'
+        url_base = '/lc/users/{}/templates/{}/task'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
         res = self.app_post_json(endpoint, data=tmpl['task'])
 
@@ -223,7 +223,7 @@ class TestCategoryApi(web.Helper):
         self.category.info = dict(presenter='iiif-annotation')
         self.project_repo.update_category(self.category)
 
-        url_base = '/libcrowds/users/{}/templates/{}/rules'
+        url_base = '/lc/users/{}/templates/{}/rules'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
         res = self.app_post_json(endpoint, data=self.tmpl_fixtures.rules_tmpl)
 
