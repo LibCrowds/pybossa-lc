@@ -630,7 +630,7 @@ class TestAnalyst(Test):
         task = self.create_task_with_context(n_answers, target)
         rect1 = dict(x=90, y=100, w=110, h=90)
         rect2 = dict(x=100, y=110, w=90, h=100)
-        rect3 = dict(x=110, y=90, w=100, h=110)
+        rect3 = dict(x=110, y=90, w=120, h=110)
         tag = 'foo'
         mock_get_tags.return_value = {
             tag: [rect1, rect2, rect3]
@@ -641,7 +641,7 @@ class TestAnalyst(Test):
             'selector': {
                 'conformsTo': 'http://www.w3.org/TR/media-frags/',
                 'type': 'FragmentSelector',
-                'value': '?xywh=100,100,100,100'
+                'value': '?xywh=90,90,110,110'
             }
         }
         TaskRunFactory.create_batch(n_answers, task=task)

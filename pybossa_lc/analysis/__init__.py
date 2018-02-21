@@ -412,13 +412,13 @@ class Analyst():
         for rect in rects:
             r1 = rect
             matched = False
-            for cluster in clusters:
-                r2 = cluster
+            for i in range(len(clusters)):
+                r2 = clusters[i]
                 overlap_ratio = self.get_overlap_ratio(r1, r2)
                 if overlap_ratio > merge_ratio:
                     matched = True
                     r3 = self.merge_rects(r1, r2)
-                    cluster = r3
+                    clusters[i] = r3
 
             if not matched:
                 clusters.append(rect)
