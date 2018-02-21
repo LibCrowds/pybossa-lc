@@ -43,8 +43,9 @@ class Analyst():
 
     def analyse(self, result_id):
         """Analyse a result."""
-        from pybossa.core import result_repo
+        from pybossa.core import result_repo, task_repo
         result = result_repo.get(result_id)
+        task = task_repo.get_task(result.task_id)
         task_run_df = self.get_task_run_df(result.task_id)
         tmpl = self.get_project_template(result.project_id)
         target = self.get_task_target(result.task_id)
@@ -69,26 +70,25 @@ class Analyst():
                 tagging_anno = self.create_tagging_anno(fragment_target, tag)
                 annotations.append(tagging_anno)
 
-        # Handle transcriptions
+        # Get non-empty transcriptions
         df = self.get_transcriptions_df(task_run_df)
         df = self.drop_empty_rows(df)
-        has_answers = not df.empty
 
-        # Apply normalisation rules
+        # Normalise Transcriptions
         rules = tmpl.get('rules')
         norm_func = self.normalise_transcription
         df = df.applymap(lambda x: norm_func(x, rules))
 
-        # Check for min matches
-        min_answers = tmpl.get('project', {}).get('min_answers', 1)
+        # Check for minimum matching answers
+        min_answers = tmpl.get('project', {}).get('min_answers', 3)
+        max_answers = tmpl.get('project', {}).get('max_answers', min_answers)
         has_matches = self.has_n_matches(min_answers, df)
-
-        # Store most common answers for each key
-        if has_answers and has_matches:
+        if not df.empty and has_matches:
             old_annos = []
             if isinstance(result.info, dict):
                 old_annos = result.info.get('annotations', [])
 
+            # Store matched (or previously modified) answers
             for column in df:
                 value = df[column].value_counts().idxmax()
                 modified_annos = self.get_modified_annos(old_annos, column)
@@ -97,6 +97,8 @@ class Analyst():
                 else:
                     anno = self.create_describing_anno(target, value, column)
                     annotations.append(anno)
+        else:
+            self.update_n_answers_required(task, max_answers)
 
         result.last_version = True
         result.info = dict(annotations=annotations)

@@ -113,60 +113,6 @@ class TestIIIFAnnotationAnalyst(Test):
         assert_dict_equal(df.to_dict(), self.transcriptions_df.to_dict())
 
     # @with_context
-    # @freeze_time("19-11-1984")
-    # @patch('pybossa_lc.analysis.iiif_annotation.helpers.get_project_template')
-    # def test_redundancy_increased(self, mock_get_tmpl):
-    #     """Test that redundancy is updated for non-matching transcriptions."""
-    #     category = CategoryFactory()
-    #     tmpl_fixtures = TemplateFixtures(category)
-    #     tmpl = tmpl_fixtures.create_template()
-    #     mock_get_tmpl.return_value = tmpl
-    #     project = ProjectFactory.create()
-    #     n_answers = 2
-    #     task = TaskFactory.create(project=project, n_answers=n_answers)
-    #     title1 = 'The Devils to Pay'
-    #     title2 = 'The Devil to Pay'
-    #     fake_anno1 = {
-    #         'motivation': 'describing',
-    #         'body': [
-    #             {
-    #                 "type": "TextualBody",
-    #                 "purpose": "describing",
-    #                 "value": title1,
-    #                 "format": "text/plain"
-    #             },
-    #             {
-    #                 "type": "TextualBody",
-    #                 "purpose": "tagging",
-    #                 "value": 'title'
-    #             }
-    #         ]
-    #     }
-    #     fake_anno2 = {
-    #         'motivation': 'describing',
-    #         'body': [
-    #             {
-    #                 "type": "TextualBody",
-    #                 "purpose": "describing",
-    #                 "value": title2,
-    #                 "format": "text/plain"
-    #             },
-    #             {
-    #                 "type": "TextualBody",
-    #                 "purpose": "tagging",
-    #                 "value": 'title'
-    #             }
-    #         ]
-    #     }
-    #     TaskRunFactory.create(task=task, info=[fake_anno1])
-    #     TaskRunFactory.create(task=task, info=[fake_anno2])
-    #     result = self.result_repo.filter_by(project_id=task.project_id)[0]
-    #     iiif_annotation.analyse(result.id)
-    #     updated_task = self.task_repo.get_task(task.id)
-    #     assert_equal(result.info['annotations'], [])
-    #     assert_equal(updated_task.n_answers, n_answers + 1)
-
-    # @with_context
     # def test_set_target_from_selection_parent(self):
     #     """Test target set from a selection parent."""
     #     rect = dict(x=1, y=2, width=3, height=4)
