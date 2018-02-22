@@ -152,10 +152,10 @@ def analyse_all(project_id, presenter):
     timeout = 1 * HOUR
     if func:
         job = dict(name=func,
-                args=[],
-                kwargs={'project_id': project_id},
-                timeout=timeout,
-                queue='high')
+                   args=[],
+                   kwargs={'project_id': project_id},
+                   timeout=timeout,
+                   queue='high')
         enqueue_job(job)
 
 
@@ -170,10 +170,10 @@ def analyse_empty(project_id, presenter):
     timeout = 1 * HOUR
     if func:
         job = dict(name=func,
-                args=[],
-                kwargs={'project_id': project_id},
-                timeout=timeout,
-                queue='high')
+                   args=[],
+                   kwargs={'project_id': project_id},
+                   timeout=timeout,
+                   queue='high')
         enqueue_job(job)
 
 

@@ -251,7 +251,8 @@ class TestAnalyst(Test):
         n_original_answers = 3
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create_batch(n_original_answers, task=task)
-        self.analyst.update_n_answers_required(task, max_answers=n_original_answers)
+        self.analyst.update_n_answers_required(task,
+                                               max_answers=n_original_answers)
         assert_equal(task.n_answers, n_original_answers)
         assert_equal(task.state, 'completed')
 
@@ -658,10 +659,10 @@ class TestAnalyst(Test):
     @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
     @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
     def test_different_regions_not_combined(self,
-                                      mock_create_tagging_anno,
-                                      mock_get_tags,
-                                      mock_get_transcriptions_df,
-                                      mock_get_comments):
+                                            mock_create_tagging_anno,
+                                            mock_get_tags,
+                                            mock_get_transcriptions_df,
+                                            mock_get_comments):
         """Test that different regions are not combined."""
         n_answers = 3
         target = 'example.com'
@@ -690,7 +691,7 @@ class TestAnalyst(Test):
         assert_equal(len(result.info['annotations']), 3)
         call_args_list = mock_create_tagging_anno.call_args_list
         expected_calls = [call(expected_targets[i], tag)
-                          for  i in range(n_answers)]
+                          for i in range(n_answers)]
         assert_equal(call_args_list, expected_calls)
 
     @with_context

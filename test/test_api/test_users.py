@@ -50,8 +50,7 @@ class TestCategoryApi(web.Helper):
         self.user_repo.update(user)
 
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-        endpoint = '/lc/users/{}/templates/{}'.format(user.name,
-                                                             tmpl['id'])
+        endpoint = '/lc/users/{}/templates/{}'.format(user.name, tmpl['id'])
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         assert_equal(data['template'], tmpl)
@@ -78,8 +77,7 @@ class TestCategoryApi(web.Helper):
         assert_dict_equal(templates[0], expected)
 
         # Check redirect to update page
-        next_url = '/lc/users/{0}/templates/{1}'.format(Fixtures.name,
-                                                               tmpl_id)
+        next_url = '/lc/users/{0}/templates/{1}'.format(Fixtures.name, tmpl_id)
         assert_equal(data['next'], next_url)
 
     @with_context

@@ -56,8 +56,10 @@ class IIIFAnnotationAnalyst(Analyst):
             raise ValueError('This task was not built from a selection parent')
 
         rect = highlights[0]
-        selector = '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
-                                                rect['width'], rect['height'])
+        selector = '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                  rect['y'],
+                                                  rect['width'],
+                                                  rect['height'])
         annotation['target'] = {
             'source': annotation['target'],
             'selector': {

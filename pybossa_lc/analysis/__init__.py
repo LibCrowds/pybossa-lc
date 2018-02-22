@@ -20,6 +20,7 @@ from pybossa.jobs import project_export
 
 from ..cache import templates as templates_cache
 
+
 @six.add_metaclass(ABCMeta)
 class Analyst():
 
@@ -208,7 +209,7 @@ class Analyst():
             yearfirst = rules.get('yearfirst', False)
             try:
                 ts = dateutil.parser.parse(value, dayfirst=dayfirst,
-                                          yearfirst=yearfirst)
+                                           yearfirst=yearfirst)
             except (ValueError, TypeError):
                 return ''
             return ts.isoformat()[:10]
@@ -357,8 +358,8 @@ class Analyst():
                 continue
 
             tag_matches = [body for body in anno['body']
-                          if body['purpose'] == 'tagging' and
-                          body['value'] == tag]
+                           if body['purpose'] == 'tagging' and
+                           body['value'] == tag]
             modified = [body for body in anno['body']
                         if body['purpose'] == 'describing' and
                         'modified' in body]
