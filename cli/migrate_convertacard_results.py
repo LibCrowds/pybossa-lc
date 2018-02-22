@@ -3,7 +3,7 @@
 Migrate results from previous Convert-a-Card projects to Web Annotations.
 
 Usage:
-python migrate_z3950_results.py
+python cli/migrate_z3950_results.py
 """
 
 import sys
