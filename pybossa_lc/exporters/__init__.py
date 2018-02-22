@@ -132,5 +132,4 @@ class VolumeExporter(Exporter):
             flat_data.append(row)
 
         # Return sorted by target
-        print flat_data
         return sorted(flat_data, key=lambda x: x['target'])

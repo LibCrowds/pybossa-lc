@@ -486,7 +486,6 @@ class TestAnalyst(Test):
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         self.analyst.analyse(result.id)
-        print result.info
         assert_equal(result.info, {
             'annotations': []
         })
