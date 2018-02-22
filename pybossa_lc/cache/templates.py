@@ -37,4 +37,4 @@ def get_by_category_id(category_id):
     """Return all templates for a category."""
     all_tmpl = get_all()
     return [tmpl for tmpl in all_tmpl
-            if tmpl['project']['category_id'] == category_id]
+            if tmpl['category_id'] == category_id]

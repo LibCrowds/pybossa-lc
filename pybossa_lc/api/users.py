@@ -58,12 +58,15 @@ def templates(name):
     ensure_authorized_to('update', user)
     user_templates = user.info.get('templates', [])
 
+    # Use a default category so we can create the form
     categories = project_repo.get_all_categories()
-    form = ProjectTemplateForm(request.body)
+    data = request.body.to_dict(flat=False)
+    if not data.get('category_id'):
+        data['category_id'] = categories[0].id
+    print data
+    form = ProjectTemplateForm(**data)
     category_choices = [(c.id, c.name) for c in categories]
     form.category_id.choices = category_choices
-    if not form.category_id.data:
-        form.category_id.data = category_choices[0][0]
 
     if request.method == 'POST' and form.validate():
         tmpl_id = str(uuid.uuid4())
@@ -80,7 +83,7 @@ def templates(name):
         templates_cache.reset()
         users_cache.delete_user_summary_id(user.id)
         flash("New template submitted for approval", 'success')
-        return redirect_content_type(url_for('.template',
+        return redirect_content_type(url_for('.update',
                                              name=user.name, tmpl_id=tmpl_id))
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
@@ -91,7 +94,7 @@ def templates(name):
 
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>', methods=['GET', 'POST'])
-def template(name, tmpl_id):
+def update(name, tmpl_id):
     """View or edit the main template project data."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no cover
@@ -106,9 +109,9 @@ def template(name, tmpl_id):
     elif tmpl['id'] not in user_tmpl_ids:
         abort(403)
 
-    form = ProjectTemplateForm(**tmpl)
     categories = project_repo.get_all_categories()
     category_choices = [(c.id, c.name) for c in categories]
+    form = ProjectTemplateForm(**tmpl)
     form.category_id.choices = category_choices
     if not form.category_id.data:
         form.category_id.data = category_choices[0][0]
@@ -140,7 +143,7 @@ def template(name, tmpl_id):
 
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>/task', methods=['GET', 'POST'])
-def template_task(name, tmpl_id):
+def task(name, tmpl_id):
     """Add task data for a template."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no cover
@@ -155,7 +158,7 @@ def template_task(name, tmpl_id):
     elif tmpl['id'] not in user_tmpl_ids:
         abort(403)
 
-    category = project_repo.get_category(tmpl['project']['category_id'])
+    category = project_repo.get_category(tmpl['category_id'])
     if not category:
         msg = ('The category for this template no longer exists, please '
                'contact an administrator')
@@ -204,7 +207,7 @@ def template_task(name, tmpl_id):
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>/rules',
                  methods=['GET', 'POST'])
-def template_rules(name, tmpl_id):
+def rules(name, tmpl_id):
     """Add resulsts analysis rules for a template."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no cover
@@ -219,7 +222,7 @@ def template_rules(name, tmpl_id):
     elif tmpl['id'] not in user_tmpl_ids:
         abort(403)
 
-    category = project_repo.get_category(tmpl['project']['category_id'])
+    category = project_repo.get_category(tmpl['category_id'])
     if not category:
         msg = 'The category for this template no longer exists'
         flash(msg, 'error')

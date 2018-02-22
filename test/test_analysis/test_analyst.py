@@ -30,7 +30,7 @@ class TestAnalyst(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
-        tmpl['project']['min_answers'] = n_answers
+        tmpl['min_answers'] = n_answers
         tmpl['rules'] = dict(case='title', whitespace='full_stop',
                              trim_punctuation=True)
         user_info = dict(templates=[tmpl])
@@ -387,7 +387,7 @@ class TestAnalyst(Test):
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         n_answers = 3
-        tmpl['project']['min_answers'] = n_answers
+        tmpl['min_answers'] = n_answers
         mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         target = 'example.com'

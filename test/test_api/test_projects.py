@@ -154,8 +154,8 @@ class TestProjectsApi(web.Helper):
         project = self.project_repo.get(1)
         assert_equal(project.info['template_id'], tmpl['id'])
         assert_equal(project.info['volume_id'], vol['id'])
-        assert_equal(project.description, tmpl['project']['description'])
-        assert_equal(project.category_id, tmpl['project']['category_id'])
+        assert_equal(project.description, tmpl['description'])
+        assert_equal(project.category_id, tmpl['category_id'])
         assert_equal(project.published, False)
 
     @with_context
@@ -189,6 +189,6 @@ class TestProjectsApi(web.Helper):
         project = self.project_repo.get(1)
         assert_equal(project.info['template_id'], tmpl['id'])
         assert_equal(project.info['volume_id'], vol['id'])
-        assert_equal(project.description, tmpl['project']['description'])
-        assert_equal(project.category_id, tmpl['project']['category_id'])
+        assert_equal(project.description, tmpl['description'])
+        assert_equal(project.category_id, tmpl['category_id'])
         assert_equal(project.published, False)

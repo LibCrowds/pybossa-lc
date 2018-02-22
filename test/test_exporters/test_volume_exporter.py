@@ -106,7 +106,7 @@ class TestVolumeExporter(Test):
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
         tmpl_id = tmpl['id']
-        tmpl_name = tmpl['project']['name']
+        tmpl_name = tmpl['name']
 
         UserFactory.create(info=dict(templates=[tmpl]))
         project_info = dict(volume_id=volume_id, template_id=tmpl_id)
@@ -148,7 +148,7 @@ class TestVolumeExporter(Test):
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
         tmpl_id = tmpl['id']
-        tmpl_name = tmpl['project']['name']
+        tmpl_name = tmpl['name']
 
         UserFactory.create(info=dict(templates=[tmpl]))
         project_info = dict(volume_id=volume_id, template_id=tmpl_id)
