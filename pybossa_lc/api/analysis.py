@@ -13,9 +13,9 @@ from ..jobs import analyse_all, analyse_empty, analyse_single
 BLUEPRINT = Blueprint('analysis', __name__)
 
 
-def respond_ok():
+def respond(msg):
     """Return a basic 200 OK response."""
-    data = dict(message='OK', status=200)
+    data = dict(message=msg, status=200)
     response = make_response(json.dumps(data))
     response.mimetype = 'application/json'
     response.status_code = 200
@@ -26,7 +26,7 @@ def trigger_analysis(presenter):
     payload = request.json or {}
     short_name = payload.get('project_short_name')
 
-    # Analyse all
+    # Analyse all or empty
     if payload.get('all') or payload.get('empty'):
         project = project_repo.get_by_shortname(short_name)
         if not project:
@@ -36,8 +36,10 @@ def trigger_analysis(presenter):
 
         if payload.get('all'):
             analyse_all(project.id, 'presenter')
-        elif if payload.get('empty'):
+        elif payload.get('empty'):
             analyse_empty(project.id, 'presenter')
+
+        return respond('OK')
 
     # Analyse single
     if payload.get('event') != 'task_completed':
@@ -45,7 +47,7 @@ def trigger_analysis(presenter):
 
     result_id = payload['result_id']
     analyse_single(result_id, presenter)
-    respond_ok()
+    return respond('OK')
 
 
 
@@ -55,7 +57,7 @@ def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
     if request.method == 'GET':
         return respond('The Z39.50 endpoint is listening...')
-    return analyse('z3950')
+    return trigger_analysis('z3950')
 
 
 @csrf.exempt
@@ -64,4 +66,4 @@ def iiif_annotation_analysis():
     """Endpoint for IIIF Annotation webhooks."""
     if request.method == 'GET':
         return respond('The IIIF Annotation endpoint is listening...')
-    return analyse('iiif-annotation')
+    return trigger_analysis('iiif-annotation')
