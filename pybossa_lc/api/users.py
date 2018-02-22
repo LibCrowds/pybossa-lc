@@ -67,14 +67,19 @@ def templates(name):
 
     if request.method == 'POST' and form.validate():
         tmpl_id = str(uuid.uuid4())
-        new_template = dict(id=tmpl_id, project=form.data, task=None,
-                            rules=None)
+        new_template = form.data
+        new_template.update({
+            'id': tmpl_id,
+            'pending': True,
+            'task': None,
+            'rules': None
+        })
         user_templates.append(new_template)
         user.info['templates'] = user_templates
         user_repo.update(user)
         templates_cache.reset()
         users_cache.delete_user_summary_id(user.id)
-        flash("Project template created", 'success')
+        flash("New template submitted for approval", 'success')
         return redirect_content_type(url_for('.template',
                                              name=user.name, tmpl_id=tmpl_id))
     elif request.method == 'POST':  # pragma: no cover
@@ -101,10 +106,9 @@ def template(name, tmpl_id):
     elif tmpl['id'] not in user_tmpl_ids:
         abort(403)
 
+    form = ProjectTemplateForm(**tmpl)
     categories = project_repo.get_all_categories()
     category_choices = [(c.id, c.name) for c in categories]
-    current_project_details = tmpl['project'] or {}
-    form = ProjectTemplateForm(**current_project_details)
     form.category_id.choices = category_choices
     if not form.category_id.data:
         form.category_id.data = category_choices[0][0]
@@ -119,13 +123,14 @@ def template(name, tmpl_id):
                        if _t['id'] == tmpl_id][0]
             except IndexError:  # pragma: no cover
                 abort(404)
-            tmpl['project'] = form.data
+            tmpl.update(form.data)
+            tmpl['pending'] = True
             user_templates[idx] = tmpl
             user.info['templates'] = user_templates
             user_repo.update(user)
             templates_cache.reset()
             users_cache.delete_user_summary_id(user.id)
-            flash("Project template updated", 'success')
+            flash("Template updates submitted for approval", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
@@ -180,12 +185,13 @@ def template_task(name, tmpl_id):
                 abort(404)
 
             tmpl['task'] = form.data
+            tmpl['pending'] = True
             user_templates[idx] = tmpl
             user.info['templates'] = user_templates
             user_repo.update(user)
             templates_cache.reset()
             users_cache.delete_user_summary_id(user.id)
-            flash("Task template updated", 'success')
+            flash("Template updates submitted for approval", 'success')
         else:
             flash('Please correct the errors', 'error')
 
@@ -235,12 +241,13 @@ def template_rules(name, tmpl_id):
             except IndexError:  # pragma: no cover
                 abort(404)
             tmpl['rules'] = form.data
+            tmpl['pending'] = True
             user_templates[idx] = tmpl
             user.info['templates'] = user_templates
             user_repo.update(user)
             templates_cache.reset()
             users_cache.delete_user_summary_id(user.id)
-            flash("Results analysis rules updated", 'success')
+            flash("Template updates submitted for approval", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
