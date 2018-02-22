@@ -101,7 +101,7 @@ class TestAnalysisApi(web.Helper):
         payload['empty'] = True
         project_id = payload['project_id']
         self.app_post_json(endpoint, data=payload)
-        mock_analyse_empty.assert_called_once_with(project.id, presenter)
+        mock_analyse_empty.assert_called_once_with(project_id, presenter)
 
     @with_context
     def test_analysis_get_response(self):
