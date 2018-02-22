@@ -63,7 +63,7 @@ def templates(name):
     data = request.body.to_dict(flat=False)
     if not data.get('category_id'):
         data['category_id'] = categories[0].id
-    print data
+
     form = ProjectTemplateForm(**data)
     category_choices = [(c.id, c.name) for c in categories]
     form.category_id.choices = category_choices
