@@ -25,6 +25,7 @@ def get_anno_base(motivation):
     """Return the base fo ra new Web Annotation."""
     ts_now = get_xsd_datetime()
     spa_server_name = app.config.get('SPA_SERVER_NAME')
+    github_repo = app.config.get('GITHUB_REPO')
     return {
         "@context": "http://www.w3.org/ns/anno.jsonld",
         "type": "Annotation",
@@ -32,7 +33,7 @@ def get_anno_base(motivation):
         "created": ts_now,
         "generated": ts_now,
         "generator": {
-            "id": spa_server_name,
+            "id": github_repo,
             "type": "Software",
             "name": "LibCrowds",
             "homepage": spa_server_name
