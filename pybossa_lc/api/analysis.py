@@ -8,91 +8,45 @@ from pybossa.core import project_repo, result_repo
 from pybossa.auth import ensure_authorized_to
 from pybossa.jobs import enqueue_job
 
-from ..analysis.z3950 import Z3950Analyst
-from ..analysis.iiif_annotation import IIIFAnnotationAnalyst
+from ..jobs import analyse_all, analyse_empty, analyse_single
 
 BLUEPRINT = Blueprint('analysis', __name__)
 
 
-def respond(msg, **kwargs):
-    """Return a basic 200 response."""
-    data = dict(message=msg, status=200)
-    data.update(kwargs)
+def respond_ok():
+    """Return a basic 200 OK response."""
+    data = dict(message='OK', status=200)
     response = make_response(json.dumps(data))
     response.mimetype = 'application/json'
     response.status_code = 200
     return response
 
-
-def analyse_all(short_name, func):
-    """Queue analysis of all results.
-
-    Requires the current user to be authorised to update the project.
-    """
-    project = project_repo.get_by_shortname(short_name)
-    if not project:
-        abort(404)
-
-    ensure_authorized_to('update', project)
-    job = dict(name=func,
-               args=[],
-               kwargs={'project_id': project.id},
-               timeout=current_app.config.get('TIMEOUT'),
-               queue='high')
-    enqueue_job(job)
-    return respond('All results added to job queue',
-                   project_short_name=project.short_name)
-
-
-def analyse_empty(short_name, func):
-    """Queue analysis of all empty results.
-
-    Requires the current user to be authorised to update the project.
-    """
-    project = project_repo.get_by_shortname(short_name)
-    if not project:
-        abort(404)
-
-    ensure_authorized_to('update', project)
-    job = dict(name=func,
-               args=[],
-               kwargs={'project_id': project.id},
-               timeout=current_app.config.get('TIMEOUT'),
-               queue='high')
-    enqueue_job(job)
-    return respond('Empty results added to job queue',
-                   project_short_name=project.short_name)
-
-
-def analyse_single(payload, func):
-    """Queue a single result for analysis."""
-    if payload.get('event') != 'task_completed':
-        err_msg = 'This is not a task_completed event'
-        abort(400, err_msg)
-
-    result = result_repo.get(payload['result_id'])
-    if result.info:
-        ensure_authorized_to('update', result)
-    job = dict(name=func,
-               args=[],
-               kwargs={'result_id': result.id},
-               timeout=current_app.config.get('TIMEOUT'),
-               queue='high')
-    enqueue_job(job)
-    return respond('Result added to job queue', result_id=result.id,
-                   project_short_name=payload['project_short_name'])
-
-
-def analyse(analysis_func, analysis_all_func, analysis_empty_func):
-    """Queue analysis for a result or set of results."""
+def trigger_analysis(presenter):
+    """Trigger analysis for a result or set of results."""
     payload = request.json or {}
-    if payload.get('all'):
-        short_name = payload.get('project_short_name')
-        return analyse_all(short_name, analysis_all_func)
-    elif payload.get('empty'):
-        short_name = payload.get('project_short_name')
-        return analyse_empty(short_name, analysis_empty_func)
-    return analyse_single(payload, analysis_func)
+    short_name = payload.get('project_short_name')
+
+    # Analyse all
+    if payload.get('all') or payload.get('empty'):
+        project = project_repo.get_by_shortname(short_name)
+        if not project:
+            abort(404)
+
+        ensure_authorized_to('update', project)
+
+        if payload.get('all'):
+            analyse_all(project.id, 'presenter')
+        elif if payload.get('empty'):
+            analyse_empty(project.id, 'presenter')
+
+    # Analyse single
+    if payload.get('event') != 'task_completed':
+        abort(400)
+
+    result_id = payload['result_id']
+    analyse_single(result_id, presenter)
+    respond_ok()
+
 
 
 @csrf.exempt
@@ -101,20 +55,7 @@ def z3950_analysis():
     """Endpoint for Z39.50 webhooks."""
     if request.method == 'GET':
         return respond('The Z39.50 endpoint is listening...')
-
-    def z3950_analyse(project_id, result_id):
-        analyst = Z3950Analyst(project_id)
-        analyst.analyse(result_id)
-
-    def z3950_analyse_all(project_id):
-        analyst = Z3950Analyst(project_id)
-        analyst.analyse_all()
-
-    def z3950_analyse_empty(project_id):
-        analyst = Z3950Analyst(project_id)
-        analyst.analyse_empty()
-
-    return analyse(z3950_analyse, z3950_analyse_all, z3950_analyse_empty)
+    return analyse('z3950')
 
 
 @csrf.exempt
@@ -123,18 +64,4 @@ def iiif_annotation_analysis():
     """Endpoint for IIIF Annotation webhooks."""
     if request.method == 'GET':
         return respond('The IIIF Annotation endpoint is listening...')
-
-    def iiif_annotation_analyse(project_id, result_id):
-        analyst = IIIFAnnotationAnalyst(project_id)
-        analyst.analyse(result_id)
-
-    def iiif_annotation_analyse_all(project_id):
-        analyst = IIIFAnnotationAnalyst(project_id)
-        analyst.analyse_all()
-
-    def iiif_annotation_analyse_empty(project_id):
-        analyst = IIIFAnnotationAnalyst(project_id)
-        analyst.analyse_empty()
-
-    return analyse(iiif_annotation_analyse, iiif_annotation_analyse_all,
-                   iiif_annotation_analyse_empty)
+    return analyse('iiif-annotation')

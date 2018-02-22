@@ -36,9 +36,9 @@ class TestAnalysisApi(web.Helper):
             'task_id': task.id
         }
         self.app_post_json(endpoint, data=payload)
-        job = dict(name=z3950.analyse,
+        job = dict(name=jobs.analyse,
                    args=[],
-                   kwargs={'result_id': result.id},
+                   kwargs={'result_id': result.id, 'presenter': 'z3950'},
                    timeout=self.flask_app.config.get('TIMEOUT'),
                    queue='high')
         mock_enqueue.assert_called_once_with(job)
