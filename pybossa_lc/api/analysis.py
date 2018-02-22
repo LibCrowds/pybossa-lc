@@ -21,23 +21,34 @@ def respond(msg):
     response.status_code = 200
     return response
 
-def trigger_analysis(presenter):
+
+@csrf.exempt
+@BLUEPRINT.route('/', methods=['GET', 'POST'])
+def analyse():
     """Trigger analysis for a result or set of results."""
+    if request.method == 'GET':
+        return respond('The analysis endpoint is listening...')
+
     payload = request.json or {}
     short_name = payload.get('project_short_name')
+    project = project_repo.get_by_shortname(short_name)
+    if not project:  # pragma: no cover
+        abort(404)
+
+    category = project_repo.get_category(project.category_id)
+    presenter = category.info.get('presenter')
+    valid_presenters = ['z3950', 'iiif-annotation']
+    if not presenter or presenter not in valid_presenters:
+        abort(400, 'Invalid task presenter')
 
     # Analyse all or empty
     if payload.get('all') or payload.get('empty'):
-        project = project_repo.get_by_shortname(short_name)
-        if not project:
-            abort(404)
-
         ensure_authorized_to('update', project)
 
         if payload.get('all'):
-            analyse_all(project.id, 'presenter')
+            analyse_all(project.id, presenter)
         elif payload.get('empty'):
-            analyse_empty(project.id, 'presenter')
+            analyse_empty(project.id, presenter)
 
         return respond('OK')
 
@@ -48,22 +59,3 @@ def trigger_analysis(presenter):
     result_id = payload['result_id']
     analyse_single(result_id, presenter)
     return respond('OK')
-
-
-
-@csrf.exempt
-@BLUEPRINT.route('/z3950', methods=['GET', 'POST'])
-def z3950_analysis():
-    """Endpoint for Z39.50 webhooks."""
-    if request.method == 'GET':
-        return respond('The Z39.50 endpoint is listening...')
-    return trigger_analysis('z3950')
-
-
-@csrf.exempt
-@BLUEPRINT.route('/iiif-annotation', methods=['GET', 'POST'])
-def iiif_annotation_analysis():
-    """Endpoint for IIIF Annotation webhooks."""
-    if request.method == 'GET':
-        return respond('The IIIF Annotation endpoint is listening...')
-    return trigger_analysis('iiif-annotation')

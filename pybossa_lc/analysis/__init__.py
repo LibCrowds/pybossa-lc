@@ -176,7 +176,7 @@ class Analyst():
             raise ValueError('Invalid project template')
 
         tmpl = templates_cache.get_by_id(template_id)
-        if not tmpl:  # pragma: no-cover
+        if not tmpl:  # pragma: no cover
             raise ValueError('Invalid project template')
 
         return tmpl

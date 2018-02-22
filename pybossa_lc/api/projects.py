@@ -172,7 +172,7 @@ def handle_valid_project_form(form, template, volume, category,
         return
 
     # Create
-    webhook = '{0}libcrowds/analysis/{1}'.format(request.url_root, presenter)
+    webhook = '{0}libcrowds/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
                       description=template['project']['description'],

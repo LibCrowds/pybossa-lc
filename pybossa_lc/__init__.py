@@ -10,7 +10,7 @@ from pybossa.extensions import importer
 from pybossa.core import project_repo
 
 from . import default_settings
-from .extensions import Z3950Analyst, IIIFAnnotationAnalyst
+from .extensions import *
 from .jobs import queue_startup_jobs
 
 __plugin__ = "PyBossaLC"
