@@ -76,9 +76,9 @@ def populate_empty_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             if presenter == 'iiif-annotation':
-                iiif_annotation_analyst.analyse_empty()
+                iiif_annotation_analyst.analyse_empty(project.id)
             elif presenter == 'z3950':
-                z3950_analyst.analyse_empty()
+                z3950_analyst.analyse_empty(project.id)
 
 
 def reanalyse_all_results():
@@ -90,9 +90,9 @@ def reanalyse_all_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             if presenter == 'iiif-annotation':
-                iiif_annotation_analyst.analyse_all()
+                iiif_annotation_analyst.analyse_all(project.id)
             elif presenter == 'z3950':
-                z3950_analyst.analyse_all()
+                z3950_analyst.analyse_all(project.id)
 
 
 def remove_bad_volumes():

@@ -49,24 +49,23 @@ class TestJobs(Test):
         })
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.analyse_empty')
-    def test_populate_empty_iiif_annotation_results(self, mock_analyse):
+    @patch('pybossa_lc.jobs.iiif_annotation_analyst.analyse_empty')
+    def test_populate_empty_iiif_annotation_results(self, mock_analyse_empty):
         """Check that empty IIIF Annotation results are analysed."""
         category = CategoryFactory(info=dict(presenter='iiif-annotation'))
         project = ProjectFactory.create(category=category)
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
         jobs.populate_empty_results()
-        mock_analyse.assert_called_once_with(project.id)
+        mock_analyse_empty.assert_called_once_with(project.id)
 
     @with_context
-    @patch('pybossa_lc.analysis.z3950.analyse_empty')
-    def test_populate_empty_z3950_results(self, mock_analyse):
+    @patch('pybossa_lc.jobs.z3950_analyst.analyse_empty')
+    def test_populate_empty_z3950_results(self, mock_analyse_empty):
         """Check that empty Z3950 results are analysed."""
         category = CategoryFactory(info=dict(presenter='z3950'))
         project = ProjectFactory.create(category=category)
         task = TaskFactory.create(project=project, n_answers=1)
-        tr_info = dict(comments='', reference='', control_number='')
-        TaskRunFactory.create(task=task, info=tr_info)
+        TaskRunFactory.create(task=task)
         jobs.populate_empty_results()
-        mock_analyse.assert_called_once_with(project.id)
+        mock_analyse_empty.assert_called_once_with(project.id)
