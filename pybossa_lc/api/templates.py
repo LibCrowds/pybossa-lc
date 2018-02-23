@@ -70,6 +70,8 @@ def approve(template_id):
         owner.info['templates'] = owner_templates
         user_repo.update(owner)
 
+        templates_cache.delete_memoized()
+
         # Send email
         msg = dict(subject='Template Updates Accepted', recipients=[owner.id])
         msg['body'] = render_template('/lc/email/template_accepted.md',
