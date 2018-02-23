@@ -3,6 +3,7 @@
 
 from flask import Blueprint, abort, flash, request, render_template
 from flask.ext.login import login_required
+from flask_wtf.csrf import generate_csrf
 from pybossa.util import handle_content_type, admin_required
 from pybossa.auth import ensure_authorized_to
 from pybossa.core import project_repo
@@ -39,10 +40,14 @@ def pending():
 def approve(template_id):
     """Approve template updates."""
     template = templates_cache.get_by_id(template_id)
+    print template
     if not template:
         abort(404)
 
-    category = project_repo.get_category(template['id'])
+    category_id = int(template['category_id'])
+    print category_id
+    category = project_repo.get_category(category_id)
+    print category
     if not category:
         abort(400)
 
@@ -61,13 +66,15 @@ def approve(template_id):
         recipients = [owner['id']]
         msg = dict(subject='Template Updates Accepted', recipients=recipients)
         msg['body'] = render_template('/lc/email/template_accepted.md',
-                                      owner=owner, reason=reason)
+                                      owner=owner)
         msg['html'] = render_template('/lc/email/template_accepted.html',
-                                      owner=owner, reason=reason)
+                                      owner=owner)
         enqueue_job(send_mail, msg)
         flash('Template updated', 'success')
+    else:
+        csrf = dict(form=dict(csrf=generate_csrf()))
 
-    response = dict(template=tmpl)
+    response = dict(template=template, csrf=csrf)
     return handle_content_type(response)
 
 
@@ -80,16 +87,19 @@ def reject(template_id):
     if not template:
         abort(404)
 
-    owner = templates_cache.get_owner(template_id)
-    recipients = [owner['id']]
-    reason = request.args.get('reason')
-    msg = dict(subject='Template Updates Rejected', recipients=recipients)
-    msg['body'] = render_template('/lc/email/template_rejected.md',
-                                  owner=owner, reason=reason)
-    msg['html'] = render_template('/lc/email/template_rejected.html',
-                                  owner=owner, reason=reason)
-    enqueue_job(send_mail, msg)
+    if request.method == 'POST':
+        owner = templates_cache.get_owner(template_id)
+        recipients = [owner['id']]
+        reason = request.args.get('reason')
+        msg = dict(subject='Template Updates Rejected', recipients=recipients)
+        msg['body'] = render_template('/lc/email/template_rejected.md',
+                                    owner=owner, reason=reason)
+        msg['html'] = render_template('/lc/email/template_rejected.html',
+                                    owner=owner, reason=reason)
+        enqueue_job(send_mail, msg)
+        flash('Email sent to template owner', 'success')
+    else:
+        csrf = dict(form=dict(csrf=generate_csrf()))
 
-    flash('Email sent to template owner', 'success')
-    response = dict()
+    response = dict(template=template, csrf=csrf)
     return handle_content_type(response)
