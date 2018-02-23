@@ -6,7 +6,7 @@ from flask.ext.login import login_required
 from flask_wtf.csrf import generate_csrf
 from pybossa.util import handle_content_type, admin_required
 from pybossa.auth import ensure_authorized_to
-from pybossa.core import project_repo
+from pybossa.core import project_repo, user_repo
 from pybossa.jobs import send_mail, enqueue_job
 
 from ..cache import templates as templates_cache
@@ -51,7 +51,6 @@ def approve(template_id):
     if not category:
         abort(400)
 
-    owner = templates_cache.get_owner(template_id)
     ensure_authorized_to('update', category)
 
     if request.method == 'POST':
@@ -60,11 +59,11 @@ def approve(template_id):
                             if tmpl['id'] != tmpl['id']]
         updated_templates.append(template)
         category.info['approved_templates'] = updated_templates
-
         project_repo.update_category(category)
 
-        recipients = [owner['id']]
-        msg = dict(subject='Template Updates Accepted', recipients=recipients)
+        owner_id = int(template['owner_id'])
+        owner = user_repo.get(owner_id)
+        msg = dict(subject='Template Updates Accepted', recipients=[owner.id])
         msg['body'] = render_template('/lc/email/template_accepted.md',
                                       owner=owner)
         msg['html'] = render_template('/lc/email/template_accepted.html',
@@ -88,10 +87,10 @@ def reject(template_id):
         abort(404)
 
     if request.method == 'POST':
-        owner = templates_cache.get_owner(template_id)
-        recipients = [owner['id']]
+        owner_id = int(template['owner_id'])
+        owner = user_repo.get(owner_id)
         reason = request.args.get('reason')
-        msg = dict(subject='Template Updates Rejected', recipients=recipients)
+        msg = dict(subject='Template Updates Rejected', recipients=[owner.id])
         msg['body'] = render_template('/lc/email/template_rejected.md',
                                     owner=owner, reason=reason)
         msg['html'] = render_template('/lc/email/template_rejected.html',

@@ -71,18 +71,3 @@ def get_by_category_id(category_id):
     all_tmpl = get_all()
     return [tmpl for tmpl in all_tmpl
             if tmpl['category_id'] == category_id]
-
-
-def get_owner(tmpl_id):
-    """Return the owner of a template."""
-    tmpl_query = json.dumps([{"id": tmpl_id}])
-    sql = text('''SELECT id, name, fullname
-               FROM "user"
-               WHERE info->'templates' @> :tmpl_query
-               ''')
-    db_results = session.execute(sql, dict(tmpl_query=tmpl_query))
-    for row in db_results:
-        return dict(id=row.id,
-                    name=row.name,
-                    fullname=row.fullname)
-    return None
