@@ -70,8 +70,9 @@ def approve(template_id):
                                       owner=owner)
         enqueue_job(send_mail, msg)
         flash('Template updated', 'success')
+        csrf = None
     else:
-        csrf = dict(csrf=generate_csrf())
+        csrf = generate_csrf()
 
     response = dict(template=template, csrf=csrf)
     return handle_content_type(response)
@@ -97,8 +98,9 @@ def reject(template_id):
                                     owner=owner, reason=reason)
         enqueue_job(send_mail, msg)
         flash('Email sent to template owner', 'success')
+        csrf = None
     else:
-        csrf = dict(csrf=generate_csrf())
+        csrf = generate_csrf()
 
     response = dict(template=template, csrf=csrf)
     return handle_content_type(response)
