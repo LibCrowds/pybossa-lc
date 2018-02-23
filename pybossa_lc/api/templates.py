@@ -40,14 +40,11 @@ def pending():
 def approve(template_id):
     """Approve template updates."""
     template = templates_cache.get_by_id(template_id)
-    print template
     if not template:
         abort(404)
 
     category_id = int(template['category_id'])
-    print category_id
     category = project_repo.get_category(category_id)
-    print category
     if not category:
         abort(400)
 
