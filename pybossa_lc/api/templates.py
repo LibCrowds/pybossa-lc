@@ -51,15 +51,26 @@ def approve(template_id):
     ensure_authorized_to('update', category)
 
     if request.method == 'POST':
-        approved_templates = category.get('approved_templates', [])
+        template['pending'] = False
+
+        # Update category approved template
+        approved_templates = category.info.get('approved_templates', [])
         updated_templates = [tmpl for tmpl in approved_templates
-                            if tmpl['id'] != tmpl['id']]
+                             if tmpl['id'] != template['id']]
         updated_templates.append(template)
         category.info['approved_templates'] = updated_templates
         project_repo.update_category(category)
 
+        # Update owner's template
         owner_id = int(template['owner_id'])
         owner = user_repo.get(owner_id)
+        owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
+                           if tmpl['id'] != template['id']]
+        updated_templates.append(template)
+        owner.info['templates'] = owner_templates
+        user_repo.update(owner)
+
+        # Send email
         msg = dict(subject='Template Updates Accepted', recipients=[owner.id])
         msg['body'] = render_template('/lc/email/template_accepted.md',
                                       owner=owner)
