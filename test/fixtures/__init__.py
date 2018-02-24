@@ -8,12 +8,9 @@ import uuid
 class TemplateFixtures(object):
 
     def __init__(self, category):
+        self.category = category
         transcription_field = dict(label='Title', type='input', model='title',
                                    placeholder='', inputType='text')
-        self.project_tmpl = dict(name='My Project Type', tutorial='Do stuff',
-                                 description='This project is amazing',
-                                 category_id=category.id, min_answers=3,
-                                 max_answers=5)
         self.iiif_select_tmpl = dict(tag='title', mode='select',
                                      guidance='Do it now', objective='Mark up')
         self.iiif_transcribe_tmpl = dict(tag='title', mode='transcribe',
@@ -29,8 +26,17 @@ class TemplateFixtures(object):
                                yearfirst=False)
 
     def create_template(self, task_tmpl=None, rules_tmpl=None):
-        return dict(id=str(uuid.uuid4()), task=task_tmpl,
-                    project=self.project_tmpl, rules=rules_tmpl)
+        return dict(id=str(uuid.uuid4()),
+                    name='My Project Type',
+                    tutorial='Do stuff',
+                    description='This project is amazing',
+                    category_id=self.category.id,
+                    min_answers=3,
+                    max_answers=5,
+                    pending=False,
+                    owner_id=1,
+                    task=task_tmpl,
+                    rules=rules_tmpl)
 
 
 class AnnotationFixtures(object):
