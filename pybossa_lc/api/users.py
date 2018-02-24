@@ -87,6 +87,8 @@ def templates(name):
         templates_cache.reset()
         users_cache.delete_user_summary_id(user.id)
         flash("New template submitted for approval", 'success')
+        return redirect_content_type(url_for('.update_template_core',
+                                             name=user.name, tmpl_id=tmpl_id))
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
