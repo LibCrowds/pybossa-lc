@@ -130,13 +130,15 @@ def update_template_core(name, tmpl_id):
                        if _t['id'] == tmpl_id][0]
             except IndexError:  # pragma: no cover
                 abort(404)
-            tmpl.update(form.data)
-            tmpl['pending'] = True
-            user_templates[idx] = tmpl
-            user.info['templates'] = user_templates
-            user_repo.update(user)
-            templates_cache.reset()
-            users_cache.delete_user_summary_id(user.id)
+
+            new_values = [v for k, v in form.data.items() if tmpl[k] != v]
+            if new_values:
+                tmpl['pending'] = True
+                user_templates[idx] = tmpl
+                user.info['templates'] = user_templates
+                user_repo.update(user)
+                templates_cache.reset()
+                users_cache.delete_user_summary_id(user.id)
             flash("Template updates submitted for approval", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
@@ -191,13 +193,16 @@ def update_task_template(name, tmpl_id):
             except IndexError:
                 abort(404)
 
-            tmpl['task'] = form.data
-            tmpl['pending'] = True
-            user_templates[idx] = tmpl
-            user.info['templates'] = user_templates
-            user_repo.update(user)
-            templates_cache.reset()
-            users_cache.delete_user_summary_id(user.id)
+            new_values = [v for k, v in form.data.items()
+                          if tmpl['task'][k] != v]
+            if new_values:
+                tmpl['task'] = form.data
+                tmpl['pending'] = True
+                user_templates[idx] = tmpl
+                user.info['templates'] = user_templates
+                user_repo.update(user)
+                templates_cache.reset()
+                users_cache.delete_user_summary_id(user.id)
             flash("Template updates submitted for approval", 'success')
         else:
             flash('Please correct the errors', 'error')
@@ -247,13 +252,17 @@ def update_template_rules(name, tmpl_id):
                        if _t['id'] == tmpl_id][0]
             except IndexError:  # pragma: no cover
                 abort(404)
-            tmpl['rules'] = form.data
-            tmpl['pending'] = True
-            user_templates[idx] = tmpl
-            user.info['templates'] = user_templates
-            user_repo.update(user)
-            templates_cache.reset()
-            users_cache.delete_user_summary_id(user.id)
+
+            new_values = [v for k, v in form.data.items()
+                          if tmpl['rules'][k] != v]
+            if new_values:
+                tmpl['rules'] = form.data
+                tmpl['pending'] = True
+                user_templates[idx] = tmpl
+                user.info['templates'] = user_templates
+                user_repo.update(user)
+                templates_cache.reset()
+                users_cache.delete_user_summary_id(user.id)
             flash("Template updates submitted for approval", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
