@@ -12,6 +12,7 @@ session = db.slave_session
 
 def reset():
     """Reset the cache."""
+    delete_memoized(get_all)
     delete_memoized(get_approved)
     delete_memoized(get_pending)
 
