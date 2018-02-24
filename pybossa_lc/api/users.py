@@ -76,6 +76,7 @@ def templates(name):
         new_template = form.data
         new_template.update({
             'id': tmpl_id,
+            'owner_id': user.id,
             'pending': True,
             'task': None,
             'rules': None
