@@ -18,6 +18,7 @@ from ..cache import templates as templates_cache
 BLUEPRINT = Blueprint('templates', __name__)
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
+
 @login_required
 @BLUEPRINT.route('/')
 def get_templates():
