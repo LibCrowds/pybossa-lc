@@ -25,12 +25,13 @@ class TestAnalyst(Test):
         self.result_repo = ResultRepository(db)
         self.task_repo = TaskRepository(db)
 
-    def create_task_with_context(self, n_answers, target=None):
+    def create_task_with_context(self, n_answers, target, max_answers=None):
         """Create a category, project and tasks."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         tmpl['min_answers'] = n_answers
+        tmpl['max_answers'] = max_answers or n_answers
         tmpl['rules'] = dict(case='title', whitespace='full_stop',
                              trim_punctuation=True)
         user_info = dict(templates=[tmpl])
@@ -475,7 +476,8 @@ class TestAnalyst(Test):
                            mock_get_comments):
         """Test that an empty result is updated correctly."""
         n_answers = 3
-        task = self.create_task_with_context(n_answers)
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target)
         tag = 'foo'
         data = {
             tag: [''] * n_answers
@@ -699,14 +701,14 @@ class TestAnalyst(Test):
     @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
     @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
     @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    def test_redundancy_increased(self,
-                                  mock_get_tags,
-                                  mock_get_transcriptions_df,
-                                  mock_get_comments):
-        """Test that redundancy is updated for non-matching transcriptions."""
+    def test_redundancy_increased_when_not_max(self,
+                                               mock_get_tags,
+                                               mock_get_transcriptions_df,
+                                               mock_get_comments):
+        """Test that redundancy is updated when max not reached."""
         n_answers = 3
         target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
+        task = self.create_task_with_context(n_answers, target, max_answers=4)
         tag = 'Foo'
         val = 'Bar'
         for i in range(n_answers):
@@ -722,3 +724,54 @@ class TestAnalyst(Test):
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(result.info['annotations'], [])
         assert_equal(updated_task.n_answers, n_answers + 1)
+
+    @with_context
+    @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    def test_redundancy_not_increased_when_max(self,
+                                               mock_get_tags,
+                                               mock_get_transcriptions_df,
+                                               mock_get_comments):
+        """Test that redundancy is not updated when max is reached."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target,
+                                             max_answers=n_answers)
+        tag = 'Foo'
+        val = 'Bar'
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info={
+                tag: val
+            })
+        data = {
+            tag: ['{}{}'.format(val, i) for i in range(n_answers)],
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(result.info['annotations'], [])
+        assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    @freeze_time("19-11-1984")
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    def test_redundancy_not_increased(self,
+                                      mock_get_tags,
+                                      mock_get_transcriptions_df,
+                                      mock_get_comments):
+        """Test that redundancy is not updated for non-transcriptions."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.create_task_with_context(n_answers, target, max_answers=4)
+        TaskRunFactory.create_batch(n_answers, task=task)
+        mock_get_transcriptions_df.return_value = pandas.DataFrame({})
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(result.info['annotations'], [])
+        assert_equal(updated_task.n_answers, n_answers)

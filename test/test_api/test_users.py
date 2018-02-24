@@ -64,17 +64,16 @@ class TestCategoryApi(web.Helper):
         tmpl = self.tmpl_fixtures.create_template()
 
         endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
-        res = self.app_post_json(endpoint, data=tmpl['project'],
-                                 follow_redirects=True)
+        res = self.app_post_json(endpoint, data=tmpl)
         data = json.loads(res.data)
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         templates = updated_user.info.get('templates')
-        assert_equal(data['flash'], 'Project template created')
+        assert_equal(data['flash'], 'New template submitted for approval')
         assert_equal(len(templates), 1)
         tmpl_id = templates[0].pop('id')
-        expected = dict(project=self.tmpl_fixtures.project_tmpl, task=None,
-                        rules=None)
-        assert_dict_equal(templates[0], expected)
+        print templates[0]
+        print tmpl
+        assert_dict_equal(templates[0], tmpl)
 
         # Check redirect to update page
         next_url = '/lc/users/{0}/templates/{1}'.format(Fixtures.name, tmpl_id)
@@ -89,19 +88,21 @@ class TestCategoryApi(web.Helper):
         user = self.user_repo.get_by_name(Fixtures.name)
         tmpl = self.tmpl_fixtures.create_template()
         tmpl['name'] = 'Some updated name'
+        tmpl['pending'] = False
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
         url_base = '/lc/users/{}/templates/{}'
         endpoint = url_base.format(Fixtures.name, tmpl['id'])
-        res = self.app_post_json(endpoint, data=tmpl['project'])
+        res = self.app_post_json(endpoint, data=tmpl)
 
         data = json.loads(res.data)
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         templates = updated_user.info.get('templates')
-        assert_equal(data['flash'], 'Project template updated')
+        tmpl['pending'] = True
+        assert_equal(data['flash'], 'Template updates submitted for approval')
         assert_equal(len(templates), 1)
-        assert_dict_equal(templates[0]['project'], tmpl['project'])
+        assert_dict_equal(templates[0], tmpl)
 
     @with_context
     def test_add_iiif_transcribe_task(self):
@@ -112,6 +113,7 @@ class TestCategoryApi(web.Helper):
         user = self.user_repo.get_by_name(Fixtures.name)
         tmpl = self.tmpl_fixtures.create_template()
         user.info['templates'] = [tmpl]
+        tmpl['pending'] = False
         self.user_repo.update(user)
 
         self.category.info = dict(presenter='iiif-annotation')
@@ -125,7 +127,9 @@ class TestCategoryApi(web.Helper):
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
         tmpl['task'] = self.tmpl_fixtures.iiif_transcribe_tmpl
-        assert_equal(json.loads(res.data)['flash'], 'Task template updated')
+        tmpl['pending'] = True
+        assert_equal(json.loads(res.data)['flash'],
+                     'Template updates submitted for approval')
 
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
@@ -138,6 +142,7 @@ class TestCategoryApi(web.Helper):
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
         tmpl = self.tmpl_fixtures.create_template()
+        tmpl['pending'] = False
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
@@ -152,7 +157,9 @@ class TestCategoryApi(web.Helper):
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
         tmpl['task'] = self.tmpl_fixtures.iiif_select_tmpl
-        assert_equal(json.loads(res.data)['flash'], 'Task template updated')
+        tmpl['pending'] = True
+        assert_equal(json.loads(res.data)['flash'],
+                     'Template updates submitted for approval')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
 
@@ -164,6 +171,7 @@ class TestCategoryApi(web.Helper):
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
         tmpl = self.tmpl_fixtures.create_template()
+        tmpl['pending'] = False
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
 
@@ -177,7 +185,9 @@ class TestCategoryApi(web.Helper):
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
         tmpl['task'] = self.tmpl_fixtures.z3950_tmpl
-        assert_equal(json.loads(res.data)['flash'], 'Task template updated')
+        tmpl['pending'] = True
+        assert_equal(json.loads(res.data)['flash'],
+                     'Template updates submitted for approval')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
 
@@ -190,6 +200,7 @@ class TestCategoryApi(web.Helper):
         user = self.user_repo.get_by_name(Fixtures.name)
         task_tmpl = self.tmpl_fixtures.iiif_select_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+        tmpl['pending'] = False
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
         self.category.info = dict(presenter='iiif-annotation')
@@ -203,7 +214,9 @@ class TestCategoryApi(web.Helper):
 
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
-        assert_equal(json.loads(res.data)['flash'], 'Task template updated')
+        tmpl['pending'] = True
+        assert_equal(json.loads(res.data)['flash'],
+                     'Template updates submitted for approval')
         assert_equal(len(user_templates), 1)
         assert_dict_equal(user_templates[0], tmpl)
 
@@ -216,6 +229,7 @@ class TestCategoryApi(web.Helper):
         user = self.user_repo.get_by_name(Fixtures.name)
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl)
+        tmpl['pending'] = False
         user.info['templates'] = [tmpl]
         self.user_repo.update(user)
         self.category.info = dict(presenter='iiif-annotation')
@@ -227,7 +241,8 @@ class TestCategoryApi(web.Helper):
 
         updated_user = self.user_repo.get_by_name(Fixtures.name)
         user_templates = updated_user.info.get('templates')
-        msg = 'Results analysis rules updated'
+        tmpl['pending'] = True
+        msg = 'Template updates submitted for approval'
         assert_equal(json.loads(res.data)['flash'], msg)
         assert_equal(len(user_templates), 1)
         assert_equal(user_templates[0]['rules'], self.tmpl_fixtures.rules_tmpl)

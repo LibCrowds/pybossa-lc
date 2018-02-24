@@ -32,7 +32,7 @@ class TemplateFixtures(object):
                     description='This project is amazing',
                     category_id=self.category.id,
                     min_answers=3,
-                    max_answers=5,
+                    max_answers=3,
                     pending=False,
                     owner_id=1,
                     task=task_tmpl,
