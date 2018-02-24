@@ -3,6 +3,8 @@
 
 import os
 import json
+import shutil
+from distutils.dir_util import copy_tree
 from flask import current_app as app
 from flask.ext.plugins import Plugin
 from .importers.iiif import BulkTaskIIIFImporter
@@ -26,6 +28,7 @@ class PyBossaLC(Plugin):
         self.configure()
         self.setup_blueprints()
         self.setup_iiif_importer()
+        self.replace_email_templates()
         queue_startup_jobs()
 
     def configure(self):
@@ -54,3 +57,13 @@ class PyBossaLC(Plugin):
     def setup_iiif_importer(self):
         """Setup the IIIF manifest importer."""
         importer._importers['iiif-annotation'] = BulkTaskIIIFImporter
+
+    def replace_email_templates(self):
+        """Replace email templates in the current theme."""
+        out_path = os.path.join('pybossa', app.template_folder, 'account',
+                                'email')
+        in_path = os.path.join('pybossa', 'plugins', 'pybossa_lc', 'templates',
+                               'email')
+        if not os.path.exists(out_path):
+            os.mkdir(out_path)
+        copy_tree(in_path, out_path)
