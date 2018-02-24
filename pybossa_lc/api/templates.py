@@ -55,7 +55,10 @@ def approve(template_id):
     ensure_authorized_to('update', category)
 
     if request.method == 'POST':
+        changes = template.pop('changes', {})
+        template.update(changes)
         template['pending'] = False
+
 
         # Update category approved template
         approved_templates = category.info.get('approved_templates', [])

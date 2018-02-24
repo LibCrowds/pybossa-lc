@@ -135,7 +135,6 @@ def update_template_core(name, tmpl_id):
             if changes:
                 tmpl['pending'] = True
                 tmpl['changes'] = changes
-                tmpl.update(form.data)
                 user_templates[idx] = tmpl
                 user.info['templates'] = user_templates
                 user_repo.update(user)
@@ -200,7 +199,6 @@ def update_task_template(name, tmpl_id):
             if changes:
                 tmpl['pending'] = True
                 tmpl['changes'] = changes
-                tmpl['task'] = form.data
                 user_templates[idx] = tmpl
                 user.info['templates'] = user_templates
                 user_repo.update(user)
@@ -261,7 +259,6 @@ def update_template_rules(name, tmpl_id):
             if changes:
                 tmpl['pending'] = True
                 tmpl['changes'] = changes
-                tmpl['rules'] = form.data
                 user_templates[idx] = tmpl
                 user.info['templates'] = user_templates
                 user_repo.update(user)
