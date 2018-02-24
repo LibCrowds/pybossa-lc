@@ -47,6 +47,36 @@ def get_task_template_form(task_presenter, method, data):
         return form
 
 
+def propose_template_update(form, user, template_id, key=None):
+    user_templates = user.info.get('templates', [])
+    try:
+        idx = [i for i, tmpl in enumerate(user_templates)
+                if tmpl['id'] == template_id][0]
+    except IndexError:  # pragma: no cover
+        abort(404)
+
+    tmpl = user_templates[idx]
+    if key:
+        changes = {k: v for k, v in form.data.items()
+                   if not tmpl[key] or tmpl[key][k] != v}
+    else:
+        changes = {k: v for k, v in form.data.items() if tmpl[k] != v}
+
+    if changes:
+        tmpl['pending'] = True
+        current_changes = tmpl.get('changes', {})
+        if key:
+            current_changes[key] = form.data
+        else:
+            current_changes.update(form.data)
+        tmpl['changes'] = current_changes
+        user_templates[idx] = tmpl
+        user.info['templates'] = user_templates
+        user_repo.update(user)
+        templates_cache.reset()
+        users_cache.delete_user_summary_id(user.id)
+
+
 @login_required
 @BLUEPRINT.route('/<name>/templates', methods=['GET', 'POST'])
 def templates(name):
@@ -125,21 +155,7 @@ def update_template_core(name, tmpl_id):
         form.category_id.choices = category_choices
 
         if form.validate():
-            try:
-                idx = [i for i, _t in enumerate(user_templates)
-                       if _t['id'] == tmpl_id][0]
-            except IndexError:  # pragma: no cover
-                abort(404)
-
-            changes = {k: v for k, v in form.data.items() if tmpl[k] != v}
-            if changes:
-                tmpl['pending'] = True
-                tmpl['changes'] = changes
-                user_templates[idx] = tmpl
-                user.info['templates'] = user_templates
-                user_repo.update(user)
-                templates_cache.reset()
-                users_cache.delete_user_summary_id(user.id)
+            propose_template_update(form, user, tmpl_id)
             flash("Template updates submitted for approval", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
@@ -188,22 +204,7 @@ def update_task_template(name, tmpl_id):
         form = get_task_template_form(presenter, request.method, form_data)
 
         if form.validate():
-            try:
-                idx = [i for i, _t in enumerate(user_templates)
-                       if _t['id'] == tmpl_id][0]
-            except IndexError:
-                abort(404)
-
-            changes = {k: v for k, v in form.data.items()
-                       if tmpl['task'][k] != v}
-            if changes:
-                tmpl['pending'] = True
-                tmpl['changes'] = changes
-                user_templates[idx] = tmpl
-                user.info['templates'] = user_templates
-                user_repo.update(user)
-                templates_cache.reset()
-                users_cache.delete_user_summary_id(user.id)
+            propose_template_update(form, user, tmpl_id, key='task')
             flash("Template updates submitted for approval", 'success')
         else:
             flash('Please correct the errors', 'error')
@@ -248,22 +249,7 @@ def update_template_rules(name, tmpl_id):
     if request.method == 'POST':
         form = AnalysisRulesForm(request.body)
         if form.validate():
-            try:
-                idx = [i for i, _t in enumerate(user_templates)
-                       if _t['id'] == tmpl_id][0]
-            except IndexError:  # pragma: no cover
-                abort(404)
-
-            changes = {k: v for k, v in form.data.items()
-                       if tmpl['rules'][k] != v}
-            if changes:
-                tmpl['pending'] = True
-                tmpl['changes'] = changes
-                user_templates[idx] = tmpl
-                user.info['templates'] = user_templates
-                user_repo.update(user)
-                templates_cache.reset()
-                users_cache.delete_user_summary_id(user.id)
+            propose_template_update(form, user, tmpl_id, key='rules')
             flash("Template updates submitted for approval", 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
