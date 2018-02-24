@@ -81,10 +81,10 @@ class Analyst():
         df = df.applymap(lambda x: norm_func(x, rules))
 
         # Check for minimum matching answers
-        min_answers = tmpl.get('project', {}).get('min_answers', 3)
-        max_answers = tmpl.get('project', {}).get('max_answers', min_answers)
+        min_answers = tmpl.get('min_answers', 3)
+        max_answers = tmpl.get('max_answers', min_answers)
         has_matches = self.has_n_matches(min_answers, df)
-        if not df.empty and has_matches:
+        if has_matches:
             old_annos = []
             if isinstance(result.info, dict):
                 old_annos = result.info.get('annotations', [])
@@ -98,7 +98,7 @@ class Analyst():
                 else:
                     anno = self.create_describing_anno(target, value, column)
                     annotations.append(anno)
-        else:
+        elif not df.empty:
             self.update_n_answers_required(task, max_answers)
 
         result.last_version = True
@@ -142,6 +142,8 @@ class Analyst():
     def has_n_matches(self, min_answers, task_run_df):
         """Check if minimum matching answers for each key."""
         task_run_df = task_run_df.replace(numpy.nan, '')
+        if task_run_df.empty:
+            return False
         for k in task_run_df.keys():
             if task_run_df[k].value_counts().max() < min_answers:
                 return False
