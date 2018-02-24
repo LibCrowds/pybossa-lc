@@ -69,7 +69,7 @@ def approve(template_id):
         owner = user_repo.get(owner_id)
         owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
                            if tmpl['id'] != template['id']]
-        updated_templates.append(template)
+        owner_templates.append(template)
         owner.info['templates'] = owner_templates
         user_repo.update(owner)
 
@@ -108,6 +108,7 @@ def reject(template_id):
         owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
                            if tmpl['id'] != template['id']]
         owner_templates.append(template)
+        owner.info['templates'] = owner_templates
         user_repo.update(owner)
 
         templates_cache.reset()
