@@ -106,7 +106,7 @@ def new(category_short_name):
         flash(err_msg, 'error')
         return redirect_content_type(url_for('home.home'))
 
-    template_choices = [(t['id'], t['project']['name']) for t in templates]
+    template_choices = [(tmpl['id'], tmpl['name']) for tmpl in templates]
     volume_choices = [(v['id'], v['name']) for v in volumes]
     parent_choices = [(p.id, p.name) for p in projects]
     parent_choices.append(('None', ''))
@@ -175,7 +175,7 @@ def handle_valid_project_form(form, template, volume, category,
     webhook = '{0}libcrowds/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
-                      description=template['project']['description'],
+                      description=template['description'],
                       long_description='',
                       owner_id=current_user.id,
                       info={
@@ -209,7 +209,7 @@ def handle_valid_project_form(form, template, volume, category,
 
     if success:
         auditlogger.add_log_entry(None, project, current_user)
-        n_answers = template['project'].get('min_answers', 3)
+        n_answers = template.get('min_answers', 3)
         task_repo.update_tasks_redundancy(project, n_answers)
         return redirect_content_type(url_for('home.home'))
 
