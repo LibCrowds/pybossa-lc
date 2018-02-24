@@ -56,13 +56,15 @@ class TestCategoryApi(web.Helper):
         assert_equal(data['template'], tmpl)
 
     @with_context
-    def test_add_template(self):
+    @patch('pybossa_lc.api.users.uuid.uuid4')
+    def test_add_template(self, mock_uuid):
         """Test that a template is added."""
+        fake_uuid = '123'
+        mock_uuid.return_value = fake_uuid
         self.register(email=Fixtures.email_addr, name=Fixtures.name,
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         tmpl = self.tmpl_fixtures.create_template()
-
         endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
         res = self.app_post_json(endpoint, data=tmpl)
         data = json.loads(res.data)
@@ -70,13 +72,16 @@ class TestCategoryApi(web.Helper):
         templates = updated_user.info.get('templates')
         assert_equal(data['flash'], 'New template submitted for approval')
         assert_equal(len(templates), 1)
-        tmpl_id = templates[0].pop('id')
-        print templates[0]
-        print tmpl
+
+        # Update template fixture
+        tmpl['id'] = fake_uuid
+        tmpl['pending'] = True
+
         assert_dict_equal(templates[0], tmpl)
 
         # Check redirect to update page
-        next_url = '/lc/users/{0}/templates/{1}'.format(Fixtures.name, tmpl_id)
+        next_url = '/lc/users/{0}/templates/{1}'.format(Fixtures.name,
+                                                        fake_uuid)
         assert_equal(data['next'], next_url)
 
     @with_context
