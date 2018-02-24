@@ -1,0 +1,18 @@
+{% extends "account/email/base.html" %}
+
+{% block body %}
+Hello {{ user['fullname'] }},
+<br>
+<br>
+As you have updated your email address at {{ config.BRAND }} we need to verify that
+ you are indeed the owner of this address. To do so please visit the URL below:
+<br>
+<br>
+<a href="{{ confirm_url }}">{{ confirm_url }}</a>
+<br>
+<br>
+Regards,
+<br>
+{{ config.BRAND }} Team
+</p>
+{% endblock %}
