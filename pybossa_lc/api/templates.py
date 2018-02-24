@@ -101,7 +101,7 @@ def reject(template_id):
         abort(404)
 
     if request.method == 'POST':
-        Remove pending from user's template
+        # Remove pending from user's template
         template['pending'] = False
         owner_id = int(template['owner_id'])
         owner = user_repo.get(owner_id)
