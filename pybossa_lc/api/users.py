@@ -131,9 +131,11 @@ def update_template_core(name, tmpl_id):
             except IndexError:  # pragma: no cover
                 abort(404)
 
-            new_values = [v for k, v in form.data.items() if tmpl[k] != v]
-            if new_values:
+            changes = {k: v for k, v in form.data.items() if tmpl[k] != v}
+            if changes:
                 tmpl['pending'] = True
+                tmpl['changes'] = changes
+                tmpl.update(form.data)
                 user_templates[idx] = tmpl
                 user.info['templates'] = user_templates
                 user_repo.update(user)
@@ -193,11 +195,12 @@ def update_task_template(name, tmpl_id):
             except IndexError:
                 abort(404)
 
-            new_values = [v for k, v in form.data.items()
-                          if tmpl['task'][k] != v]
-            if new_values:
-                tmpl['task'] = form.data
+            changes = {k: v for k, v in form.data.items()
+                       if tmpl['task'][k] != v}
+            if changes:
                 tmpl['pending'] = True
+                tmpl['changes'] = changes
+                tmpl['task'] = form.data
                 user_templates[idx] = tmpl
                 user.info['templates'] = user_templates
                 user_repo.update(user)
@@ -253,11 +256,12 @@ def update_template_rules(name, tmpl_id):
             except IndexError:  # pragma: no cover
                 abort(404)
 
-            new_values = [v for k, v in form.data.items()
-                          if tmpl['rules'][k] != v]
-            if new_values:
-                tmpl['rules'] = form.data
+            changes = {k: v for k, v in form.data.items()
+                       if tmpl['rules'][k] != v}
+            if changes:
                 tmpl['pending'] = True
+                tmpl['changes'] = changes
+                tmpl['rules'] = form.data
                 user_templates[idx] = tmpl
                 user.info['templates'] = user_templates
                 user_repo.update(user)
