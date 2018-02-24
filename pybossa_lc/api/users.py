@@ -56,7 +56,10 @@ def templates(name):
         abort(404)
 
     ensure_authorized_to('update', user)
-    user_templates = user.info.get('templates', [])
+    if current_user.admin:
+        templates = templates_cache.get_all()
+    else:
+        templates = user.info.get('templates', [])
 
     # Use a default category so we can create the form
     categories = project_repo.get_all_categories()
@@ -77,8 +80,8 @@ def templates(name):
             'task': None,
             'rules': None
         })
-        user_templates.append(new_template)
-        user.info['templates'] = user_templates
+        templates.append(new_template)
+        user.info['templates'] = templates
         user_repo.update(user)
         templates_cache.reset()
         users_cache.delete_user_summary_id(user.id)
@@ -88,13 +91,13 @@ def templates(name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(templates=user_templates, form=form)
+    response = dict(templates=templates, form=form)
     return handle_content_type(response)
 
 
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>', methods=['GET', 'POST'])
-def update(name, tmpl_id):
+def update_template_core(name, tmpl_id):
     """View or edit the main template project data."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no cover
@@ -143,7 +146,7 @@ def update(name, tmpl_id):
 
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>/task', methods=['GET', 'POST'])
-def task(name, tmpl_id):
+def update_task_template(name, tmpl_id):
     """Add task data for a template."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no cover
@@ -207,7 +210,7 @@ def task(name, tmpl_id):
 @login_required
 @BLUEPRINT.route('/<name>/templates/<tmpl_id>/rules',
                  methods=['GET', 'POST'])
-def rules(name, tmpl_id):
+def update_template_rules(name, tmpl_id):
     """Add resulsts analysis rules for a template."""
     user = user_repo.get_by_name(name)
     if not user:  # pragma: no cover
