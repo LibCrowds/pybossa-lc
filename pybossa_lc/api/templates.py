@@ -117,11 +117,11 @@ def reject(template_id):
         reason = request.json.get('reason')
         msg = dict(subject='Template Updates Rejected', recipients=[owner.id])
         msg['body'] = render_template('/account/email/template_rejected.md',
-                                    user=owner, reason=reason,
-                                    template=template)
+                                      user=owner, reason=reason,
+                                      template=template)
         msg['html'] = render_template('/account/email/template_rejected.html',
-                                    user=owner, reason=reason,
-                                    template=template)
+                                      user=owner, reason=reason,
+                                      template=template)
         MAIL_QUEUE.enqueue(send_mail, msg)
         flash('Email sent to template owner', 'success')
         csrf = None
