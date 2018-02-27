@@ -69,10 +69,10 @@ class ProjectTemplateRepository(Repository):
           Category.info.contains(filter_dict)
         ).all()
 
-        user_templates = itertools.chain(*[user.info.get('templates', [])
-                                           for user in users])
-        category_templates = itertools.chain(*[cat.info.get('templates', [])
-                                               for cat in categories])
+        user_templates = list(itertools.chain(*[u.info.get('templates', [])
+                                                for u in users]))
+        category_templates = list(itertools.chain(*[c.info.get('templates', [])
+                                                    for c in categories]))
         user_tmpl_ids = [tmpl['id'] for tmpl in user_templates]
         user_templates += [tmpl for tmpl in category_templates
                            if tmpl['id'] not in user_tmpl_ids]
