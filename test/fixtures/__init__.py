@@ -1,8 +1,6 @@
 # -*- coding: utf8 -*-
 """Test fixtures."""
 
-import uuid
-
 from pybossa_lc.model.project_template import ProjectTemplate
 
 
