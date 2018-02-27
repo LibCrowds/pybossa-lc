@@ -195,3 +195,30 @@ def update_template_rules(template_id):
 
     response = dict(form=form, template=template.to_dict())
     return handle_content_type(response)
+
+@login_required
+@BLUEPRINT.route('/<template_id>/delete',  methods=['GET', 'POST'])
+def delete(template_id):
+    """Delete a pending template."""
+    template = project_tmpl_repo.get_pending(template_id)
+    if not template:  # pragma: no cover
+        abort(404)
+
+    user = user_repo.get(template.owner_id)
+    if not user:  # pragma: no cover
+        abort(400)
+
+    ensure_authorized_to('update', user)
+
+    approved = project_tmpl_repo.get(template_id)
+
+    if request.method == 'POST':
+        if not approved:
+            project_tmpl_repo.delete_pending(template)
+            flash('Template deleted', 'success')
+        else:
+            flash('Approved templates can only be deleted by administrators',
+                  'warning')
+
+    response = dict(can_delete=not approved, template=template.to_dict())
+    return handle_content_type(response)

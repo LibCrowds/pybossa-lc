@@ -205,6 +205,22 @@ class TestProjectTemplateRepository(Test):
         assert_equal(not_pending_tmpl.pending, False)
 
     @with_context
+    def test_delete_pending(self):
+        """Test pending template is deleted."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        user_info = dict(templates=[tmpl.to_dict()])
+        UserFactory(info=user_info)
+
+        not_deleted_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        assert_dict_equal(not_deleted_tmpl.to_dict(), tmpl.to_dict())
+
+        self.project_tmpl_repo.delete_pending(tmpl)
+        deleted_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        assert_equal(deleted_tmpl, None)
+
+    @with_context
     def test_bad_objects_identified_templates(self):
         """Test non-templates raise WrongObjectErrors."""
         bad_object = dict()

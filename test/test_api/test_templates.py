@@ -129,3 +129,30 @@ class TestTemplatesApi(web.Helper):
         assert_equal(flash_msg, 'Updates submitted for approval')
         assert_equal(len(user_templates), 1)
         assert_equal(user_templates[0]['rules'], self.tmpl_fixtures.rules_tmpl)
+
+    @with_context
+    def test_delete_template(self):
+        """Test a template is deleted."""
+        template = self.create_tmpl_with_context(Fixtures.name, 'foo')
+        endpoint = '/lc/templates/{}/delete'.format(template.id)
+        res = self.app_post_json(endpoint)
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        user_templates = updated_user.info.get('templates')
+        flash_msg = json.loads(res.data)['flash']
+        assert_equal(flash_msg, 'Template deleted')
+        assert_equal(len(user_templates), 0)
+
+    @with_context
+    def test_delete_approved_template(self):
+        """Test an approved template is not deleted."""
+        template = self.create_tmpl_with_context(Fixtures.name, 'foo')
+        self.category.info['templates'] = [template.to_dict()]
+        self.project_repo.update_category(self.category)
+        endpoint = '/lc/templates/{}/delete'.format(template.id)
+        res = self.app_post_json(endpoint)
+        updated_user = self.user_repo.get_by_name(Fixtures.name)
+        user_templates = updated_user.info.get('templates')
+        flash_msg = json.loads(res.data)['flash']
+        msg = 'Approved templates can only be deleted by administrators'
+        assert_equal(flash_msg, msg)
+        assert_equal([user_templates], [template.to_dict()])

@@ -156,6 +156,23 @@ class ProjectTemplateRepository(Repository):
             self.db.session.rollback()
             raise DBIntegrityError(e)
 
+    def delete_pending(self, tmpl):
+        """Delete a pending template."""
+        self._validate_can_be('deleted', tmpl)
+        user = self.db.session.query(User).get(tmpl.owner_id)
+        if not user:  # pragma: no cover
+            raise ValueError('Template owner does not exist')
+
+        user_templates = [t for t in user.info.get('templates', [])
+                          if t['id'] != tmpl.id]
+        user.info['templates'] = user_templates
+        try:
+            self.db.session.merge(user)
+            self.db.session.commit()
+        except IntegrityError as e:  # pragma: no cover
+            self.db.session.rollback()
+            raise DBIntegrityError(e)
+
     def _validate_can_be(self, action, element):
         """Return related Category if approved else related User."""
         name = element.__class__.__name__
