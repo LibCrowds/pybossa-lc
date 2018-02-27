@@ -35,7 +35,7 @@ class TestAdminApi(web.Helper):
         assert_equal(data['templates'], expected)
 
     @with_context
-    @patch('pybossa_lc.api.admin.render_template')
+    @patch('pybossa_lc.api.admin.render_template', return_value=True)
     def test_template_approved(self, mock_render):
         """Test template approval."""
         self.register()
@@ -70,7 +70,7 @@ class TestAdminApi(web.Helper):
         assert_equal(user_templates, [tmpl.to_dict()])
 
     @with_context
-    @patch('pybossa_lc.api.admin.render_template')
+    @patch('pybossa_lc.api.admin.render_template', return_value=True)
     def test_template_rejected(self, mock_render):
         """Test template rejection."""
         self.register()
@@ -106,7 +106,7 @@ class TestAdminApi(web.Helper):
 
     @with_context
     @patch('pybossa_lc.api.admin.analyse_all')
-    @patch('pybossa_lc.api.admin.render_template')
+    @patch('pybossa_lc.api.admin.render_template', return_value=True)
     def test_results_updated_when_template_approved(self, mock_render,
                                                     mock_analyse_all):
         """Test results updated when template approved."""
