@@ -68,7 +68,6 @@ class TestAdminApi(web.Helper):
         user_templates = updated_user.info.get('templates')
         assert_equal(user_templates, [tmpl.to_dict()])
 
-
     @with_context
     def test_template_rejected(self):
         """Test template rejection."""

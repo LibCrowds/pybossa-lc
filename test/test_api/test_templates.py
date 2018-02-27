@@ -21,18 +21,18 @@ class TestTemplatesApi(web.Helper):
         self.project_repo = ProjectRepository(db)
 
     def create_tmpl_with_context(self, name, presenter):
-      """Create user template context."""
-      self.register(email=Fixtures.email_addr, name=name,
-                    password=Fixtures.password)
-      self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-      user = self.user_repo.get_by_name(Fixtures.name)
-      template = self.tmpl_fixtures.create_template()
-      template.pending = False
-      user.info['templates'] = [template.to_dict()]
-      self.user_repo.update(user)
-      self.category.info = dict(presenter=presenter)
-      self.project_repo.update_category(self.category)
-      return template
+        """Create user template context."""
+        self.register(email=Fixtures.email_addr, name=name,
+                      password=Fixtures.password)
+        self.signin(email=Fixtures.email_addr, password=Fixtures.password)
+        user = self.user_repo.get_by_name(Fixtures.name)
+        template = self.tmpl_fixtures.create_template()
+        template.pending = False
+        user.info['templates'] = [template.to_dict()]
+        self.user_repo.update(user)
+        self.category.info = dict(presenter=presenter)
+        self.project_repo.update_category(self.category)
+        return template
 
     @with_context
     def test_update_template(self):

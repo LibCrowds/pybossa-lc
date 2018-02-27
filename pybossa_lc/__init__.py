@@ -15,9 +15,11 @@ from . import default_settings
 from .extensions import *
 from .jobs import queue_startup_jobs
 
+
 __plugin__ = "PyBossaLC"
 __version__ = json.load(open(os.path.join(os.path.dirname(__file__),
                                           'info.json')))['version']
+
 
 class PyBossaLC(Plugin):
     """A PYBOSSA plugin for managing LibCrowds projects."""

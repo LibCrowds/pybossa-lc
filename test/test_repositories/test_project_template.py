@@ -10,6 +10,7 @@ from pybossa.exc import WrongObjectError, DBIntegrityError
 from ..fixtures import TemplateFixtures
 from pybossa_lc.repositories.project_template import ProjectTemplateRepository
 
+
 class TestProjectTemplateRepository(Test):
 
     def setUp(self):
@@ -232,5 +233,3 @@ class TestProjectTemplateRepository(Test):
         ]
         for func in functions:
             assert_raises(WrongObjectError, func, bad_object)
-
-

@@ -168,8 +168,8 @@ def analyse_single(result_id, presenter):
     analyst = get_analyst(presenter)
     if analyst:
         job = dict(name=analyst.analyse,
-                args=[],
-                kwargs={'result_id': result_id},
-                timeout=current_app.config.get('TIMEOUT'),
-                queue='high')
+                   args=[],
+                   kwargs={'result_id': result_id},
+                   timeout=current_app.config.get('TIMEOUT'),
+                   queue='high')
         enqueue_job(job)

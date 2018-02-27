@@ -17,7 +17,7 @@ class ProjectTemplateRepository(Repository):
         """Get an approved template from Category context."""
         filter_dict = {'templates': [{'id': id}]}
         category = self.db.session.query(Category).filter(
-          Category.info.contains(filter_dict)
+            Category.info.contains(filter_dict)
         ).first()
         if not category:
             return None
@@ -30,7 +30,7 @@ class ProjectTemplateRepository(Repository):
         """Get a template from User context."""
         filter_dict = {'templates': [{'id': id}]}
         user = self.db.session.query(User).filter(
-          User.info.contains(filter_dict)
+            User.info.contains(filter_dict)
         ).first()
         if not user:
             return None
@@ -42,7 +42,7 @@ class ProjectTemplateRepository(Repository):
     def get_all(self):
         """Get all approved templates from Category context."""
         categories = self.db.session.query(Category).filter(
-          Category.info.has_key('templates')
+            Category.info.has_key('templates')
         ).all()
 
         tmpl_lists = [cat.info.get('templates', []) for cat in categories]
@@ -52,7 +52,7 @@ class ProjectTemplateRepository(Repository):
     def get_all_pending(self):
         """Get all pending templates from User context."""
         users = self.db.session.query(User).filter(
-          User.info.has_key('templates')
+            User.info.has_key('templates')
         ).all()
 
         tmpl_lists = [user.info.get('templates', []) for user in users]
@@ -63,10 +63,10 @@ class ProjectTemplateRepository(Repository):
         """Get all of a user's templates."""
         filter_dict = {'templates': [{'owner_id': owner_id}]}
         users = self.db.session.query(User).filter(
-          User.info.contains(filter_dict)
+            User.info.contains(filter_dict)
         ).all()
         categories = self.db.session.query(Category).filter(
-          Category.info.contains(filter_dict)
+            Category.info.contains(filter_dict)
         ).all()
 
         user_templates = list(itertools.chain(*[u.info.get('templates', [])
@@ -108,7 +108,7 @@ class ProjectTemplateRepository(Repository):
         self._validate_can_be('saved', tmpl)
         tmpl.pending = False
         user = self.db.session.query(User).filter(
-          User.info.contains({'templates': [{'id': tmpl.id}]})
+            User.info.contains({'templates': [{'id': tmpl.id}]})
         ).first()
         category = self.db.session.query(Category).get(tmpl.category_id)
         if not category:  # pragma: no cover

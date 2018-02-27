@@ -4,6 +4,7 @@
 import json
 from pybossa.model import make_timestamp, make_uuid
 
+
 class ProjectTemplate(object):
 
     def __init__(self, **kwargs):

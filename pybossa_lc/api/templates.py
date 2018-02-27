@@ -29,7 +29,7 @@ def get_changes(form, template, key=None):
     tmpl_dict = template.to_dict()
     if key:
         return {k: v for k, v in form.data.items()
-                   if not tmpl_dict[key] or tmpl_dict[key][k] != v}
+                if not tmpl_dict[key] or tmpl_dict[key][k] != v}
     else:
         return {k: v for k, v in form.data.items() if tmpl_dict[k] != v}
 
@@ -155,7 +155,7 @@ def update_template_task(template_id):
 
 
 @login_required
-@BLUEPRINT.route('/<template_id>/rules',  methods=['GET', 'POST'])
+@BLUEPRINT.route('/<template_id>/rules', methods=['GET', 'POST'])
 def update_template_rules(template_id):
     """Update resulsts analysis rules for a template."""
     template = project_tmpl_repo.get_pending(template_id)
@@ -196,8 +196,9 @@ def update_template_rules(template_id):
     response = dict(form=form, template=template.to_dict())
     return handle_content_type(response)
 
+
 @login_required
-@BLUEPRINT.route('/<template_id>/delete',  methods=['GET', 'POST'])
+@BLUEPRINT.route('/<template_id>/delete', methods=['GET', 'POST'])
 def delete(template_id):
     """Delete a pending template."""
     template = project_tmpl_repo.get_pending(template_id)

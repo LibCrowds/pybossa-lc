@@ -1,4 +1,6 @@
 # -*- coding: utf8 -*-
+"""Repository module."""
+
 
 class Repository(object):
 
