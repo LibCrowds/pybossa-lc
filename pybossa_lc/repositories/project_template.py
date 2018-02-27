@@ -173,6 +173,11 @@ class ProjectTemplateRepository(Repository):
     def _update_container_templates(self, tmpl, container, ignore_error=False):
         """Update a template in a User or Category."""
         templates = container.info.get('templates', [])
+
+        # Replace any bad templates keys
+        if not isinstance(templates, list):  # pragma: no cover
+            templates = []
+
         try:
             idx = [i for i, t in enumerate(templates) if t['id'] == tmpl.id][0]
             templates[idx] = tmpl.to_dict()
