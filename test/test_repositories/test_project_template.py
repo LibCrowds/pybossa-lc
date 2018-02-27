@@ -33,6 +33,18 @@ class TestProjectTemplateRepository(Test):
         assert_equal(tmpl, None)
 
     @with_context
+    def test_get_pending_returns_none_if_no_template_pending(self):
+        """Test get pending returns None if no template pending."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        tmpl.pending = False
+        user_info = dict(templates=[tmpl.to_dict()])
+        UserFactory(info=user_info)
+        retrieved_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        assert_equal(retrieved_tmpl, None)
+
+    @with_context
     def test_get_returns_template(self):
         """Test get returns a template if it exists."""
         category = CategoryFactory()
@@ -49,6 +61,7 @@ class TestProjectTemplateRepository(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
+        tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
         retrieved_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
@@ -70,13 +83,16 @@ class TestProjectTemplateRepository(Test):
         assert_equal(retrieved, expected)
 
     @with_context
-    def test_get_all_pending_returns_pending_templates(self):
+    def test_get_all_pending_returns_pending_templates_only(self):
         """Test get pending returns pending templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         approved_tmpl = tmpl_fixtures.create_template()
         pending_tmpl = tmpl_fixtures.create_template()
-        user_info = dict(templates=[pending_tmpl.to_dict()])
+        non_pending_tmpl = tmpl_fixtures.create_template()
+        pending_tmpl.pending = True
+        user_info = dict(templates=[pending_tmpl.to_dict(),
+                                    non_pending_tmpl.to_dict()])
         UserFactory(info=user_info)
         category.info['templates'] = [approved_tmpl.to_dict()]
         self.project_repo.update_category(category)
@@ -153,6 +169,7 @@ class TestProjectTemplateRepository(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
+        tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
         name = 'New Name'
@@ -173,6 +190,7 @@ class TestProjectTemplateRepository(Test):
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         tmpl.owner_id = user.id
+        tmpl.pending = True
 
         not_pending_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
         assert_equal(not_pending_tmpl, None)
@@ -192,6 +210,7 @@ class TestProjectTemplateRepository(Test):
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         tmpl.owner_id = user.id
+        tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
 
@@ -203,7 +222,7 @@ class TestProjectTemplateRepository(Test):
         assert_dict_equal(tmpl.to_dict(), approved_tmpl.to_dict())
 
         not_pending_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
-        assert_equal(not_pending_tmpl.pending, False)
+        assert_equal(not_pending_tmpl, None)
 
     @with_context
     def test_delete_pending(self):
@@ -211,6 +230,7 @@ class TestProjectTemplateRepository(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
+        tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
 

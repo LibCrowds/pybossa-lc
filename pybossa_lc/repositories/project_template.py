@@ -28,7 +28,7 @@ class ProjectTemplateRepository(Repository):
 
     def get_pending(self, id):
         """Get a template from User context."""
-        filter_dict = {'templates': [{'id': id}]}
+        filter_dict = {'templates': [{'id': id, 'pending': True}]}
         user = self.db.session.query(User).filter(
             User.info.contains(filter_dict)
         ).first()
@@ -46,17 +46,19 @@ class ProjectTemplateRepository(Repository):
         ).all()
 
         tmpl_lists = [cat.info.get('templates', []) for cat in categories]
-        tmpl_dicts = itertools.chain(*tmpl_lists)
+        tmpl_dicts = list(itertools.chain(*tmpl_lists))
         return map(self._convert_to_object, tmpl_dicts)
 
     def get_all_pending(self):
         """Get all pending templates from User context."""
+        filter_dict = {'templates': [{'pending': True}]}
         users = self.db.session.query(User).filter(
-            User.info.has_key('templates')
+            User.info.contains(filter_dict)
         ).all()
 
         tmpl_lists = [user.info.get('templates', []) for user in users]
-        tmpl_dicts = itertools.chain(*tmpl_lists)
+        tmpl_dicts = [t for t in list(itertools.chain(*tmpl_lists))
+                      if t.get('pending')]
         return map(self._convert_to_object, tmpl_dicts)
 
     def get_by_owner_id(self, owner_id):
