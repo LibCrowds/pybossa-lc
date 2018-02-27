@@ -18,7 +18,7 @@ class ProjectTemplate(object):
         self.tutorial = kwargs.get('tutorial', '')
         self.task = kwargs.get('task', {})
         self.rules = kwargs.get('rules', {})
-        self.pending = kwargs.get('pending', False)
+        self.pending = kwargs.get('pending', True)
 
     def to_dict(self):
         """Return a dict representation of the object."""
