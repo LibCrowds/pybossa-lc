@@ -66,15 +66,13 @@ class TestVolumeExporter(Test):
     @with_context
     def test_get_json_data_with_multiple_annotations(self):
         """Test get JSON data with multiple annotations."""
-        self.category.info = {
-            'volumes': self.volumes
-        }
-        self.project_repo.update_category(self.category)
-        volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+        self.category.info = dict(volumes=self.volumes,
+                                  templates=[tmpl.to_dict()])
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
 
-        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
         project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
@@ -96,15 +94,13 @@ class TestVolumeExporter(Test):
     @with_context
     def test_get_csv_data_with_multiple_annotations(self):
         """Test get CSV data with multiple annotations."""
-        self.category.info = {
-            'volumes': self.volumes
-        }
-        self.project_repo.update_category(self.category)
-        volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+        self.category.info = dict(volumes=self.volumes,
+                                  templates=[tmpl.to_dict()])
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
 
-        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
         project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
@@ -136,14 +132,13 @@ class TestVolumeExporter(Test):
     @with_context
     def test_get_csv_data_with_same_tags_for_the_same_target(self):
         """Test get CSV data with multiple tags for the same tags."""
-        self.category.info = {
-            'volumes': self.volumes
-        }
-        self.project_repo.update_category(self.category)
-        volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
+        self.category.info = dict(volumes=self.volumes,
+                                  templates=[tmpl.to_dict()])
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
+
         project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)

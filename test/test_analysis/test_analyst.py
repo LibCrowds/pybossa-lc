@@ -11,6 +11,7 @@ from default import db, Test, with_context
 from nose.tools import *
 from pybossa.core import result_repo, task_repo
 from pybossa.repositories import ResultRepository, TaskRepository
+from pybossa.repositories import ProjectRepository
 
 from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis import Analyst
@@ -22,6 +23,7 @@ class TestAnalyst(Test):
         super(TestAnalyst, self).setUp()
         Analyst.__abstractmethods__ = frozenset()
         self.analyst = Analyst()
+        self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
         self.task_repo = TaskRepository(db)
 
@@ -34,9 +36,9 @@ class TestAnalyst(Test):
         tmpl.max_answers = max_answers or n_answers
         tmpl.rules = dict(case='title', whitespace='full_stop',
                           trim_punctuation=True)
-        user_info = dict(templates=[tmpl.to_dict()])
-        UserFactory.create(info=user_info)
         project_info = dict(template_id=tmpl.id)
+        category.info['templates'] = [tmpl.to_dict()]
+        self.project_repo.update_category(category)
         project = ProjectFactory.create(category=category, info=project_info)
         task_info = dict(target=target)
         return TaskFactory.create(n_answers=n_answers, project=project,
@@ -331,9 +333,9 @@ class TestAnalyst(Test):
             tmpl1.to_dict(),
             tmpl2.to_dict()
         ]
-        user_info = dict(templates=fake_templates)
+        cat_info = dict(templates=fake_templates)
+        CategoryFactory.create(info=cat_info)
         project_info = dict(template_id=tmpl1.id)
-        UserFactory.create(info=user_info)
         project = ProjectFactory(info=project_info)
         returned_tmpl = self.analyst.get_project_template(project.id)
         assert_equal(returned_tmpl.to_dict(), tmpl1.to_dict())
