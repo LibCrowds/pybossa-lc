@@ -24,7 +24,7 @@ MAIL_QUEUE = Queue('email', connection=sentinel.master)
 @BLUEPRINT.route('/templates/pending')
 def pending_templates():
     """Return pending templates."""
-    templates = project_tmpl_repo.get_all()
+    templates = project_tmpl_repo.get_all_pending()
     tmpl_dicts = [tmpl.to_dict() for tmpl in templates]
     response = dict(templates=tmpl_dicts)
     return handle_content_type(response)
@@ -35,7 +35,7 @@ def pending_templates():
 @BLUEPRINT.route('/templates/<template_id>/approve', methods=['GET', 'POST'])
 def approve_template(template_id):
     """Approve updates to a template."""
-    template = project_tmpl_repo.get(template_id)
+    template = project_tmpl_repo.get_pending(template_id)
     if not template:
         abort(404)
 
@@ -47,15 +47,7 @@ def approve_template(template_id):
 
     if request.method == 'POST':
         template.pending = False
-
-        approved_template = project_tmpl_repo.get_approved(template.id)
-        if approved_template:
-            project_tmpl_repo.update(template, True)
-        else:
-            project_tmpl_repo.save(template, True)
-
-        # Update user template to remove pending
-        project_tmpl_repo.update(template)
+        project_tmpl_repo.approve(template)
 
         # Reanalyse all results
         presenter = category.info.get('presenter')
@@ -87,13 +79,13 @@ def approve_template(template_id):
 @BLUEPRINT.route('/templates/<template_id>/reject', methods=['GET', 'POST'])
 def reject_template(template_id):
     """Reject updates to a template."""
-    template = project_tmpl_repo.get(template_id)
+    template = project_tmpl_repo.get_pending(template_id)
     if not template:
         abort(404)
 
     if request.method == 'POST':
         template.pending = False
-        project_tmpl_repo.update(template)
+        project_tmpl_repo.update_pending(template)
 
         # Send email
         owner = user_repo.get(template.owner_id)

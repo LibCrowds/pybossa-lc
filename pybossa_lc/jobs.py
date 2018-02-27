@@ -55,7 +55,7 @@ def check_for_missing_templates():
     """Make an announcement if any projects are missing templates."""
     from pybossa.core import project_repo
     projects = project_repo.get_all()
-    templates = project_tmpl_repo.get_all_approved()
+    templates = project_tmpl_repo.get_all()
     template_ids = [tmpl.id for tmpl in templates]
     for project in projects:
         project_tmpl_id = project.info.get('template_id')

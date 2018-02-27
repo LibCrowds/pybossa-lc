@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """Project template repository module."""
 
+import itertools
 from sqlalchemy.exc import IntegrityError
 from pybossa.model.user import User
 from pybossa.model.category import Category
@@ -13,87 +14,7 @@ from . import Repository
 class ProjectTemplateRepository(Repository):
 
     def get(self, id):
-        """Get a template object from User info."""
-        filter_dict = {'templates': [{'id': id}]}
-        user = self.db.session.query(User).filter(
-          User.info.contains(filter_dict)
-        ).first()
-        if not user:
-            return None
-
-        # Return as a ProjectTemplate object
-        templates = user.info.get('templates', [])
-        tmpl_dict = [tmpl for tmpl in templates if tmpl['id'] == id][0]
-        tmpl = ProjectTemplate(**tmpl_dict)
-        tmpl.id = tmpl_dict['id']
-        tmpl.created = tmpl_dict['created']
-        return tmpl
-
-    def get_all(self):
-        """Get all User templates."""
-        users = self.db.session.query(User).filter(
-          User.info.has_key('templates')
-        ).all()
-
-        # Return as a ProjectTemplate object
-        templates = []
-        for user in users:
-            user_templates = user.info.get('templates', [])
-            for tmpl_dict in user_templates:
-                tmpl = ProjectTemplate(**tmpl_dict)
-                tmpl.id = tmpl_dict['id']
-                tmpl.created = tmpl_dict['created']
-                templates.append(tmpl)
-        return templates
-
-    def get_all_approved(self):
-        """Get all approved templates."""
-        categories = self.db.session.query(Category).filter(
-          Category.info.has_key('templates')
-        ).all()
-
-        # Return as a ProjectTemplate object
-        templates = []
-        for category in categories:
-            category_templates = category.info.get('templates', [])
-            for tmpl_dict in category_templates:
-                tmpl = ProjectTemplate(**tmpl_dict)
-                tmpl.id = tmpl_dict['id']
-                tmpl.created = tmpl_dict['created']
-                templates.append(tmpl)
-        return templates
-
-    def get_by_owner_id(self, owner_id):
-        """Get all of a specific user's templates."""
-        user = self.db.session.query(User).get(owner_id)
-
-        # Return as a ProjectTemplate object
-        templates = []
-        user_templates = user.info.get('templates', [])
-        for tmpl_dict in user_templates:
-            tmpl = ProjectTemplate(**tmpl_dict)
-            tmpl.id = tmpl_dict['id']
-            tmpl.created = tmpl_dict['created']
-            templates.append(tmpl)
-        return templates
-
-    def get_by_category_id(self, category_id):
-        """Get all of a specific category's templates."""
-        category = self.db.session.query(Category).get(category_id)
-        print category
-
-        # Return as a ProjectTemplate object
-        templates = []
-        category_templates = category.info.get('templates', [])
-        for tmpl_dict in category_templates:
-            tmpl = ProjectTemplate(**tmpl_dict)
-            tmpl.id = tmpl_dict['id']
-            tmpl.created = tmpl_dict['created']
-            templates.append(tmpl)
-        return templates
-
-    def get_approved(self, id):
-        """Get an approved template object from Category info."""
+        """Get an approved template from Category context."""
         filter_dict = {'templates': [{'id': id}]}
         category = self.db.session.query(Category).filter(
           Category.info.contains(filter_dict)
@@ -101,64 +22,162 @@ class ProjectTemplateRepository(Repository):
         if not category:
             return None
 
-        # Return as a ProjectTemplate object
         templates = category.info.get('templates', [])
         tmpl_dict = [tmpl for tmpl in templates if tmpl['id'] == id][0]
-        tmpl = ProjectTemplate(**tmpl_dict)
-        tmpl.id = tmpl_dict['id']
-        tmpl.created = tmpl_dict['created']
-        return tmpl
+        return self._convert_to_object(tmpl_dict)
 
-    def save(self, tmpl, approved=False):
-        """Save a template."""
-        container = self._get_valid_container('saved', tmpl, approved)
+    def get_pending(self, id):
+        """Get a template from User context."""
+        filter_dict = {'templates': [{'id': id}]}
+        user = self.db.session.query(User).filter(
+          User.info.contains(filter_dict)
+        ).first()
+        if not user:
+            return None
+
+        templates = user.info.get('templates', [])
+        tmpl_dict = [tmpl for tmpl in templates if tmpl['id'] == id][0]
+        return self._convert_to_object(tmpl_dict)
+
+    def get_all(self):
+        """Get all approved templates from Category context."""
+        categories = self.db.session.query(Category).filter(
+          Category.info.has_key('templates')
+        ).all()
+
+        tmpl_lists = [cat.info.get('templates', []) for cat in categories]
+        tmpl_dicts = itertools.chain(*tmpl_lists)
+        return map(self._convert_to_object, tmpl_dicts)
+
+    def get_all_pending(self):
+        """Get all pending templates from User context."""
+        users = self.db.session.query(User).filter(
+          User.info.has_key('templates')
+        ).all()
+
+        tmpl_lists = [user.info.get('templates', []) for user in users]
+        tmpl_dicts = itertools.chain(*tmpl_lists)
+        return map(self._convert_to_object, tmpl_dicts)
+
+    def get_by_owner_id(self, owner_id):
+        """Get all of a user's templates."""
+        filter_dict = {'templates': [{'owner_id': owner_id}]}
+        users = self.db.session.query(User).filter(
+          User.info.contains(filter_dict)
+        ).all()
+        categories = self.db.session.query(Category).filter(
+          Category.info.contains(filter_dict)
+        ).all()
+
+        user_templates = itertools.chain(*[user.info.get('templates', [])
+                                           for user in users])
+        category_templates = itertools.chain(*[cat.info.get('templates', [])
+                                               for cat in categories])
+        user_tmpl_ids = [tmpl['id'] for tmpl in user_templates]
+        user_templates += [tmpl for tmpl in category_templates
+                           if tmpl['id'] not in user_tmpl_ids]
+        return map(self._convert_to_object, user_templates)
+
+    def get_by_category_id(self, category_id):
+        """Get all of a category's templates."""
+        category = self.db.session.query(Category).get(category_id)
+        tmpl_dicts = category.info.get('templates', [])
+        return map(self._convert_to_object, tmpl_dicts)
+
+    def save(self, tmpl):
+        """Save a template to the User."""
+        self._validate_can_be('saved', tmpl)
+        user = self.db.session.query(User).get(tmpl.owner_id)
         tmpl_dict = tmpl.to_dict()
-        templates = container.info.get('templates', [])
+        templates = user.info.get('templates', [])
         already_exists = [t for t in templates if t['id'] == tmpl.id]
-        if already_exists:
+        if already_exists:  # pragma: no cover
             raise ValueError('Template ID already exists')
 
         templates.append(tmpl_dict)
-        container.info['templates'] = templates
+        user.info['templates'] = templates
         try:
-            self.db.session.merge(container)
+            self.db.session.merge(user)
             self.db.session.commit()
-        except IntegrityError as e:
+        except IntegrityError as e:  # pragma: no cover
+            self.db.session.rollback()
+            raise DBIntegrityError(e)
+
+    def approve(self, tmpl):
+        """Remove a template from user context and add it to the category."""
+        self._validate_can_be('saved', tmpl)
+        tmpl.pending = False
+        user = self.db.session.query(User).filter(
+          User.info.contains({'templates': [{'id': tmpl.id}]})
+        ).first()
+        category = self.db.session.query(Category).get(tmpl.category_id)
+        if not category:  # pragma: no cover
+            raise ValueError('Template category does not exist')
+        elif not user:  # pragma: no cover
+            raise ValueError('Template owner does not exist')
+
+        self._update_container_templates(tmpl, user)
+        self._update_container_templates(tmpl, category, ignore_error=True)
+        try:
+            self.db.session.merge(user)
+            self.db.session.merge(category)
+            self.db.session.commit()
+        except IntegrityError as e:  # pragma: no cover
             self.db.session.rollback()
             raise DBIntegrityError(e)
 
     def update(self, tmpl, approved=False):
-        container = self._get_valid_container('updated', tmpl, approved)
-        templates = container.info.get('templates', [])
-        try:
-            idx = [i for i, t in enumerate(templates) if t['id'] == tmpl.id][0]
-        except IndexError:
-            raise ValueError('Template does not exist')
+        """Update a template."""
+        self._validate_can_be('updated', tmpl)
+        category = self.db.session.query(Category).get(tmpl.category_id)
+        if not category:  # pragma: no cover
+            raise ValueError('Template category does not exist')
 
-        templates[idx] = tmpl.to_dict()
-        container.info['templates'] = templates
+        self._update_container_templates(tmpl, category)
         try:
-            self.db.session.merge(container)
+            self.db.session.merge(category)
             self.db.session.commit()
-        except IntegrityError as e:
+        except IntegrityError as e:  # pragma: no cover
             self.db.session.rollback()
             raise DBIntegrityError(e)
 
-    # def delete(self, hm):
-    #     self._validate_can_be('deleted', hm)
-    #     blog = self.db.session.query(HelpingMaterial).filter(HelpingMaterial.id==hm.id).first()
-    #     self.db.session.delete(blog)
-    #     self.db.session.commit()
+    def update_pending(self, tmpl):
+        """Update a pending template."""
+        self._validate_can_be('updated', tmpl)
+        user = self.db.session.query(User).get(tmpl.owner_id)
+        if not user:  # pragma: no cover
+            raise ValueError('Template owner does not exist')
 
-    def _get_valid_container(self, action, element, approved=False):
+        self._update_container_templates(tmpl, user)
+        try:
+            self.db.session.merge(user)
+            self.db.session.commit()
+        except IntegrityError as e:  # pragma: no cover
+            self.db.session.rollback()
+            raise DBIntegrityError(e)
+
+    def _validate_can_be(self, action, element):
         """Return related Category if approved else related User."""
         name = element.__class__.__name__
         msg = '%s cannot be %s by %s' % (name, action, self.__class__.__name__)
         if not isinstance(element, ProjectTemplate):
             raise WrongObjectError(msg)
 
-        if approved:
-            return self.db.session.query(Category).get(element.category_id)
-        else:
-            return self.db.session.query(User).get(element.owner_id)
+    def _convert_to_object(self, template_dict):
+        """Convert a template dict to an object."""
+        tmpl = ProjectTemplate(**template_dict)
+        tmpl.id = template_dict['id']
+        tmpl.created = template_dict['created']
+        return tmpl
 
+    def _update_container_templates(self, tmpl, container, ignore_error=False):
+        """Update a template in a User or Category."""
+        templates = container.info.get('templates', [])
+        try:
+            idx = [i for i, t in enumerate(templates) if t['id'] == tmpl.id][0]
+            templates[idx] = tmpl.to_dict()
+        except IndexError:  # pragma: no cover
+            if not ignore_error:
+                raise ValueError('Template does not exist')
+            templates.append(tmpl.to_dict())
+        container.info['templates'] = templates

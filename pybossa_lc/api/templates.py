@@ -67,7 +67,7 @@ def get_template_task_form(task_presenter, method, data):
 @BLUEPRINT.route('/<template_id>/update', methods=['GET', 'POST'])
 def update_template(template_id):
     """Edit a template's core details."""
-    template = project_tmpl_repo.get(template_id)
+    template = project_tmpl_repo.get_pending(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
@@ -93,7 +93,7 @@ def update_template(template_id):
             if changes:
                 template.update(form.data)
                 template.pending = True
-                project_tmpl_repo.update(template)
+                project_tmpl_repo.update_pending(template)
                 flash('Updates submitted for approval', 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
@@ -106,8 +106,7 @@ def update_template(template_id):
 @BLUEPRINT.route('/<template_id>/task', methods=['GET', 'POST'])
 def update_template_task(template_id):
     """Update task data for a template."""
-    template = project_tmpl_repo.get(template_id)
-    print template
+    template = project_tmpl_repo.get_pending(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
@@ -137,7 +136,6 @@ def update_template_task(template_id):
 
     if request.method == 'POST':
         form_data = json.loads(request.data) if request.data else {}
-        print form_data
         form = get_template_task_form(presenter, request.method, form_data)
 
         if form.validate():
@@ -145,7 +143,7 @@ def update_template_task(template_id):
             if changes:
                 template.task.update(form.data)
                 template.pending = True
-                project_tmpl_repo.update(template)
+                project_tmpl_repo.update_pending(template)
                 flash('Updates submitted for approval', 'success')
         else:
             flash('Please correct the errors', 'error')
@@ -160,7 +158,7 @@ def update_template_task(template_id):
 @BLUEPRINT.route('/<template_id>/rules',  methods=['GET', 'POST'])
 def update_template_rules(template_id):
     """Update resulsts analysis rules for a template."""
-    template = project_tmpl_repo.get(template_id)
+    template = project_tmpl_repo.get_pending(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
@@ -190,7 +188,7 @@ def update_template_rules(template_id):
             if changes:
                 template.rules.update(form.data)
                 template.pending = True
-                project_tmpl_repo.update(template)
+                project_tmpl_repo.update_pending(template)
                 flash('Updates submitted for approval', 'success')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')

@@ -120,7 +120,7 @@ def new(category_short_name):
 
     if request.method == 'POST':
         if form.validate():
-            tmpl = project_tmpl_repo.get_approved(form.template_id.data)
+            tmpl = project_tmpl_repo.get(form.template_id.data)
             volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
             handle_valid_project_form(form, tmpl, volume, category,
                                       built_templates)
@@ -238,10 +238,10 @@ def get_valid_parent_project_ids(category):
                 continue
 
             parent_tmpl = project_tmpl_repo.get(parent_tmpl_id)
-            if not parent_tmpl or not parent_tmpl['task']:
+            if not parent_tmpl or not parent_tmpl.task:
                 continue
 
-            parent_task = parent_tmpl['task']
+            parent_task = parent_tmpl.task
             if not parent_task.get('mode') == 'select':
                 continue
 

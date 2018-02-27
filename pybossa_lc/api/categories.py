@@ -13,7 +13,6 @@ from pybossa.core import uploader
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
 
-from .. import project_tmpl_repo
 from ..utils import *
 from ..forms import *
 from ..exporters.csv_volume_exporter import CsvVolumeExporter
