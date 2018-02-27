@@ -26,9 +26,9 @@ class ProjectTemplateRepository(Repository):
         tmpl_dict = [tmpl for tmpl in templates if tmpl['id'] == id][0]
         return self._convert_to_object(tmpl_dict)
 
-    def get_pending(self, id):
+    def get_user_template(self, id):
         """Get a template from User context."""
-        filter_dict = {'templates': [{'id': id, 'pending': True}]}
+        filter_dict = {'templates': [{'id': id}]}
         user = self.db.session.query(User).filter(
             User.info.contains(filter_dict)
         ).first()

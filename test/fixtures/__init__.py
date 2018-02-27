@@ -33,7 +33,7 @@ class TemplateFixtures(object):
                                category_id=self.category.id,
                                min_answers=3,
                                max_answers=3,
-                               pending=False,
+                               pending=True,
                                owner_id=1,
                                task=task,
                                rules=rules)

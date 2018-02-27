@@ -26,23 +26,11 @@ class TestProjectTemplateRepository(Test):
         assert_equal(tmpl, None)
 
     @with_context
-    def test_get_pending_returns_none_if_no_template(self):
+    def test_get_user_template_returns_none_if_no_template(self):
         """Test get pending returns None if no template."""
         fake_id = '123'
-        tmpl = self.project_tmpl_repo.get_pending(fake_id)
+        tmpl = self.project_tmpl_repo.get_user_template(fake_id)
         assert_equal(tmpl, None)
-
-    @with_context
-    def test_get_pending_returns_none_if_no_template_pending(self):
-        """Test get pending returns None if no template pending."""
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
-        tmpl.pending = False
-        user_info = dict(templates=[tmpl.to_dict()])
-        UserFactory(info=user_info)
-        retrieved_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
-        assert_equal(retrieved_tmpl, None)
 
     @with_context
     def test_get_returns_template(self):
@@ -56,15 +44,14 @@ class TestProjectTemplateRepository(Test):
         assert_dict_equal(retrieved_tmpl.to_dict(), tmpl.to_dict())
 
     @with_context
-    def test_get_pending_returns_template(self):
+    def test_get_user_template_returns_template(self):
         """Test get pending returns a template if it exists."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
-        tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
-        retrieved_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        retrieved_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_dict_equal(retrieved_tmpl.to_dict(), tmpl.to_dict())
 
     @with_context
@@ -175,11 +162,11 @@ class TestProjectTemplateRepository(Test):
         name = 'New Name'
         tmpl.name = name
 
-        not_updated_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        not_updated_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_not_equal(not_updated_tmpl.name, name)
 
         self.project_tmpl_repo.update_pending(tmpl)
-        updated_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        updated_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_dict_equal(tmpl.to_dict(), updated_tmpl.to_dict())
 
     @with_context
@@ -192,11 +179,11 @@ class TestProjectTemplateRepository(Test):
         tmpl.owner_id = user.id
         tmpl.pending = True
 
-        not_pending_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        not_pending_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_equal(not_pending_tmpl, None)
 
         self.project_tmpl_repo.save(tmpl)
-        pending_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        pending_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_dict_equal(tmpl.to_dict(), pending_tmpl.to_dict())
 
         not_approved = self.project_tmpl_repo.get(tmpl.id)
@@ -221,7 +208,7 @@ class TestProjectTemplateRepository(Test):
         approved_tmpl = self.project_tmpl_repo.get(tmpl.id)
         assert_dict_equal(tmpl.to_dict(), approved_tmpl.to_dict())
 
-        not_pending_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        not_pending_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_equal(not_pending_tmpl, None)
 
     @with_context
@@ -234,11 +221,11 @@ class TestProjectTemplateRepository(Test):
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
 
-        not_deleted_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        not_deleted_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_dict_equal(not_deleted_tmpl.to_dict(), tmpl.to_dict())
 
         self.project_tmpl_repo.delete_pending(tmpl)
-        deleted_tmpl = self.project_tmpl_repo.get_pending(tmpl.id)
+        deleted_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
         assert_equal(deleted_tmpl, None)
 
     @with_context

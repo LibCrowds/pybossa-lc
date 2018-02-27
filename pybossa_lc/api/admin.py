@@ -35,7 +35,7 @@ def pending_templates():
 @BLUEPRINT.route('/templates/<template_id>/approve', methods=['GET', 'POST'])
 def approve_template(template_id):
     """Approve updates to a template."""
-    template = project_tmpl_repo.get_pending(template_id)
+    template = project_tmpl_repo.get_user_template(template_id)
     if not template:
         abort(404)
 
@@ -79,7 +79,7 @@ def approve_template(template_id):
 @BLUEPRINT.route('/templates/<template_id>/reject', methods=['GET', 'POST'])
 def reject_template(template_id):
     """Reject updates to a template."""
-    template = project_tmpl_repo.get_pending(template_id)
+    template = project_tmpl_repo.get_user_template(template_id)
     if not template:
         abort(404)
 

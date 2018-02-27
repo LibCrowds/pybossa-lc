@@ -67,7 +67,7 @@ def get_template_task_form(task_presenter, method, data):
 @BLUEPRINT.route('/<template_id>/update', methods=['GET', 'POST'])
 def update_template(template_id):
     """Edit a template's core details."""
-    template = project_tmpl_repo.get_pending(template_id)
+    template = project_tmpl_repo.get_user_template(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
@@ -106,7 +106,7 @@ def update_template(template_id):
 @BLUEPRINT.route('/<template_id>/task', methods=['GET', 'POST'])
 def update_template_task(template_id):
     """Update task data for a template."""
-    template = project_tmpl_repo.get_pending(template_id)
+    template = project_tmpl_repo.get_user_template(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
@@ -158,7 +158,7 @@ def update_template_task(template_id):
 @BLUEPRINT.route('/<template_id>/rules', methods=['GET', 'POST'])
 def update_template_rules(template_id):
     """Update resulsts analysis rules for a template."""
-    template = project_tmpl_repo.get_pending(template_id)
+    template = project_tmpl_repo.get_user_template(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
@@ -201,7 +201,7 @@ def update_template_rules(template_id):
 @BLUEPRINT.route('/<template_id>/delete', methods=['GET', 'POST'])
 def delete(template_id):
     """Delete a pending template."""
-    template = project_tmpl_repo.get_pending(template_id)
+    template = project_tmpl_repo.get_user_template(template_id)
     if not template:  # pragma: no cover
         abort(404)
 
