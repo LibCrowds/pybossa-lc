@@ -46,9 +46,26 @@ class ProjectTemplateRepository(Repository):
                 templates.append(tmpl)
         return templates
 
+    def get_all_approved(self):
+        """Get all approved templates."""
+        categories = self.db.session.query(Category).filter(
+          Category.info.has_key('templates')
+        ).all()
+
+        # Return as a ProjectTemplate object
+        templates = []
+        for category in categories:
+            category_templates = category.info.get('templates', [])
+            for tmpl_dict in category_templates:
+                tmpl = ProjectTemplate(**tmpl_dict)
+                tmpl.id = tmpl_dict['id']
+                tmpl.created = tmpl_dict['created']
+                templates.append(tmpl)
+        return templates
+
     def get_by_owner_id(self, owner_id):
         """Get all of a specific user's templates."""
-        user = self.db.session.query(User).first()
+        user = self.db.session.query(User).get(owner_id)
 
         # Return as a ProjectTemplate object
         templates = []
@@ -60,9 +77,23 @@ class ProjectTemplateRepository(Repository):
             templates.append(tmpl)
         return templates
 
+    def get_by_category_id(self, category_id):
+        """Get all of a specific category's templates."""
+        category = self.db.session.query(Category).get(category_id)
+
+        # Return as a ProjectTemplate object
+        templates = []
+        category_templates = category.info.get('templates', [])
+        for tmpl_dict in category_templates:
+            tmpl = ProjectTemplate(**tmpl_dict)
+            tmpl.id = tmpl_dict['id']
+            tmpl.created = tmpl_dict['created']
+            templates.append(tmpl)
+        return templates
+
     def get_approved(self, id):
         """Get an approved template object from Category info."""
-        filter_dict = {'templates': [{'id': id, 'pending': False}]}
+        filter_dict = {'templates': [{'id': id}]}
         category = self.db.session.query(Category).filter(
           Category.info.contains(filter_dict)
         ).first()

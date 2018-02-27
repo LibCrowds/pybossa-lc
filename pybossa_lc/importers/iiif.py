@@ -3,8 +3,6 @@
 import requests
 from pybossa.importers.base import BulkTaskImport
 
-from ..cache import templates as templates_cache
-
 
 class BulkTaskIIIFImporter(BulkTaskImport):
     """Class to import tasks from IIIF manifests."""

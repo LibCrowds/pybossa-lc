@@ -13,7 +13,7 @@ from pybossa.core import uploader
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
 
-from ..cache import templates as templates_cache
+from .. import project_tmpl_repo
 from ..utils import *
 from ..forms import *
 from ..exporters.csv_volume_exporter import CsvVolumeExporter
@@ -206,7 +206,6 @@ def exports(short_name):
         abort(404)
 
     ensure_authorized_to('update', category)
-    templates = templates_cache.get_by_category_id(category.id)
     export_fmts = category.info.get('export_formats', [])
     form_data = json.loads(request.data) if request.data else {}
     form = _get_export_form(request.method, form_data)
@@ -224,7 +223,7 @@ def exports(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(export_formats=export_fmts, templates=templates, form=form)
+    response = dict(export_formats=export_fmts, form=form)
     return handle_content_type(response)
 
 
@@ -237,7 +236,6 @@ def update_export(short_name, export_id):
         abort(404)
 
     ensure_authorized_to('update', category)
-    templates = templates_cache.get_by_category_id(category.id)
     export_fmts = category.info.get('export_formats', [])
     try:
         export_fmt = [fmt for fmt in export_fmts if fmt['id'] == export_id][0]
@@ -266,5 +264,5 @@ def update_export(short_name, export_id):
         else:
             flash('Please correct the errors', 'error')
 
-    response = dict(export_formats=export_fmts, templates=templates, form=form)
+    response = dict(export_formats=export_fmts, form=form)
     return handle_content_type(response)

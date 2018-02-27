@@ -10,8 +10,6 @@ from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
 from pybossa.core import project_repo
 
-from .cache import templates as templates_cache
-
 
 class UniqueVolumeField(object):
     """Checks for a unique volume field for a category."""

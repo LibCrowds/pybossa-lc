@@ -19,8 +19,8 @@ from pybossa.auditlogger import AuditLogger
 from wtforms import TextField
 from pybossa.jobs import enqueue_job
 
+from .. import project_tmpl_repo
 from ..forms import *
-from ..cache import templates as templates_cache
 
 
 auditlogger = AuditLogger(auditlog_repo, caller='web')
@@ -95,7 +95,7 @@ def new(category_short_name):
         abort(404)
 
     ensure_authorized_to('create', Project)
-    templates = templates_cache.get_by_category_id(category.id)
+    templates = project_tmpl_repo.get_by_category_id(category.id)
     volumes = category.info.get('volumes', [])
     projects = project_repo.filter_by(category_id=category.id)
 
@@ -216,7 +216,7 @@ def handle_valid_project_form(form, template, volume, category,
 
 def get_built_templates(category):
     """Get dict of templates against volumes for all current projects."""
-    templates = templates_cache.get_by_category_id(category.id)
+    templates = project_tmpl_repo.get_by_category_id(category.id)
     built_templates = {tmpl['id']: [] for tmpl in templates}
     projects = project_repo.filter_by(category_id=category.id)
     for p in projects:
@@ -241,7 +241,7 @@ def get_valid_parent_project_ids(category):
             if not parent_tmpl_id:
                 continue
 
-            parent_tmpl = templates_cache.get_by_id(parent_tmpl_id)
+            parent_tmpl = project_tmpl_repo.get(parent_tmpl_id)
             if not parent_tmpl or not parent_tmpl['task']:
                 continue
 
