@@ -155,4 +155,4 @@ class TestTemplatesApi(web.Helper):
         flash_msg = json.loads(res.data)['flash']
         msg = 'Approved templates can only be deleted by administrators'
         assert_equal(flash_msg, msg)
-        assert_equal([user_templates], [template.to_dict()])
+        assert_equal(user_templates, [template.to_dict()])
