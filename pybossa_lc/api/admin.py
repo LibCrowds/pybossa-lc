@@ -38,39 +38,26 @@ def approve_template(template_id):
     if not template:
         abort(404)
 
-    category_id = int(template['category_id'])
-    category = project_repo.get_category(category_id)
+    category = project_repo.get_category(template.category_id)
     if not category:
         abort(400)
 
     ensure_authorized_to('update', category)
 
     if request.method == 'POST':
-        changes = template.pop('changes', {})
-        template.update(changes)
-        template['pending'] = False
+        template.pending = False
 
+        approved_template = project_tmpl_repo.get_approved(template.id)
+        if approved_template:
+            project_tmpl_repo.update(template, True)
+        else:
+            project_tmpl_repo.save(template, True)
 
-        # Update category approved template
-        approved_templates = category.info.get('approved_templates', [])
-        updated_templates = [tmpl for tmpl in approved_templates
-                             if tmpl['id'] != template['id']]
-        updated_templates.append(template)
-        category.info['approved_templates'] = updated_templates
-        project_repo.update_category(category)
-
-        # Update owner's template
-        owner_id = int(template['owner_id'])
-        owner = user_repo.get(owner_id)
-        owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
-                           if tmpl['id'] != template['id']]
-        owner_templates.append(template)
-        owner.info['templates'] = owner_templates
-        user_repo.update(owner)
-
-        templates_cache.reset()
+        # Update user template to remove pending
+        project_tmpl_repo.update(template)
 
         # Send email
+        owner = user_repo.get(template.owner_id)
         msg = dict(subject='Template Updates Accepted', recipients=[owner.id])
         msg['body'] = render_template('/account/email/template_accepted.md',
                                       user=owner, template=template)
@@ -82,7 +69,7 @@ def approve_template(template_id):
     else:
         csrf = generate_csrf()
 
-    response = dict(template=template, csrf=csrf)
+    response = dict(template=template.to_dict(), csrf=csrf)
     return handle_content_type(response)
 
 
@@ -91,24 +78,16 @@ def approve_template(template_id):
 @BLUEPRINT.route('/templates/<template_id>/reject', methods=['GET', 'POST'])
 def reject_template(template_id):
     """Reject updates to a template."""
-    template = templates_cache.get_by_id(template_id)
+    template = project_tmpl_repo.get(template_id)
     if not template:
         abort(404)
 
     if request.method == 'POST':
-        # Remove pending from user's template
-        template['pending'] = False
-        owner_id = int(template['owner_id'])
-        owner = user_repo.get(owner_id)
-        owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
-                           if tmpl['id'] != template['id']]
-        owner_templates.append(template)
-        owner.info['templates'] = owner_templates
-        user_repo.update(owner)
-
-        templates_cache.reset()
+        template.pending = False
+        project_tmpl_repo.update(template)
 
         # Send email
+        owner = user_repo.get(template.owner_id)
         reason = request.json.get('reason')
         msg = dict(subject='Template Updates Rejected', recipients=[owner.id])
         msg['body'] = render_template('/account/email/template_rejected.md',
@@ -123,5 +102,5 @@ def reject_template(template_id):
     else:
         csrf = generate_csrf()
 
-    response = dict(template=template, csrf=csrf)
+    response = dict(template=template.to_dict(), csrf=csrf)
     return handle_content_type(response)

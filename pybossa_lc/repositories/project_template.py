@@ -80,7 +80,6 @@ class ProjectTemplateRepository(Repository):
     def save(self, tmpl, approved=False):
         """Save a template."""
         container = self._get_valid_container('saved', tmpl, approved)
-        tmpl.pending = not approved
         tmpl_dict = tmpl.to_dict()
         templates = container.info.get('templates', [])
         already_exists = [t for t in templates if t['id'] == tmpl.id]
@@ -98,7 +97,6 @@ class ProjectTemplateRepository(Repository):
 
     def update(self, tmpl, approved=False):
         container = self._get_valid_container('updated', tmpl, approved)
-        tmpl.pending = not approved
         templates = container.info.get('templates', [])
         try:
             idx = [i for i, t in enumerate(templates) if t['id'] == tmpl.id][0]

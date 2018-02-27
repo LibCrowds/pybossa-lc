@@ -1,6 +1,6 @@
 Hello {{ user['fullname'] }},
 
-You submitted some requests to create or update the
+You submitted a request to create or update the
 **{{ template['name'] }}** template. Good news, the proposed
  changes have been accepted!
 

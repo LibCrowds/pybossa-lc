@@ -1,29 +1,106 @@
 # -*- coding: utf8 -*-
-"""Test templates API."""
+"""Test admin API."""
 
-from mock import patch
+import json
 from nose.tools import *
 from helper import web
 from default import with_context, db
-from pybossa.repositories import ResultRepository, UserRepository
+from factories import CategoryFactory, UserFactory
+from pybossa.repositories import ProjectRepository, UserRepository
 
-from pybossa_lc.api import analysis as analysis_api
+from ..fixtures import TemplateFixtures
 
 
-class TestTemplatesApi(web.Helper):
+class TestAdminApi(web.Helper):
 
     def setUp(self):
-        super(TestTemplatesApi, self).setUp()
-        self.result_repo = ResultRepository(db)
+        super(TestAdminApi, self).setUp()
+        self.project_repo = ProjectRepository(db)
         self.user_repo = UserRepository(db)
 
     @with_context
+    def test_get_pending_templates(self):
+        """Test pending templates returned for all users."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl1 = tmpl_fixtures.create_template()
+        tmpl2 = tmpl_fixtures.create_template()
+        UserFactory.create(info=dict(templates=[tmpl1.to_dict()]))
+        UserFactory.create(info=dict(templates=[tmpl2.to_dict()]))
+        endpoint = '/lc/admin/templates/pending'
+        res = self.app_get_json(endpoint)
+        data = json.loads(res.data)
+        expected = [tmpl1.to_dict(), tmpl2.to_dict()]
+        assert_equal(data['templates'], expected)
+
+    @with_context
     def test_template_approved(self):
-        pass
+        """Test template approval."""
+        self.register()
+        self.signin()
+        category = CategoryFactory()
+        user = self.user_repo.get(1)
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        tmpl.pending = True
+        tmpl.owner_id = user.id
+        user.info = dict(templates=[tmpl.to_dict()])
+        self.user_repo.update(user)
+        endpoint = '/lc/admin/templates/{}/approve'.format(tmpl.id)
+
+        # Test CSRF returned with GET response
+        get_res = self.app_get_json(endpoint)
+        get_data = json.loads(get_res.data)
+        assert_in('csrf', get_data.keys())
+
+        # Test approved template added to category
+        post_res = self.app_post_json(endpoint, data=get_data)
+        post_data = json.loads(post_res.data)
+        assert_equal(post_data['flash'], 'Template approved')
+        updated_category = self.project_repo.get_category(category.id)
+        category_templates = updated_category.info.get('templates')
+        tmpl.pending = False
+        assert_equal(category_templates, [tmpl.to_dict()])
+
+        # Test user template no longer pending
+        updated_user = self.user_repo.get(user.id)
+        user_templates = updated_user.info.get('templates')
+        assert_equal(user_templates, [tmpl.to_dict()])
+
 
     @with_context
     def test_template_rejected(self):
-        pass
+        """Test template rejection."""
+        self.register()
+        self.signin()
+        category = CategoryFactory()
+        user = self.user_repo.get(1)
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        tmpl.pending = True
+        tmpl.owner_id = user.id
+        user.info = dict(templates=[tmpl.to_dict()])
+        self.user_repo.update(user)
+        endpoint = '/lc/admin/templates/{}/reject'.format(tmpl.id)
+
+        # Test CSRF returned with GET response
+        get_res = self.app_get_json(endpoint)
+        get_data = json.loads(get_res.data)
+        assert_in('csrf', get_data.keys())
+
+        # Test approved template not added to category
+        post_res = self.app_post_json(endpoint, data=get_data)
+        post_data = json.loads(post_res.data)
+        assert_equal(post_data['flash'], 'Email sent to template owner')
+        updated_category = self.project_repo.get_category(category.id)
+        category_templates = updated_category.info.get('templates')
+        assert_equal(category_templates, None)
+
+        # Test user template no longer pending
+        updated_user = self.user_repo.get(user.id)
+        user_templates = updated_user.info.get('templates')
+        tmpl.pending = False
+        assert_equal(user_templates, [tmpl.to_dict()])
 
     @with_context
     def test_results_updated_when_template_approved(self):
