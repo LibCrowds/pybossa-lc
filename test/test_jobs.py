@@ -27,21 +27,21 @@ class TestJobs(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
-        user = UserFactory.create(info=dict(templates=[tmpl]))
+        user = UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
         self.user_repo.update(user)
 
-        info = dict(template_id=tmpl['id'])
-        project1 = ProjectFactory.create(info=info)
-        project2 = ProjectFactory.create()
+        info = dict(template_id=tmpl.id)
+        ProjectFactory.create(info=info)
+        empty_proj = ProjectFactory.create()
         jobs.check_for_missing_templates()
 
         spa_server_name = self.flask_app.config.get('SPA_SERVER_NAME')
         endpoint = self.flask_app.config.get('PROJECT_TMPL_ENDPOINT')
-        launch_url = spa_server_name + endpoint.format(project2.short_name)
+        launch_url = spa_server_name + endpoint.format(empty_proj.short_name)
         announcements = self.announcement_repo.get_all_announcements()
         assert_equal(len(announcements), 1)
         assert_equal(announcements[0].title, 'Missing Template')
-        assert_equal(announcements[0].body, project2.name)
+        assert_equal(announcements[0].body, empty_proj.name)
         assert_equal(announcements[0].published, True)
         assert_dict_equal(announcements[0].info, {
             'admin': True,

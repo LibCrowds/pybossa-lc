@@ -30,13 +30,13 @@ class TestAnalyst(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
-        tmpl['min_answers'] = n_answers
-        tmpl['max_answers'] = max_answers or n_answers
-        tmpl['rules'] = dict(case='title', whitespace='full_stop',
-                             trim_punctuation=True)
-        user_info = dict(templates=[tmpl])
+        tmpl.min_answers = n_answers
+        tmpl.max_answers = max_answers or n_answers
+        tmpl.rules = dict(case='title', whitespace='full_stop',
+                          trim_punctuation=True)
+        user_info = dict(templates=[tmpl.to_dict()])
         UserFactory.create(info=user_info)
-        project_info = dict(template_id=tmpl['id'])
+        project_info = dict(template_id=tmpl.id)
         project = ProjectFactory.create(category=category, info=project_info)
         task_info = dict(target=target)
         return TaskFactory.create(n_answers=n_answers, project=project,
@@ -323,16 +323,20 @@ class TestAnalyst(Test):
     @with_context
     def test_get_project_template(self):
         """Test that the correct template is returned."""
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl1 = tmpl_fixtures.create_template()
+        tmpl2 = tmpl_fixtures.create_template()
         fake_templates = [
-            {'id': 'foo', 'name': 'bar'},
-            {'id': 'baz', 'name': 'qux'}
+            tmpl1.to_dict(),
+            tmpl2.to_dict()
         ]
         user_info = dict(templates=fake_templates)
-        project_info = dict(template_id=fake_templates[0]['id'])
+        project_info = dict(template_id=tmpl1.id)
         UserFactory.create(info=user_info)
         project = ProjectFactory(info=project_info)
         returned_tmpl = self.analyst.get_project_template(project.id)
-        assert_equal(returned_tmpl, fake_templates[0])
+        assert_equal(returned_tmpl.to_dict(), tmpl1.to_dict())
 
     @with_context
     @raises(ValueError)
@@ -388,7 +392,7 @@ class TestAnalyst(Test):
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         n_answers = 3
-        tmpl['min_answers'] = n_answers
+        tmpl.min_answers = n_answers
         mock_get_tmpl.return_value = tmpl
         project = ProjectFactory.create()
         target = 'example.com'

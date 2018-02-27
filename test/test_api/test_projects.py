@@ -2,7 +2,7 @@
 """Test projects API."""
 
 import json
-from mock import patch, MagicMock
+from mock import patch
 from nose.tools import *
 from helper import web
 from default import with_context, db, Fixtures
@@ -29,7 +29,6 @@ class TestProjectsApi(web.Helper):
     @with_context
     def test_get_valid_iiif_annotation_data(self):
         """Test the pattern for valid IIIF manifest URIs."""
-
         volume = {
             'name': 'some_manifest',
             'source': self.manifest_uri
@@ -137,14 +136,14 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
         category.info['volumes'] = [vol]
-        user.info['templates'] = [tmpl]
+        user.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
         self.user_repo.update(user)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl['id'],
+                         template_id=tmpl.id,
                          volume_id=vol['id'],
                          parent_id='None')
         res = self.app_post_json(endpoint, data=form_data)
@@ -152,10 +151,10 @@ class TestProjectsApi(web.Helper):
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
         project = self.project_repo.get(1)
-        assert_equal(project.info['template_id'], tmpl['id'])
+        assert_equal(project.info['template_id'], tmpl.id)
         assert_equal(project.info['volume_id'], vol['id'])
-        assert_equal(project.description, tmpl['description'])
-        assert_equal(project.category_id, tmpl['category_id'])
+        assert_equal(project.description, tmpl.description)
+        assert_equal(project.category_id, tmpl.category_id)
         assert_equal(project.published, False)
 
     @with_context
@@ -172,14 +171,14 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
         category.info['volumes'] = [vol]
-        user.info['templates'] = [tmpl]
+        user.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
         self.user_repo.update(user)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl['id'],
+                         template_id=tmpl.id,
                          volume_id=vol['id'],
                          parent_id='None')
         res = self.app_post_json(endpoint, data=form_data)
@@ -187,8 +186,8 @@ class TestProjectsApi(web.Helper):
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
         project = self.project_repo.get(1)
-        assert_equal(project.info['template_id'], tmpl['id'])
+        assert_equal(project.info['template_id'], tmpl.id)
         assert_equal(project.info['volume_id'], vol['id'])
-        assert_equal(project.description, tmpl['description'])
-        assert_equal(project.category_id, tmpl['category_id'])
+        assert_equal(project.description, tmpl.description)
+        assert_equal(project.category_id, tmpl.category_id)
         assert_equal(project.published, False)

@@ -24,7 +24,7 @@ from ..cache import templates as templates_cache
 
 
 auditlogger = AuditLogger(auditlog_repo, caller='web')
-BLUEPRINT = Blueprint('projects', __name__)
+BLUEPRINT = Blueprint('lc_projects', __name__)
 MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 300
 
 

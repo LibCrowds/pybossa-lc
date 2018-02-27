@@ -10,7 +10,7 @@ from pybossa.jobs import enqueue_job
 
 from ..jobs import analyse_all, analyse_empty, analyse_single
 
-BLUEPRINT = Blueprint('analysis', __name__)
+BLUEPRINT = Blueprint('lc_analysis', __name__)
 
 
 def respond(msg):

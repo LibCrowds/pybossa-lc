@@ -1,136 +1,199 @@
 # -*- coding: utf8 -*-
 """API template module for pybossa-lc."""
 
+import json
 from rq import Queue
-from flask import Blueprint, abort, flash, request, render_template
+from flask import Blueprint, abort, flash, request, render_template, url_for
 from flask import current_app
 from flask.ext.login import login_required
 from flask_wtf.csrf import generate_csrf
 from pybossa.util import handle_content_type, admin_required
+from pybossa.util import redirect_content_type
 from pybossa.auth import ensure_authorized_to
 from pybossa.core import project_repo, user_repo
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail, enqueue_job
+from pybossa.cache import users as users_cache
 
-from ..cache import templates as templates_cache
+from ..forms import *
+from .. import project_tmpl_repo
+from ..model.project_template import ProjectTemplate
 
 
-BLUEPRINT = Blueprint('templates', __name__)
+BLUEPRINT = Blueprint('lc_templates', __name__)
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
 
-@login_required
-@BLUEPRINT.route('/')
-def get_templates():
-    """Return approved templates."""
-    templates = templates_cache.get_approved()
-    response = dict(templates=templates)
-    return handle_content_type(response)
+def get_changes(form, template, key=None):
+    """Get any changes to a template."""
+    tmpl_dict = template.to_dict()
+    if key:
+        return {k: v for k, v in form.data.items()
+                   if not tmpl_dict[key] or tmpl_dict[key][k] != v}
+    else:
+        return {k: v for k, v in form.data.items() if tmpl_dict[k] != v}
+
+
+def get_template_task_form(task_presenter, method, data):
+    """Return the template form for a type of task presenter."""
+    if not data:
+        data = {}
+
+    if task_presenter == 'iiif-annotation':
+        form = IIIFAnnotationTemplateForm(**data)
+
+        # Populate fields schema
+        if method == 'POST':
+            if data.get('mode') == 'transcribe':
+                for field in data.get('fields_schema', []):
+                    form.fields_schema.append_entry(field)
+            else:
+                del form.fields_schema
+        return form
+
+    elif task_presenter == 'z3950':
+        form = Z3950TemplateForm(**data)
+        dbs = current_app.config.get("Z3950_DATABASES", {}).keys()
+        form.database.choices = [(k, k.upper()) for k in dbs]
+
+        # Populate institutions
+        if method == 'POST':
+            for field in data.get('institutions', []):
+                form.institutions.append_entry(field)
+        return form
 
 
 @login_required
-@admin_required
-@BLUEPRINT.route('/pending')
-def pending():
-    """Return pending templates."""
-    templates = templates_cache.get_pending()
-    response = dict(templates=templates)
-    return handle_content_type(response)
-
-
-@login_required
-@admin_required
-@BLUEPRINT.route('/<template_id>/approve', methods=['GET', 'POST'])
-def approve(template_id):
-    """Approve updates to a template."""
-    template = templates_cache.get_by_id(template_id)
-    if not template:
+@BLUEPRINT.route('/<template_id>/update', methods=['GET', 'POST'])
+def update_template(template_id):
+    """Edit a template's core details."""
+    template = project_tmpl_repo.get(template_id)
+    if not template:  # pragma: no cover
         abort(404)
 
-    category_id = int(template['category_id'])
-    category = project_repo.get_category(category_id)
-    if not category:
+    user = user_repo.get(template.owner_id)
+    if not user:  # pragma: no cover
         abort(400)
 
-    ensure_authorized_to('update', category)
+    ensure_authorized_to('update', user)
+
+    categories = project_repo.get_all_categories()
+    category_choices = [(c.id, c.name) for c in categories]
+    form = ProjectTemplateForm(**template.to_dict())
+    form.category_id.choices = category_choices
+    if not form.category_id.data:
+        form.category_id.data = category_choices[0][0]
 
     if request.method == 'POST':
-        changes = template.pop('changes', {})
-        template.update(changes)
-        template['pending'] = False
+        form = ProjectTemplateForm(request.body)
+        form.category_id.choices = category_choices
 
+        if form.validate():
+            changes = get_changes(form, template)
+            if changes:
+                template.update(form.data)
+                template.pending = True
+                project_tmpl_repo.update(template)
+                flash('Updates submitted for approval', 'success')
+        else:  # pragma: no cover
+            flash('Please correct the errors', 'error')
 
-        # Update category approved template
-        approved_templates = category.info.get('approved_templates', [])
-        updated_templates = [tmpl for tmpl in approved_templates
-                             if tmpl['id'] != template['id']]
-        updated_templates.append(template)
-        category.info['approved_templates'] = updated_templates
-        project_repo.update_category(category)
-
-        # Update owner's template
-        owner_id = int(template['owner_id'])
-        owner = user_repo.get(owner_id)
-        owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
-                           if tmpl['id'] != template['id']]
-        owner_templates.append(template)
-        owner.info['templates'] = owner_templates
-        user_repo.update(owner)
-
-        templates_cache.reset()
-
-        # Send email
-        msg = dict(subject='Template Updates Accepted', recipients=[owner.id])
-        msg['body'] = render_template('/account/email/template_accepted.md',
-                                      user=owner, template=template)
-        msg['html'] = render_template('/account/email/template_accepted.html',
-                                      user=owner, template=template)
-        MAIL_QUEUE.enqueue(send_mail, msg)
-        flash('Template approved', 'success')
-        csrf = None
-    else:
-        csrf = generate_csrf()
-
-    response = dict(template=template, csrf=csrf)
+    response = dict(template=template.to_dict(), form=form)
     return handle_content_type(response)
 
 
 @login_required
-@admin_required
-@BLUEPRINT.route('/<template_id>/reject', methods=['GET', 'POST'])
-def reject(template_id):
-    """Reject updates to a template."""
-    template = templates_cache.get_by_id(template_id)
-    if not template:
+@BLUEPRINT.route('/<template_id>/task', methods=['GET', 'POST'])
+def update_template_task(template_id):
+    """Update task data for a template."""
+    template = project_tmpl_repo.get(template_id)
+    print template
+    if not template:  # pragma: no cover
         abort(404)
 
+    user = user_repo.get(template.owner_id)
+    if not user:  # pragma: no cover
+        abort(400)
+
+    ensure_authorized_to('update', user)
+
+    category = project_repo.get_category(template.category_id)
+    if not category:
+        msg = ('The category for this template no longer exists, please '
+               'contact an administrator')
+        flash(msg, 'error')
+        return redirect_content_type(url_for('home.home'))
+
+    if not category.info:
+        category.info = {}
+
+    # Get the form for the category's task presenter
+    presenter = category.info.get('presenter')
+    form = get_template_task_form(presenter, request.method, template.task)
+    if not form:
+        msg = 'This category has an invalid task presenter'
+        flash(msg, 'error')
+        return redirect_content_type(url_for('home.home'))
+
     if request.method == 'POST':
-        # Remove pending from user's template
-        template['pending'] = False
-        owner_id = int(template['owner_id'])
-        owner = user_repo.get(owner_id)
-        owner_templates = [tmpl for tmpl in owner.info.get('templates', [])
-                           if tmpl['id'] != template['id']]
-        owner_templates.append(template)
-        owner.info['templates'] = owner_templates
-        user_repo.update(owner)
+        form_data = json.loads(request.data) if request.data else {}
+        print form_data
+        form = get_template_task_form(presenter, request.method, form_data)
 
-        templates_cache.reset()
+        if form.validate():
+            changes = get_changes(form, template, key='task')
+            if changes:
+                template.task.update(form.data)
+                template.pending = True
+                project_tmpl_repo.update(template)
+                flash('Updates submitted for approval', 'success')
+        else:
+            flash('Please correct the errors', 'error')
 
-        # Send email
-        reason = request.json.get('reason')
-        msg = dict(subject='Template Updates Rejected', recipients=[owner.id])
-        msg['body'] = render_template('/account/email/template_rejected.md',
-                                      user=owner, reason=reason,
-                                      template=template)
-        msg['html'] = render_template('/account/email/template_rejected.html',
-                                      user=owner, reason=reason,
-                                      template=template)
-        MAIL_QUEUE.enqueue(send_mail, msg)
-        flash('Email sent to template owner', 'success')
-        csrf = None
-    else:
-        csrf = generate_csrf()
+    z3950_databases = form.database.choices if presenter == 'z3950' else []
+    response = dict(form=form, template=template.to_dict(),
+                    presenter=presenter, z3950_databases=z3950_databases)
+    return handle_content_type(response)
 
-    response = dict(template=template, csrf=csrf)
+
+@login_required
+@BLUEPRINT.route('/<template_id>/rules',  methods=['GET', 'POST'])
+def update_template_rules(template_id):
+    """Update resulsts analysis rules for a template."""
+    template = project_tmpl_repo.get(template_id)
+    if not template:  # pragma: no cover
+        abort(404)
+
+    user = user_repo.get(template.owner_id)
+    if not user:  # pragma: no cover
+        abort(400)
+
+    ensure_authorized_to('update', user)
+
+    category = project_repo.get_category(template.category_id)
+    if not category:
+        msg = ('The category for this template no longer exists, please '
+               'contact an administrator')
+        flash(msg, 'error')
+        return redirect_content_type(url_for('home.home'))
+
+    if not category.info:
+        category.info = {}
+
+    current_rules = template.rules or {}
+    form = AnalysisRulesForm(**current_rules)
+
+    if request.method == 'POST':
+        form = AnalysisRulesForm(request.body)
+        if form.validate():
+            changes = get_changes(form, template, key='rules')
+            if changes:
+                template.rules.update(form.data)
+                template.pending = True
+                project_tmpl_repo.update(template)
+                flash('Updates submitted for approval', 'success')
+        else:  # pragma: no cover
+            flash('Please correct the errors', 'error')
+
+    response = dict(form=form, template=template.to_dict())
     return handle_content_type(response)

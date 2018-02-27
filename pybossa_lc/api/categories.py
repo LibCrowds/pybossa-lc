@@ -20,7 +20,7 @@ from ..exporters.csv_volume_exporter import CsvVolumeExporter
 from ..exporters.json_volume_exporter import JsonVolumeExporter
 
 
-BLUEPRINT = Blueprint('categories', __name__)
+BLUEPRINT = Blueprint('lc_categories', __name__)
 
 
 def _get_export_form(method, form_data=None):

@@ -33,7 +33,7 @@ class TestIIIFImporter(Test):
 
     def test_task_generation_triggered(self):
         """Test that task generation is triggered."""
-        importer = BulkTaskIIIFImporter(None, None, None)
+        importer = BulkTaskIIIFImporter(None, None)
         mock_generate = MagicMock()
         importer._generate_tasks = mock_generate
         importer.tasks()
@@ -58,14 +58,14 @@ class TestIIIFImporter(Test):
         ]
         manifest_uri = 'http://example.com/iiif/123/manifest.json'
         mock_get_data.return_value = task_data
-        importer = BulkTaskIIIFImporter(manifest_uri, None, project.id)
+        importer = BulkTaskIIIFImporter(manifest_uri, project.id)
         importer._generate_tasks()
         mock_enhance.assert_called_with(task_data, project.id)
 
     def test_task_count(self):
         """Test that tasks are counted correctly."""
         n_tasks = 42
-        importer = BulkTaskIIIFImporter(None, None, None)
+        importer = BulkTaskIIIFImporter(None, None)
         mock_generate = MagicMock()
         mock_generate.return_value = [{}] * n_tasks
         importer._generate_tasks = mock_generate
@@ -76,7 +76,7 @@ class TestIIIFImporter(Test):
         """Test get default share URL."""
         _id = '123'
         manifest_uri = 'http://example.com/iiif/{}/manifest.json'.format(_id)
-        importer = BulkTaskIIIFImporter(manifest_uri, None, None)
+        importer = BulkTaskIIIFImporter(manifest_uri, None)
         canvas_index = 10
         share_url = importer._get_share_url(manifest_uri, canvas_index)
         base = 'http://universalviewer.io/uv.html'
@@ -89,7 +89,7 @@ class TestIIIFImporter(Test):
         _id = 'ark:/81055/vdc_100022589138.0x000002'
         base = 'http://api.bl.uk/metadata/iiif'
         manifest_uri = '{}/{}/manifest.json'.format(base, _id)
-        importer = BulkTaskIIIFImporter(manifest_uri, None, None)
+        importer = BulkTaskIIIFImporter(manifest_uri, None)
         canvas_index = 10
         share_url = importer._get_share_url(manifest_uri, canvas_index)
         expected_base = 'http://access.bl.uk/item/viewer/'
@@ -100,67 +100,37 @@ class TestIIIFImporter(Test):
     @with_context
     def test_get_select_task_data_from_manifest(self):
         """Test that select task data is generated from a manifest."""
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
-        user = UserFactory.create(info=dict(templates=[tmpl]))
-        self.user_repo.update(user)
         manifest_uri = self.manifest['@id']
-
-        importer = BulkTaskIIIFImporter(manifest_uri, tmpl['id'], None)
+        importer = BulkTaskIIIFImporter(manifest_uri, None)
         task_data = importer._get_task_data(self.manifest)
         canvases = self.manifest['sequences'][0]['canvases']
         assert len(task_data) == len(canvases)
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
             assert_dict_equal(task, {
-                'info': self.manifest['@id'],
+                'info': manifest_uri,
                 'target': canvases[idx]['@id'],
-                'guidance': tmpl['task']['guidance'],
                 'shareUrl': importer._get_share_url(manifest_uri, idx),
                 'tileSource': '{}/info.json'.format(img),
-                'tag': tmpl['task']['tag'],
-                'mode': tmpl['task']['mode'],
-                'objective': tmpl['task']['objective'],
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img)
             })
 
     @with_context
     def test_get_transcribe_task_data_from_manifest(self):
         """Test that transcribe task data is generated from a manifest."""
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        transcribe_task = tmpl_fixtures.iiif_transcribe_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=transcribe_task)
-        user = UserFactory.create(info=dict(templates=[tmpl]))
-        self.user_repo.update(user)
         manifest_uri = self.manifest['@id']
-
-        importer = BulkTaskIIIFImporter(manifest_uri, tmpl['id'], None)
+        importer = BulkTaskIIIFImporter(manifest_uri, None)
         task_data = importer._get_task_data(self.manifest)
         canvases = self.manifest['sequences'][0]['canvases']
         assert len(task_data) == len(canvases)
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
             assert_dict_equal(task, {
-                'info': self.manifest['@id'],
+                'info': manifest_uri,
                 'target': canvases[idx]['@id'],
-                'guidance': tmpl['task']['guidance'],
                 'shareUrl': importer._get_share_url(manifest_uri, idx),
                 'tileSource': '{}/info.json'.format(img),
-                'tag': tmpl['task']['tag'],
-                'mode': tmpl['task']['mode'],
-                'objective': tmpl['task']['objective'],
-                'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
-                'form': {
-                    'model': {
-                        'title': ''
-                    },
-                    'schema': {
-                        'fields': tmpl['task']['fields_schema']
-                    }
-                }
+                'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img)
             })
 
     @with_context
@@ -188,7 +158,7 @@ class TestIIIFImporter(Test):
                 'mode': 'transcribe'
             }
         ]
-        importer = BulkTaskIIIFImporter(None, None, None)
+        importer = BulkTaskIIIFImporter(None, None)
         task_data = importer._enhance_task_data(task_data, project.id)
         assert len(task_data) == len(annotations)
         for i in range(n_annos):
@@ -225,7 +195,7 @@ class TestIIIFImporter(Test):
                 'mode': 'select'
             }
         ]
-        importer = BulkTaskIIIFImporter(None, None, None)
+        importer = BulkTaskIIIFImporter(None, None)
         importer._enhance_task_data(task_data, project.id)
 
     @with_context
@@ -236,5 +206,5 @@ class TestIIIFImporter(Test):
         task = TaskFactory.create(project=project, n_answers=1)
         TaskRunFactory.create(task=task)
         task_data = []
-        importer = BulkTaskIIIFImporter(None, None, None)
+        importer = BulkTaskIIIFImporter(None, None)
         importer._enhance_task_data(task_data, project.id)

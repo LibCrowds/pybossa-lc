@@ -1,8 +1,9 @@
 # -*- coding: utf8 -*-
 """Test fixtures."""
 
-import random
 import uuid
+
+from pybossa_lc.model.project_template import ProjectTemplate
 
 
 class TemplateFixtures(object):
@@ -26,23 +27,23 @@ class TemplateFixtures(object):
                                yearfirst=False)
 
     def create_template(self, task_tmpl=None, rules_tmpl=None):
-        return dict(id=str(uuid.uuid4()),
-                    name='My Project Type',
-                    tutorial='Do stuff',
-                    description='This project is amazing',
-                    category_id=self.category.id,
-                    min_answers=3,
-                    max_answers=3,
-                    pending=False,
-                    owner_id=1,
-                    task=task_tmpl,
-                    rules=rules_tmpl)
+        task = task_tmpl or {}
+        rules = task_tmpl or {}
+        return ProjectTemplate(name='My Project Type',
+                               tutorial='Do stuff',
+                               description='This project is amazing',
+                               category_id=self.category.id,
+                               min_answers=3,
+                               max_answers=3,
+                               pending=False,
+                               owner_id=1,
+                               task=task,
+                               rules=rules)
 
 
 class AnnotationFixtures(object):
 
-    def create(self, motivation, tag=None, target=None, value=None):
-        n = random.randint(1, 10)
+    def create(self, n, motivation, tag=None, target=None, value=None):
         tag = tag or "tag_{}".format(n)
         source = target or "http://eg.com/iiif/book1/canvas/p{}".format(n)
         value = value or "Some Value {}".format(n)

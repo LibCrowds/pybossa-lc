@@ -43,19 +43,18 @@ class TestVolumeExporter(Test):
         volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (annotation, tag, value,
-             source) = self.anno_fixtures.create('describing')
+             source) = self.anno_fixtures.create(i, 'describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[annotation])
             self.result_repo.update(result)
@@ -74,19 +73,18 @@ class TestVolumeExporter(Test):
         volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create('describing')
+             source) = self.anno_fixtures.create(i, 'describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
             self.result_repo.update(result)
@@ -105,26 +103,24 @@ class TestVolumeExporter(Test):
         volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
-        tmpl_name = tmpl['name']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create('describing')
+             source) = self.anno_fixtures.create(i, 'describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
             self.result_repo.update(result)
             expected_row = dict(target=source)
             expected_row.update(flatten({
-                tmpl_name: {
+                tmpl.name: {
                     tag: [value]
                 },
                 'task_state': 'completed',
@@ -147,21 +143,18 @@ class TestVolumeExporter(Test):
         volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
-        tmpl_name = tmpl['name']
-
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         tag_values = []
         target = "example.com"
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create('describing', tag="foo",
+             source) = self.anno_fixtures.create(i, 'describing', tag="foo",
                                                  target=target)
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
@@ -170,7 +163,7 @@ class TestVolumeExporter(Test):
 
         expected_row = dict(target=target)
         expected_row.update(flatten({
-            tmpl_name: {
+            tmpl.name: {
                 'foo': tag_values
             },
             'task_state': 'completed',

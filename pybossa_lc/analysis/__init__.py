@@ -18,8 +18,6 @@ from flask import current_app
 from abc import ABCMeta, abstractmethod
 from pybossa.jobs import project_export
 
-from ..cache import templates as templates_cache
-
 
 @six.add_metaclass(ABCMeta)
 class Analyst():
@@ -76,14 +74,11 @@ class Analyst():
         df = self.drop_empty_rows(df)
 
         # Normalise Transcriptions
-        rules = tmpl.get('rules')
         norm_func = self.normalise_transcription
-        df = df.applymap(lambda x: norm_func(x, rules))
+        df = df.applymap(lambda x: norm_func(x, tmpl.rules))
 
         # Check for minimum matching answers
-        min_answers = tmpl.get('min_answers', 3)
-        max_answers = tmpl.get('max_answers', min_answers)
-        has_matches = self.has_n_matches(min_answers, df)
+        has_matches = self.has_n_matches(tmpl.min_answers, df)
         if has_matches:
             old_annos = []
             if isinstance(result.info, dict):
@@ -99,7 +94,7 @@ class Analyst():
                     anno = self.create_describing_anno(target, value, column)
                     annotations.append(anno)
         elif not df.empty:
-            self.update_n_answers_required(task, max_answers)
+            self.update_n_answers_required(task, tmpl.max_answers)
 
         result.last_version = True
         result.info = dict(annotations=annotations)
@@ -173,12 +168,13 @@ class Analyst():
     def get_project_template(self, project_id):
         """Return the project's template."""
         from pybossa.core import project_repo
+        from .. import project_tmpl_repo
         project = project_repo.get(project_id)
         template_id = project.info.get('template_id')
         if not template_id:
             raise ValueError('Invalid project template')
 
-        tmpl = templates_cache.get_by_id(template_id)
+        tmpl = project_tmpl_repo.get(template_id)
         if not tmpl:  # pragma: no cover
             raise ValueError('Invalid project template')
 

@@ -7,7 +7,7 @@ from flask import Blueprint, abort, make_response, request
 from ..cache import annotations as annotations_cache
 
 
-BLUEPRINT = Blueprint('annotations', __name__)
+BLUEPRINT = Blueprint('lc_annotations', __name__)
 
 
 def json_response(data):
