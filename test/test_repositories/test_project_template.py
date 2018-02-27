@@ -103,6 +103,7 @@ class TestProjectTemplateRepository(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
+        original_name = tmpl.name
         user_info = dict(templates=[tmpl.to_dict()])
         owner = UserFactory(info=user_info)
         tmpl.name = 'foo'
@@ -110,6 +111,7 @@ class TestProjectTemplateRepository(Test):
         self.project_repo.update_category(category)
         templates = self.project_tmpl_repo.get_by_owner_id(owner.id)
         retrieved = [t.to_dict() for t in templates]
+        tmpl.name = original_name
         expected = [tmpl.to_dict()]
         assert_equal(retrieved, expected)
 
