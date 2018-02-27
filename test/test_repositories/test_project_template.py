@@ -77,6 +77,8 @@ class TestProjectTemplateRepository(Test):
         approved_tmpl = tmpl_fixtures.create_template()
         pending_tmpl = tmpl_fixtures.create_template()
         non_pending_tmpl = tmpl_fixtures.create_template()
+        approved_tmpl.pending = False
+        non_pending_tmpl.pending = False
         pending_tmpl.pending = True
         user_info = dict(templates=[pending_tmpl.to_dict(),
                                     non_pending_tmpl.to_dict()])
@@ -209,7 +211,7 @@ class TestProjectTemplateRepository(Test):
         assert_dict_equal(tmpl.to_dict(), approved_tmpl.to_dict())
 
         not_pending_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
-        assert_equal(not_pending_tmpl, None)
+        assert_equal(not_pending_tmpl.pending, False)
 
     @with_context
     def test_delete_pending(self):
