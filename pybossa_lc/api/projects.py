@@ -67,14 +67,14 @@ def validate_parent(parent_id, presenter):
     return True
 
 
-def _get_iiif_annotation_data(volume, template_id, parent_id):
+def _get_iiif_annotation_data(volume, parent_id):
     """Return IIIF manifest data."""
     pattern = r'^(https?:\/\/).*\/manifest\.json$'
     source = volume.get('source', '')
     match = re.search(pattern, source)
     if match:
         return dict(type='iiif-annotation', manifest_uri=source,
-                    template_id=template_id, parent_id=parent_id)
+                    parent_id=parent_id)
 
 
 def _get_flickr_data(volume):
@@ -106,7 +106,7 @@ def new(category_short_name):
         flash(err_msg, 'error')
         return redirect_content_type(url_for('home.home'))
 
-    template_choices = [(tmpl['id'], tmpl['name']) for tmpl in templates]
+    template_choices = [(tmpl.id, tmpl.name) for tmpl in templates]
     volume_choices = [(v['id'], v['name']) for v in volumes]
     parent_choices = [(p.id, p.name) for p in projects]
     parent_choices.append(('None', ''))
@@ -120,8 +120,7 @@ def new(category_short_name):
 
     if request.method == 'POST':
         if form.validate():
-            tmpl = [t for t in templates
-                    if t['id'] == form.template_id.data][0]
+            tmpl = project_tmpl_repo.get_approved(form.template_id.data)
             volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
             handle_valid_project_form(form, tmpl, volume, category,
                                       built_templates)
@@ -130,7 +129,8 @@ def new(category_short_name):
             flash('Please correct the errors', 'error')
 
     valid_parent_ids = get_valid_parent_project_ids(category)
-    response = dict(form=form, templates=templates, volumes=volumes,
+    tmpl_dicts = [tmpl.to_dict() for tmpl in templates]
+    response = dict(form=form, templates=tmpl_dicts, volumes=volumes,
                     built_templates=built_templates,
                     valid_parent_ids=valid_parent_ids)
     return handle_content_type(response)
@@ -140,7 +140,7 @@ def handle_valid_project_form(form, template, volume, category,
                               built_templates):
     """Handle a seemingly valid project form."""
     presenter = category.info.get('presenter')
-    task = template['task']
+    task = template.task
     if not task:
         flash('The selected template is incomplete', 'error')
         return
@@ -154,8 +154,7 @@ def handle_valid_project_form(form, template, volume, category,
     if presenter == 'z3950':
         import_data = _get_flickr_data(volume)
     elif presenter == 'iiif-annotation':
-        import_data = _get_iiif_annotation_data(volume, template['id'],
-                                                parent_id)
+        import_data = _get_iiif_annotation_data(volume, parent_id)
     if not import_data:
         err_msg = "Invalid volume details for the task presenter type"
         flash(err_msg, 'error')
@@ -166,7 +165,7 @@ def handle_valid_project_form(form, template, volume, category,
         validate_parent(parent_id, presenter)
 
     # Check for similar projects
-    if volume['id'] in built_templates[template['id']]:
+    if volume['id'] in built_templates[template.id]:
         err_msg = "A project already exists for that volume and template."
         flash(err_msg, 'error')
         return
@@ -175,14 +174,12 @@ def handle_valid_project_form(form, template, volume, category,
     webhook = '{0}libcrowds/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
-                      description=template['description'],
+                      description=template.description,
                       long_description='',
                       owner_id=current_user.id,
                       info={
-                          'tutorial': template.get('tutorial', ''),
                           'volume_id': volume['id'],
-                          'template_id': template['id'],
-                          'tags': template.get('tags', {})
+                          'template_id': template.id
                       },
                       webhook=webhook,
                       category_id=category.id,
@@ -209,15 +206,14 @@ def handle_valid_project_form(form, template, volume, category,
 
     if success:
         auditlogger.add_log_entry(None, project, current_user)
-        n_answers = template.get('min_answers', 3)
-        task_repo.update_tasks_redundancy(project, n_answers)
+        task_repo.update_tasks_redundancy(project, template.min_answers)
         return redirect_content_type(url_for('home.home'))
 
 
 def get_built_templates(category):
     """Get dict of templates against volumes for all current projects."""
     templates = project_tmpl_repo.get_by_category_id(category.id)
-    built_templates = {tmpl['id']: [] for tmpl in templates}
+    built_templates = {tmpl.id: [] for tmpl in templates}
     projects = project_repo.filter_by(category_id=category.id)
     for p in projects:
         tmpl_id = p.info.get('template_id')

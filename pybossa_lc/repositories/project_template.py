@@ -80,6 +80,7 @@ class ProjectTemplateRepository(Repository):
     def get_by_category_id(self, category_id):
         """Get all of a specific category's templates."""
         category = self.db.session.query(Category).get(category_id)
+        print category
 
         # Return as a ProjectTemplate object
         templates = []

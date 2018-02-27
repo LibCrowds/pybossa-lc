@@ -8,8 +8,8 @@ from helper import web
 from default import with_context, db, Fixtures
 from factories import ProjectFactory, CategoryFactory
 from pybossa.jobs import import_tasks
-from pybossa.core import task_repo, user_repo
-from pybossa.repositories import UserRepository, ProjectRepository
+from pybossa.core import task_repo
+from pybossa.repositories import ProjectRepository
 
 from pybossa_lc.api import projects as projects_api
 from ..fixtures import TemplateFixtures
@@ -19,7 +19,6 @@ class TestProjectsApi(web.Helper):
 
     def setUp(self):
         super(TestProjectsApi, self).setUp()
-        self.user_repo = UserRepository(db)
         self.project_repo = ProjectRepository(db)
         self.manifest_uri = 'http://api.bl.uk/ark:/1/vdc_123/manifest.json'
         flickr_url = 'http://www.flickr.com/photos/132066275@N04/albums/'
@@ -35,10 +34,9 @@ class TestProjectsApi(web.Helper):
         }
         template_id = 'foo'
         parent_id = 123
-        data = projects_api._get_iiif_annotation_data(volume, template_id,
-                                                      parent_id)
+        data = projects_api._get_iiif_annotation_data(volume, parent_id)
         expected = dict(type='iiif-annotation', manifest_uri=self.manifest_uri,
-                        template_id=template_id, parent_id=parent_id)
+                        parent_id=parent_id)
         assert_equals(data, expected)
 
     @with_context
@@ -50,8 +48,7 @@ class TestProjectsApi(web.Helper):
             'source': manifest_uri
         }
         template_id = 'foo'
-        data = projects_api._get_iiif_annotation_data(volume, template_id,
-                                                      None)
+        data = projects_api._get_iiif_annotation_data(volume, None)
         assert not data
 
     @with_context
@@ -129,16 +126,14 @@ class TestProjectsApi(web.Helper):
         mock_importer.count_tasks_to_import.return_value = 1
         self.register(name=Fixtures.name)
         self.signin()
-        user = self.user_repo.get_by_name(Fixtures.name)
         vol = dict(id='123abc', name='My Volume', source=self.manifest_uri)
-        category = CategoryFactory(info=dict(presenter='iiif-annotation'))
+        category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
-        category.info['volumes'] = [vol]
-        user.info['templates'] = [tmpl.to_dict()]
+        category.info = dict(presenter='iiif-annotation', volumes=[vol],
+                             templates=[tmpl.to_dict()])
         self.project_repo.update_category(category)
-        self.user_repo.update(user)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
@@ -148,6 +143,7 @@ class TestProjectsApi(web.Helper):
                          parent_id='None')
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
+        print res.data
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
         project = self.project_repo.get(1)
@@ -164,16 +160,14 @@ class TestProjectsApi(web.Helper):
         mock_importer.count_tasks_to_import.return_value = 1
         self.register(name=Fixtures.name)
         self.signin()
-        user = self.user_repo.get_by_name(Fixtures.name)
         vol = dict(id='123abc', name='My Volume', source=self.flickr_album_uri)
-        category = CategoryFactory(info=dict(presenter='z3950'))
+        category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
-        category.info['volumes'] = [vol]
-        user.info['templates'] = [tmpl.to_dict()]
+        category.info = dict(presenter='z3950', volumes=[vol],
+                             templates=[tmpl.to_dict()])
         self.project_repo.update_category(category)
-        self.user_repo.update(user)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
