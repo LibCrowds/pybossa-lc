@@ -10,3 +10,6 @@ EXTRA_STARTUP_TASKS = {
     'reanalyse_all_results': False,
     'remove_bad_volumes': False
 }
+
+# The main LibCrowds GitHub repo (used as the Web Annotation generator IRI)
+GITHUB_REPO = 'https://github.com/LibCrowds/libcrowds'

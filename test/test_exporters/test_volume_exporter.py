@@ -43,19 +43,18 @@ class TestVolumeExporter(Test):
         volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (annotation, tag, value,
-             source) = self.anno_fixtures.create('describing')
+             source) = self.anno_fixtures.create(i, 'describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[annotation])
             self.result_repo.update(result)
@@ -67,26 +66,23 @@ class TestVolumeExporter(Test):
     @with_context
     def test_get_json_data_with_multiple_annotations(self):
         """Test get JSON data with multiple annotations."""
-        self.category.info = {
-            'volumes': self.volumes
-        }
-        self.project_repo.update_category(self.category)
-        volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
+        self.category.info = dict(volumes=self.volumes,
+                                  templates=[tmpl.to_dict()])
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create('describing')
+             source) = self.anno_fixtures.create(i, 'describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
             self.result_repo.update(result)
@@ -98,33 +94,29 @@ class TestVolumeExporter(Test):
     @with_context
     def test_get_csv_data_with_multiple_annotations(self):
         """Test get CSV data with multiple annotations."""
-        self.category.info = {
-            'volumes': self.volumes
-        }
-        self.project_repo.update_category(self.category)
-        volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
-        tmpl_name = tmpl['project']['name']
+        self.category.info = dict(volumes=self.volumes,
+                                  templates=[tmpl.to_dict()])
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         expected_data = []
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create('describing')
+             source) = self.anno_fixtures.create(i, 'describing')
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
             self.result_repo.update(result)
             expected_row = dict(target=source)
             expected_row.update(flatten({
-                tmpl_name: {
+                tmpl.name: {
                     tag: [value]
                 },
                 'task_state': 'completed',
@@ -140,28 +132,24 @@ class TestVolumeExporter(Test):
     @with_context
     def test_get_csv_data_with_same_tags_for_the_same_target(self):
         """Test get CSV data with multiple tags for the same tags."""
-        self.category.info = {
-            'volumes': self.volumes
-        }
-        self.project_repo.update_category(self.category)
-        volume_id = self.volumes[0]['id']
         task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
         tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
-        tmpl_id = tmpl['id']
-        tmpl_name = tmpl['project']['name']
+        self.category.info = dict(volumes=self.volumes,
+                                  templates=[tmpl.to_dict()])
+        self.project_repo.update_category(self.category)
+        volume_id = self.volumes[0]['id']
 
-        UserFactory.create(info=dict(templates=[tmpl]))
-        project_info = dict(volume_id=volume_id, template_id=tmpl_id)
+        project_info = dict(volume_id=volume_id, template_id=tmpl.id)
         project = ProjectFactory.create(category=self.category,
                                         info=project_info)
         tasks = TaskFactory.create_batch(3, project=project, n_answers=1)
 
         tag_values = []
         target = "example.com"
-        for task in tasks:
+        for i, task in enumerate(tasks):
             TaskRunFactory.create(task=task, project=project)
             (anno, tag, value,
-             source) = self.anno_fixtures.create('describing', tag="foo",
+             source) = self.anno_fixtures.create(i, 'describing', tag="foo",
                                                  target=target)
             result = self.result_repo.get_by(task_id=task.id)
             result.info = dict(annotations=[anno])
@@ -170,7 +158,7 @@ class TestVolumeExporter(Test):
 
         expected_row = dict(target=target)
         expected_row.update(flatten({
-            tmpl_name: {
+            tmpl.name: {
                 'foo': tag_values
             },
             'task_state': 'completed',

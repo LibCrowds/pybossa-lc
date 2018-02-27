@@ -1,0 +1,23 @@
+{% extends "account/email/base.html" %}
+
+{% block body %}
+Hello {{ user['fullname'] }},
+<br>
+<br>
+You submitted a request to create or update the
+ <strong>{{ template['name'] }}</strong> template. Unfortunately, we didn't
+ think that the proposed changes were suitable for the following reason:
+<br>
+<br>
+{{ reason }}
+<br>
+<br>
+Please get in touch at
+ <a href="mailto:{{ config.CONTACT_EMAIL }}">{{ config.CONTACT_EMAIL }}</a>
+ for further guidance.
+<br>
+<br>
+Regards,
+<br>
+{{ config.BRAND }} Team
+{% endblock %}

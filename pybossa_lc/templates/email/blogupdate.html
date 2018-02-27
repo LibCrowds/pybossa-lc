@@ -1,0 +1,5 @@
+{% extends "account/email/base.html" %}
+
+{% block body %}
+{{ blog['body'] | markdown }}
+{% endblock %}

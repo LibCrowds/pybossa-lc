@@ -10,8 +10,6 @@ from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
 from pybossa.core import project_repo
 
-from .cache import templates as templates_cache
-
 
 class UniqueVolumeField(object):
     """Checks for a unique volume field for a category."""
@@ -61,8 +59,10 @@ class ProjectTemplateForm(Form):
     description = TextField('Description', [validators.Required()])
     tutorial = TextAreaField('Tutorial')
     category_id = SelectField('Category', coerce=int)
-    min_answers = IntegerField('Min Answers', [validators.Required()])
-    max_answers = IntegerField('Max Answers', [validators.Required()])
+    min_answers = IntegerField('Min Answers', [validators.Required()],
+                               default=3)
+    max_answers = IntegerField('Max Answers', [validators.Required()],
+                               default=3)
 
 
 class IIIFAnnotationTemplateForm(Form):

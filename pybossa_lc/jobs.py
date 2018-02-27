@@ -7,8 +7,11 @@ from pybossa.cache.projects import overall_progress
 from pybossa.model.announcement import Announcement
 from pybossa.jobs import enqueue_job
 
-from .cache import templates as templates_cache
-from .analysis import z3950, iiif_annotation
+from .utils import get_analyst
+from . import project_tmpl_repo
+
+
+HOUR = 60 * 60
 
 
 def queue_startup_jobs():
@@ -52,8 +55,8 @@ def check_for_missing_templates():
     """Make an announcement if any projects are missing templates."""
     from pybossa.core import project_repo
     projects = project_repo.get_all()
-    templates = templates_cache.get_all()
-    template_ids = [tmpl['id'] for tmpl in templates]
+    templates = project_tmpl_repo.get_all()
+    template_ids = [tmpl.id for tmpl in templates]
     for project in projects:
         project_tmpl_id = project.info.get('template_id')
         if not project_tmpl_id or project_tmpl_id not in template_ids:
@@ -72,10 +75,8 @@ def populate_empty_results():
         presenter = category.info.get('presenter')
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
-            if presenter == 'iiif-annotation':
-                iiif_annotation.analyse_empty(project.id)
-            elif presenter == 'z3950':
-                z3950.analyse_empty(project.id)
+            analyst = get_analyst(presenter)
+            analyst.analyse_empty(project.id)
 
 
 def reanalyse_all_results():
@@ -86,10 +87,8 @@ def reanalyse_all_results():
         presenter = category.info.get('presenter')
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
-            if presenter == 'iiif-annotation':
-                iiif_annotation.analyse_all(project.id)
-            elif presenter == 'z3950':
-                z3950.analyse_all(project.id)
+            analyst = get_analyst(presenter)
+            analyst.analyse_all(project.id)
 
 
 def remove_bad_volumes():
@@ -136,3 +135,41 @@ def get_launch_url(endpoint):
     if not spa_server_name:
         return None
     return spa_server_name + endpoint
+
+
+def analyse_all(project_id, presenter):
+    """Queue analysis of all results for a project."""
+    analyst = get_analyst(presenter)
+    timeout = 1 * HOUR
+    if analyst:
+        job = dict(name=analyst.analyse_all,
+                   args=[],
+                   kwargs={'project_id': project_id},
+                   timeout=timeout,
+                   queue='high')
+        enqueue_job(job)
+
+
+def analyse_empty(project_id, presenter):
+    """Queue analysis of all empty results for a proejct."""
+    analyst = get_analyst(presenter)
+    timeout = 1 * HOUR
+    if analyst:
+        job = dict(name=analyst.analyse_empty,
+                   args=[],
+                   kwargs={'project_id': project_id},
+                   timeout=timeout,
+                   queue='high')
+        enqueue_job(job)
+
+
+def analyse_single(result_id, presenter):
+    """Queue a single result for analysis."""
+    analyst = get_analyst(presenter)
+    if analyst:
+        job = dict(name=analyst.analyse,
+                   args=[],
+                   kwargs={'result_id': result_id},
+                   timeout=current_app.config.get('TIMEOUT'),
+                   queue='high')
+        enqueue_job(job)

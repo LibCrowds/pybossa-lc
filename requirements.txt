@@ -1,7 +1,9 @@
 --index-url https://pypi.python.org/simple/
 
+six
 titlecase
 
+click
 nose
 rednose
 freezegun

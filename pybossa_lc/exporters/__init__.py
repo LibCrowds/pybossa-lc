@@ -12,8 +12,8 @@ from werkzeug.utils import secure_filename
 from sqlalchemy.orm.base import _entity_descriptor
 from pybossa.model.result import Result
 
+from .. import project_tmpl_repo
 from ..cache import volumes as volumes_cache
-from ..cache import templates as templates_cache
 
 
 session = db.slave_session
@@ -94,8 +94,8 @@ class VolumeExporter(Exporter):
         if not flat:
             return volumes_cache.get_annotations(volume_id, motivation)
 
-        tmpls = templates_cache.get_all()
-        tmpl_names = {tmpl['id']: tmpl['project']['name'] for tmpl in tmpls}
+        tmpls = project_tmpl_repo.get_all()
+        tmpl_names = {tmpl.id: tmpl.name for tmpl in tmpls}
 
         data = {}
         tmpl_results = volumes_cache.get_tmpl_results(volume_id)
@@ -132,5 +132,4 @@ class VolumeExporter(Exporter):
             flat_data.append(row)
 
         # Return sorted by target
-        print flat_data
         return sorted(flat_data, key=lambda x: x['target'])
