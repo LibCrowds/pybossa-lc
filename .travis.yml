@@ -13,7 +13,7 @@ before_install:
   - sudo apt-get update -y && sudo apt-get install -y swig libffi-dev
   - pip install -U pip
 install:
-  - git clone --recursive https://github.com/PyBossa/pybossa.git
+  - git clone --recursive https://github.com/SciFabric/pybossa.git
   - cd pybossa
   - pip install -r requirements.txt
   - cd ..
