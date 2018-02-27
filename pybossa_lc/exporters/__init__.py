@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy.orm.base import _entity_descriptor
 from pybossa.model.result import Result
 
-from .. import templates as project_tmpl_repo
+from .. import project_tmpl_repo
 from ..cache import volumes as volumes_cache
 
 
