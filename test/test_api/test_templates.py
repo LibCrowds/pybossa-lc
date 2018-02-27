@@ -2,6 +2,7 @@
 """Test templates API."""
 
 import json
+from mock import patch
 from nose.tools import *
 from helper import web
 from default import with_context, db, Fixtures
