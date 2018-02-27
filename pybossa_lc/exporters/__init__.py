@@ -95,7 +95,7 @@ class VolumeExporter(Exporter):
             return volumes_cache.get_annotations(volume_id, motivation)
 
         tmpls = project_tmpl_repo.get_all()
-        tmpl_names = {tmpl['id']: tmpl['name'] for tmpl in tmpls}
+        tmpl_names = {tmpl.id: tmpl.name for tmpl in tmpls}
 
         data = {}
         tmpl_results = volumes_cache.get_tmpl_results(volume_id)
