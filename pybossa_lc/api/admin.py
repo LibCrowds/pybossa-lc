@@ -12,6 +12,7 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail, enqueue_job
 
 from .. import project_tmpl_repo
+from ..jobs import analyse_all
 
 
 BLUEPRINT = Blueprint('lc_admin', __name__)
@@ -55,6 +56,14 @@ def approve_template(template_id):
 
         # Update user template to remove pending
         project_tmpl_repo.update(template)
+
+        # Reanalyse all results
+        presenter = category.info.get('presenter')
+        cat_projects = project_repo.filter_by(category_id=category.id)
+        tmpl_projects = [project for project in cat_projects
+                         if project.info.get('template_id') == template.id]
+        for project in tmpl_projects:
+            analyse_all(project.id, presenter)
 
         # Send email
         owner = user_repo.get(template.owner_id)
