@@ -33,7 +33,6 @@ class TestUserApi(web.Helper):
         endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
-        print data
         assert_equal(data['templates'], [tmpl.to_dict()])
 
     @with_context
