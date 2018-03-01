@@ -22,30 +22,33 @@ class TestJobs(Test):
         self.announcement_repo = AnnouncementRepository(db)
 
     @with_context
-    def test_missing_templates_identified(self):
-        """Check that missing templates are identified."""
+    def test_invalid_templates_identified(self):
+        """Check that invalid templates are identified."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         category.info = dict(templates=[tmpl.to_dict()])
         self.project_repo.update_category(category)
 
-        ProjectFactory.create(info=dict(template_id=tmpl.id))
+        ProjectFactory.create(category=category,
+                              info=dict(template_id=tmpl.id))
+        invalid_proj = ProjectFactory.create(category=category,
+                                             info=dict(template_id='foo'))
         empty_proj = ProjectFactory.create()
         jobs.check_for_invalid_templates()
 
         spa_server_name = self.flask_app.config.get('SPA_SERVER_NAME')
         endpoint = self.flask_app.config.get('PROJECT_TMPL_ENDPOINT')
-        launch_url = spa_server_name + endpoint.format(empty_proj.short_name)
         announcements = self.announcement_repo.get_all_announcements()
-        assert_equal(len(announcements), 1)
-        assert_equal(announcements[0].title, 'Missing Template')
-        assert_equal(announcements[0].body, empty_proj.name)
-        assert_equal(announcements[0].published, True)
-        assert_dict_equal(announcements[0].info, {
-            'admin': True,
-            'url': launch_url
-        })
+        assert_equal(len(announcements), 2)
+        assert_equal([a.title for a in announcements], ['Invalid Template']*2)
+        assert_equal([a.published for a in announcements], [True]*2)
+        for project in [invalid_proj, empty_proj]:
+            assert_in(project.name, [a.body for a in announcements])
+            assert_in({
+                'admin': True,
+                'url': spa_server_name + endpoint.format(project.short_name)
+            }, [a.info for a in announcements])
 
     @with_context
     @patch('pybossa_lc.jobs.get_analyst')
