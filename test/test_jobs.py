@@ -41,8 +41,9 @@ class TestJobs(Test):
         endpoint = self.flask_app.config.get('PROJECT_TMPL_ENDPOINT')
         announcements = self.announcement_repo.get_all_announcements()
         assert_equal(len(announcements), 2)
-        assert_equal([a.title for a in announcements], ['Invalid Template']*2)
-        assert_equal([a.published for a in announcements], [True]*2)
+        assert_equal([a.title for a in announcements],
+                     ['Invalid Template'] * 2)
+        assert_equal([a.published for a in announcements], [True] * 2)
         for project in [invalid_proj, empty_proj]:
             assert_in(project.name, [a.body for a in announcements])
             assert_in({
