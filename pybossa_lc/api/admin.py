@@ -23,10 +23,23 @@ MAIL_QUEUE = Queue('email', connection=sentinel.master)
 @admin_required
 @BLUEPRINT.route('/templates/pending')
 def pending_templates():
-    """Return pending templates."""
-    templates = project_tmpl_repo.get_all_pending()
-    tmpl_dicts = [tmpl.to_dict() for tmpl in templates]
-    response = dict(templates=tmpl_dicts)
+    """Return pending templates, enhanced with diffs."""
+    pending_templates = project_tmpl_repo.get_all_pending()
+    approved_templates = project_tmpl_repo.get_all()
+    approved_tmpls_idx = {tmpl.id: tmpl for tmpl in approved_templates}
+    enhanced_templates = []
+    for pending_tmpl in pending_templates:
+        tmpl_dict = pending_tmpl.to_dict()
+        tmpl_dict['_diff'] = tmpl_dict.keys()
+        approved_tmpl = approved_tmpls_idx.get(pending_tmpl.id)
+        if approved_tmpl:
+            approved_dict = approved_tmpl.to_dict()
+            tmpl_dict['_diff'] = [k for k, v in tmpl_dict.items()
+                                  if approved_dict.get(k) != v and
+                                  k != '_diff']
+        enhanced_templates.append(tmpl_dict)
+
+    response = dict(templates=enhanced_templates)
     return handle_content_type(response)
 
 
