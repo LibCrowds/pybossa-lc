@@ -16,3 +16,6 @@ GITHUB_REPO = 'https://github.com/LibCrowds/libcrowds'
 
 # The user ID used to make automated announcements
 ANNOUNCEMENT_USER_ID = 1
+
+# Email all comment annotations to administrators
+EMAIL_COMMENT_ANNOTATIONS = False

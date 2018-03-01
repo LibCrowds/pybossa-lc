@@ -1,0 +1,21 @@
+{% extends "account/email/base.html" %}
+
+{% block body %}
+Hello,
+<br>
+<br>
+<pre>
+  <code>
+    {{ annotation }}
+  </code>
+</pre>
+<br>
+<br>
+Note that these messages can be disabled by setting EMAIL_COMMENT_ANNOTATIONS
+to False in the main PYBOSSA settings file.
+<br>
+<br>
+Thanks,
+<br>
+<p>{{ config.BRAND }} Team
+{% endblock %}

@@ -14,9 +14,14 @@ import dateutil
 import dateutil.parser
 from datetime import datetime
 from titlecase import titlecase
-from flask import current_app
+from flask import current_app, render_template
+from rq import Queue
 from abc import ABCMeta, abstractmethod
-from pybossa.jobs import project_export
+from pybossa.core import sentinel
+from pybossa.jobs import project_export, send_mail
+
+
+MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
 
 @six.add_metaclass(ABCMeta)
@@ -40,7 +45,7 @@ class Analyst():
         """Return a dataframe of transcriptions."""
         pass
 
-    def analyse(self, result_id):
+    def analyse(self, result_id, silent=True):
         """Analyse a result."""
         from pybossa.core import result_repo, task_repo
         result = result_repo.get(result_id)
@@ -59,6 +64,8 @@ class Analyst():
         for value in comments:
             comment_anno = self.create_commenting_anno(target, value)
             annotations.append(comment_anno)
+            if not silent:
+                self.email_comment_anno(comment_anno)
 
         # Handle tags
         tags = self.get_tags(task_run_df)
@@ -426,3 +433,17 @@ class Analyst():
                 clusters.append(rect)
 
         return clusters
+
+    def email_comment_anno(self, anno):
+        """Email a comment annotation to administrators."""
+        if not current_app.config.get('EMAIL_COMMENT_ANNOTATIONS'):
+            return
+
+        admins = current_app.config.get('ADMINS')
+        msg = dict(subject='New Comment Annotation', recipients=admins)
+        msg['body'] = render_template('/account/email/new_comment_anno.md',
+                                      annotation=anno)
+        msg['html'] = render_template('/account/email/new_comment_anno.html',
+                                      annotation=anno)
+
+        MAIL_QUEUE.enqueue(send_mail, msg)

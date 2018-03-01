@@ -173,7 +173,7 @@ def analyse_single(result_id, presenter):
     if analyst:
         job = dict(name=analyst.analyse,
                    args=[],
-                   kwargs={'result_id': result_id},
+                   kwargs={'result_id': result_id, 'silent': False},
                    timeout=current_app.config.get('TIMEOUT'),
                    queue='high')
         enqueue_job(job)
