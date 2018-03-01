@@ -143,7 +143,6 @@ class TestProjectsApi(web.Helper):
                          parent_id='None')
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
-        print res.data
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
         project = self.project_repo.get(1)
