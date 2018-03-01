@@ -36,7 +36,7 @@ def pending_templates():
             approved_dict = approved_tmpl.to_dict()
             tmpl_dict['_diff'] = [k for k, v in tmpl_dict.items()
                                   if approved_dict.get(k) != v and
-                                  k != '_diff']
+                                  k not in ('_diff', 'pending')]
         enhanced_templates.append(tmpl_dict)
 
     response = dict(templates=enhanced_templates)
