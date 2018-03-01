@@ -27,14 +27,14 @@ class TestJobs(Test):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
-        category.info = dict(templates=[tmpl.to_dict()])
+        category.info = dict(templates=[tmpl.to_dict()], published=True)
         self.project_repo.update_category(category)
 
         ProjectFactory.create(category=category,
                               info=dict(template_id=tmpl.id))
         invalid_proj = ProjectFactory.create(category=category,
                                              info=dict(template_id='foo'))
-        empty_proj = ProjectFactory.create()
+        empty_proj = ProjectFactory.create(category=category)
         jobs.check_for_invalid_templates()
 
         spa_server_name = self.flask_app.config.get('SPA_SERVER_NAME')
