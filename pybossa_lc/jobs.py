@@ -17,9 +17,9 @@ HOUR = 60 * 60
 def queue_startup_jobs():
     """Queue startup jobs."""
     extra_startup_tasks = current_app.config.get('EXTRA_STARTUP_TASKS')
-    if extra_startup_tasks.get('check_for_missing_templates'):
+    if extra_startup_tasks.get('check_for_invalid_templates'):
         enqueue_job({
-            'name': check_for_missing_templates,
+            'name': check_for_invalid_templates,
             'args': [],
             'kwargs': {},
             'timeout': current_app.config.get('TIMEOUT'),
@@ -51,20 +51,22 @@ def queue_startup_jobs():
         })
 
 
-def check_for_missing_templates():
-    """Make an announcement if any projects are missing templates."""
+def check_for_invalid_templates():
+    """Make an announcement if any projects have invalid templates."""
     from pybossa.core import project_repo
-    projects = project_repo.get_all()
-    templates = project_tmpl_repo.get_all()
-    template_ids = [tmpl.id for tmpl in templates]
-    for project in projects:
-        project_tmpl_id = project.info.get('template_id')
-        if not project_tmpl_id or project_tmpl_id not in template_ids:
-            tmpl_endpoint = current_app.config.get('PROJECT_TMPL_ENDPOINT')
-            endpoint = tmpl_endpoint.format(project.short_name)
-            url = get_launch_url(endpoint)
-            make_announcement('Missing Template', project.name, url,
-                              admin=True)
+    categories = project_repo.get_all_categories()
+    for category in categories:
+        templates = project_tmpl_repo.get_by_category_id(category.id)
+        valid_tmpl_ids = [tmpl.id for tmpl in templates]
+        projects = project_repo.filter_by(category_id=category.id)
+        for project in projects:
+            project_tmpl_id = project.info.get('template_id')
+            if not project_tmpl_id or project_tmpl_id not in valid_tmpl_ids:
+                tmpl_endpoint = current_app.config.get('PROJECT_TMPL_ENDPOINT')
+                endpoint = tmpl_endpoint.format(project.short_name)
+                url = get_launch_url(endpoint)
+                make_announcement('Invalid Template', project.name, url,
+                                  admin=True)
 
 
 def populate_empty_results():

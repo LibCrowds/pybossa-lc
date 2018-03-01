@@ -32,7 +32,7 @@ class TestJobs(Test):
 
         ProjectFactory.create(info=dict(template_id=tmpl.id))
         empty_proj = ProjectFactory.create()
-        jobs.check_for_missing_templates()
+        jobs.check_for_invalid_templates()
 
         spa_server_name = self.flask_app.config.get('SPA_SERVER_NAME')
         endpoint = self.flask_app.config.get('PROJECT_TMPL_ENDPOINT')
