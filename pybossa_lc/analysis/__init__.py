@@ -284,7 +284,7 @@ class Analyst():
     def get_anno_generator(self):
         """Return a reference to the LibCrowds software."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        github_repo = app.config.get('GITHUB_REPO')
+        github_repo = current_app.config.get('GITHUB_REPO')
         return {
             "id": github_repo,
             "type": "Software",
