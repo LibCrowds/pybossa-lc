@@ -440,7 +440,6 @@ class Analyst():
         if not current_app.config.get('EMAIL_COMMENT_ANNOTATIONS'):
             return
 
-
         admins = current_app.config.get('ADMINS')
         json_anno = json.dumps(anno, indent=2, sort_keys=True)
         msg = dict(subject='New Comment Annotation', recipients=admins)
