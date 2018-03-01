@@ -32,25 +32,27 @@ class TestAdminApi(web.Helper):
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
         expected = [tmpl1.to_dict(), tmpl2.to_dict()]
-        map(lambda x: x.pop('_diff'), data['templates'])
+        map(lambda x: x.pop('_original'), data['templates'])
         assert_equal(data['templates'], expected)
 
     @with_context
-    def test_diff_added_to_pending_templates(self):
-        """Test diff added to pending templates."""
+    def test_original_added_to_pending_templates(self):
+        """Test original added to pending templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
+        new_name = 'foo'
         original_name = tmpl.name
-        tmpl.name = 'foo'
+        tmpl.name = new_name
         UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
-
+        tmpl.name = original_name
         endpoint = '/lc/admin/templates/pending'
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
-        assert_equal(data['templates'][0]['_diff'], {'name': original_name})
+        assert_equal(data['templates'][0]['name'], new_name)
+        assert_dict_equal(data['templates'][0]['_original'], tmpl.to_dict())
 
     @with_context
     @patch('pybossa_lc.api.admin.render_template', return_value=True)

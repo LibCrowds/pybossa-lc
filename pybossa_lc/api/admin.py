@@ -30,14 +30,10 @@ def pending_templates():
     enhanced_templates = []
     for pending_tmpl in pending_templates:
         tmpl_dict = pending_tmpl.to_dict()
-        tmpl_dict['_diff'] = tmpl_dict.keys()
+        tmpl_dict['_original'] = None
         approved_tmpl = approved_tmpls_idx.get(pending_tmpl.id)
         if approved_tmpl:
-            approved_dict = approved_tmpl.to_dict()
-            tmpl_dict['_diff'] = {k: approved_dict.get(k)
-                                  for k, v in tmpl_dict.items()
-                                  if approved_dict.get(k) != v and
-                                  k not in ('_diff', 'pending')}
+            tmpl_dict['_original'] = approved_tmpl.to_dict()
         enhanced_templates.append(tmpl_dict)
 
     response = dict(templates=enhanced_templates)
