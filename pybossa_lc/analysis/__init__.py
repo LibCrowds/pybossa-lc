@@ -7,6 +7,7 @@ type. One subclass should be provided for each type of task presenter.
 
 import six
 import math
+import json
 import numpy
 import string
 import pandas
@@ -439,11 +440,12 @@ class Analyst():
         if not current_app.config.get('EMAIL_COMMENT_ANNOTATIONS'):
             return
 
+
         admins = current_app.config.get('ADMINS')
+        json_anno = json.dumps(anno, indent=2, sort_keys=True)
         msg = dict(subject='New Comment Annotation', recipients=admins)
         msg['body'] = render_template('/account/email/new_comment_anno.md',
-                                      annotation=anno)
+                                      annotation=json_anno)
         msg['html'] = render_template('/account/email/new_comment_anno.html',
-                                      annotation=anno)
-
+                                      annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)
