@@ -43,13 +43,14 @@ class TestAdminApi(web.Helper):
         tmpl = tmpl_fixtures.create_template()
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
+        original_name = tmpl.name
         tmpl.name = 'foo'
         UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
 
         endpoint = '/lc/admin/templates/pending'
         res = self.app_get_json(endpoint)
         data = json.loads(res.data)
-        assert_equal(data['templates'][0]['_diff'], ['name'])
+        assert_equal(data['templates'][0]['_diff'], {'name': original_name})
 
     @with_context
     @patch('pybossa_lc.api.admin.render_template', return_value=True)
