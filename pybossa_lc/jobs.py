@@ -3,7 +3,6 @@
 
 from flask import current_app
 from pybossa.core import project_repo, announcement_repo
-from pybossa.cache.projects import overall_progress
 from pybossa.model.announcement import Announcement
 from pybossa.jobs import enqueue_job
 
