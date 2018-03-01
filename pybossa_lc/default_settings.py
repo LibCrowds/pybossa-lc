@@ -13,3 +13,6 @@ EXTRA_STARTUP_TASKS = {
 
 # The main LibCrowds GitHub repo (used as the Web Annotation generator IRI)
 GITHUB_REPO = 'https://github.com/LibCrowds/libcrowds'
+
+# The user ID used to make automated announcements
+ANNOUNCEMENT_USER_ID = 1
