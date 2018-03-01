@@ -56,6 +56,9 @@ def check_for_invalid_templates():
     from pybossa.core import project_repo
     categories = project_repo.get_all_categories()
     for category in categories:
+        if not category.info.get('published'):
+            continue
+
         templates = project_tmpl_repo.get_by_category_id(category.id)
         valid_tmpl_ids = [tmpl.id for tmpl in templates]
         projects = project_repo.filter_by(category_id=category.id)
