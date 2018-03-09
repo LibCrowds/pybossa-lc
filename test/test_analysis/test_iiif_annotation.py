@@ -88,9 +88,9 @@ class TestIIIFAnnotationAnalyst(Test):
 
         self.data = {
             'info': [
-                comment_annos,
-                tagging_annos,
-                transcription_annos
+                self.comment_annos,
+                self.tagging_annos,
+                self.transcription_annos
             ]
         }
 
