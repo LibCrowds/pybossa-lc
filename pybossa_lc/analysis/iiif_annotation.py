@@ -27,7 +27,12 @@ class IIIFAnnotationAnalyst(Analyst):
         tags = {}
         for anno in annotations:
             if anno['motivation'] == 'tagging':
-                tag = anno['body']['value']
+                body = anno['body']
+                if isinstance(body, list):
+                  tag = [item['value'] for item in body
+                         if item['purpose'] == 'describing']
+                else:
+                  tag = body['value']
                 rect = self.get_rect_from_selection_anno(anno)
                 tag_values = tags.get(tag, [])
                 tag_values.append(rect)
