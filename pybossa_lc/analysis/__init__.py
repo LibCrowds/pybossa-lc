@@ -33,7 +33,7 @@ class Analyst():
 
     @abstractmethod
     def get_comments(self, task_run_df):
-        """Return a list of comments."""
+        """Return a list of tuples with the format (user_id, comment)."""
         pass
 
     @abstractmethod
@@ -62,8 +62,10 @@ class Analyst():
 
         # Handle comments
         comments = self.get_comments(task_run_df)
-        for value in comments:
-            comment_anno = self.create_commenting_anno(target, value)
+        for comment in comments:
+            user_id = comment[0]
+            value = comment[1]
+            comment_anno = self.create_commenting_anno(target, value, user_id)
             annotations.append(comment_anno)
             if not silent:
                 self.email_comment_anno(comment_anno)
@@ -153,7 +155,7 @@ class Analyst():
         return True
 
     def get_task_run_df(self, task_id):
-        """Load an Array of task runs into a dataframe."""
+        """Load task run info into a dataframe."""
         from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task_id)
         data = [self.explode_info(tr) for tr in task_runs]
@@ -300,6 +302,19 @@ class Analyst():
             "homepage": spa_server_name
         }
 
+    def get_anno_creator(self, user_id):
+        """Return a reference to a LibCrowds user."""
+        from pybossa.core import user_repo
+        user = user_repo.get(user_id)
+        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        return {
+            "id": url,
+            "type": "Person",
+            "name": user.fullname,
+            "nickname": user.name
+        }
+
     def get_anno_base(self, motivation):
         """Return the base fo ra new Web Annotation."""
         ts_now = self.get_xsd_datetime()
@@ -312,7 +327,7 @@ class Analyst():
             "generator": self.get_anno_generator()
         }
 
-    def create_commenting_anno(self, target, value):
+    def create_commenting_anno(self, target, value, user_id=None):
         """Create a Web Annotation with the commenting motivation."""
         anno = self.get_anno_base('commenting')
         anno['target'] = target
@@ -322,6 +337,8 @@ class Analyst():
             "purpose": "commenting",
             "format": "text/plain"
         }
+        if user_id:
+            anno['creator'] = self.get_anno_creator(user_id)
         return anno
 
     def create_tagging_anno(self, target, value):

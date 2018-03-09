@@ -14,11 +14,14 @@ class IIIFAnnotationAnalyst(Analyst):
 
     def get_comments(self, task_run_df):
         """Return a list of comments."""
-        annotations = list(itertools.chain(*task_run_df['info']))
         comments = []
-        for anno in annotations:
-            if anno['motivation'] == 'commenting':
-                comments.append(anno['body']['value'])
+        for _index, row in task_run_df.iterrows():
+            user_id = row['user_id']
+            annotations = row['info']
+            for anno in annotations:
+                if anno['motivation'] == 'commenting':
+                    item = (user_id, anno['body']['value'])
+                    comments.append(item)
         return comments
 
     def get_tags(self, task_run_df):

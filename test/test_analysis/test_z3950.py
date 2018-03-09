@@ -14,6 +14,7 @@ class TestZ3950Analyst(Test):
         super(TestZ3950Analyst, self).setUp()
         self.z3950_analyst = Z3950Analyst()
         self.data = {
+            'user_id': [1],
             'control_number': ['123'],
             'reference': ['abc'],
             'foo': ['bar'],
@@ -24,7 +25,9 @@ class TestZ3950Analyst(Test):
         """Test Z3950 comments are returned."""
         task_run_df = pandas.DataFrame(self.data)
         comments = self.z3950_analyst.get_comments(task_run_df)
-        assert_equal(comments, self.data['comments'])
+        expected = [(self.data['user_id'][i], self.data['comments'][i])
+                    for i in range(len(self.data['user_id']))]
+        assert_equal(comments, expected)
 
     def test_get_tags(self):
         """Test Z3950 tags are returned."""

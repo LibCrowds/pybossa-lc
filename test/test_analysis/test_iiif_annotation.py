@@ -87,6 +87,7 @@ class TestIIIFAnnotationAnalyst(Test):
                 })
 
         self.data = {
+            'user_id': [1, 2, 3],
             'info': [
                 self.comment_annos,
                 self.tagging_annos,
@@ -98,7 +99,8 @@ class TestIIIFAnnotationAnalyst(Test):
         """Test IIIF Annotation comments are returned."""
         task_run_df = pandas.DataFrame(self.data)
         comments = self.iiif_analyst.get_comments(task_run_df)
-        assert_equal(comments, self.comments)
+        expected = [(1, comment) for comment in self.comments]
+        assert_equal(comments, expected)
 
     def test_get_tags(self):
         """Test IIIF Annotation tags are returned."""
