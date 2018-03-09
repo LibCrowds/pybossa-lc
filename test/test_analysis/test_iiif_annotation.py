@@ -116,7 +116,7 @@ class TestIIIFAnnotationAnalyst(Test):
                 'value': 'foo'
             }
         ]
-        task_run_df = pandas.DataFrame(data)
+        task_run_df = pandas.DataFrame(self.data)
         tags = self.iiif_analyst.get_tags(task_run_df)
         assert_dict_equal(tags, self.tags)
 
