@@ -30,7 +30,7 @@ class IIIFAnnotationAnalyst(Analyst):
                 body = anno['body']
                 if isinstance(body, list):
                     tag = [item['value'] for item in body
-                           if item['purpose'] == 'describing']
+                           if item['purpose'] == 'tagging'][0]
                 else:
                     tag = body['value']
                 rect = self.get_rect_from_selection_anno(anno)
