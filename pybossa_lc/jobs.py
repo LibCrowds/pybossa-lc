@@ -80,6 +80,10 @@ def populate_empty_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             analyst = get_analyst(presenter)
+            if not analyst:
+                msg = 'WARNING: Project {} has an invalid task presenter'
+                print(msg.format(project.id))
+                continue
             analyst.analyse_empty(project.id)
 
 
@@ -92,6 +96,10 @@ def reanalyse_all_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             analyst = get_analyst(presenter)
+            if not analyst:
+                msg = 'WARNING: Project {} has an invalid task presenter'
+                print(msg.format(project.id))
+                continue
             analyst.analyse_all(project.id)
 
 
