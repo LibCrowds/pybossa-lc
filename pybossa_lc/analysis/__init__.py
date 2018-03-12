@@ -307,10 +307,8 @@ class Analyst():
             "homepage": spa_server_name
         }
 
-    def get_anno_creator(self, user_id):
+    def get_anno_creator(self, user):
         """Return a reference to a LibCrowds user."""
-        from pybossa.core import user_repo
-        user = user_repo.get(user_id)
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
         return {
@@ -334,6 +332,7 @@ class Analyst():
 
     def create_commenting_anno(self, target, value, user_id=None):
         """Create a Web Annotation with the commenting motivation."""
+        from pybossa.core import user_repo
         anno = self.get_anno_base('commenting')
         anno['target'] = target
         anno['body'] = {
@@ -342,8 +341,10 @@ class Analyst():
             "purpose": "commenting",
             "format": "text/plain"
         }
-        if user_id:
-            anno['creator'] = self.get_anno_creator(user_id)
+
+        user = user_repo.get(user_id)
+        if user:
+            anno['creator'] = self.get_anno_creator(user)
         return anno
 
     def create_tagging_anno(self, target, value):
