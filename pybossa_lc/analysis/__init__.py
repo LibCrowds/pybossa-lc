@@ -58,7 +58,7 @@ class Analyst():
 
         # Verify that required keys exist
         if not all(key in task_run_df for key in self.required_keys):
-            missing = [k for k in self.required_keys if key not in task_run_df]
+            missing = [k for k in self.required_keys if k not in task_run_df]
             msg = 'Result {0}: Missing keys - {1}'.format(result_id, missing)
             raise ValueError(msg)
 
