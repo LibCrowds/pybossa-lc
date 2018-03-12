@@ -197,7 +197,6 @@ class Analyst():
     def normalise_case(self, value, rules):
         """Normalise the case of a string."""
         if rules.get('case') == 'title':
-            return value.lower()
             return titlecase(value.lower())
         elif rules.get('case') == 'lower':
             return value.lower()
