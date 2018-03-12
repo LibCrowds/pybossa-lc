@@ -808,17 +808,15 @@ class TestAnalyst(Test):
     @with_context
     def test_get_creator(self):
         """Test that the correct annotation creator is returned."""
-        name = 'foo'
-        fullname = 'bar'
         spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        user = UserFactory.create(name=name, fullname=fullname)
+        user = UserFactory.create()
         url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
-        creator = self.analyst.get_anno_creator(1)
+        creator = self.analyst.get_anno_creator(user)
         assert_dict_equal(creator, {
             'id': url,
             'type': 'Person',
-            'name': fullname,
-            'nickname': name
+            'name': user.fullname,
+            'nickname': user.name
         })
 
     @with_context
