@@ -58,7 +58,9 @@ class Analyst():
 
         # Verify that required keys exist
         if not all(key in task_run_df for key in self.required_keys):
-            raise ValueError('Missing required keys')
+            missing = [k for k in self.required_keys if key not in task_run_df]
+            msg = 'Result {0}: Missing keys - {1}'.format(result_id, missing)
+            raise ValueError(msg)
 
         # Handle comments
         comments = self.get_comments(task_run_df)
@@ -182,17 +184,20 @@ class Analyst():
         project = project_repo.get(project_id)
         template_id = project.info.get('template_id')
         if not template_id:
-            raise ValueError('Invalid project template')
+            msg = 'Invalid project template: Project {}'.format(project.id)
+            raise ValueError(msg)
 
         tmpl = project_tmpl_repo.get(template_id)
         if not tmpl:  # pragma: no cover
-            raise ValueError('Invalid project template')
+            msg = 'Invalid project template: Project {}'.format(project.id)
+            raise ValueError(msg)
 
         return tmpl
 
     def normalise_case(self, value, rules):
         """Normalise the case of a string."""
         if rules.get('case') == 'title':
+            return value.lower()
             return titlecase(value.lower())
         elif rules.get('case') == 'lower':
             return value.lower()
