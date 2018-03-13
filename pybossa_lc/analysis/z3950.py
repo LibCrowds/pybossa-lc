@@ -9,10 +9,6 @@ MATCH_PERCENTAGE = 60
 
 class Z3950Analyst(Analyst):
 
-    def __init__(self):
-        super(Z3950Analyst, self).__init__()
-        self.required_keys = ['control_number', 'reference', 'comments']
-
     def get_comments(self, task_run_df):
         """Return a list of comments."""
         comments = task_run_df['comments'].tolist()

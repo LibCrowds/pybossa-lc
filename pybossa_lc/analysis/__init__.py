@@ -28,9 +28,6 @@ MAIL_QUEUE = Queue('email', connection=sentinel.master)
 @six.add_metaclass(ABCMeta)
 class Analyst():
 
-    def __init__(self):
-        self.required_keys = []
-
     @abstractmethod
     def get_comments(self, task_run_df):
         """Return a list of tuples with the format (user_id, comment)."""
@@ -55,12 +52,6 @@ class Analyst():
         tmpl = self.get_project_template(result.project_id)
         target = self.get_task_target(result.task_id)
         annotations = []
-
-        # Verify that required keys exist
-        if not all(key in task_run_df for key in self.required_keys):
-            missing = [k for k in self.required_keys if k not in task_run_df]
-            msg = 'Result {0}: Missing keys - {1}'.format(result_id, missing)
-            raise ValueError(msg)
 
         # Handle comments
         comments = self.get_comments(task_run_df)

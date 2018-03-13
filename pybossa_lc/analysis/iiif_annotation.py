@@ -9,9 +9,6 @@ from . import Analyst
 
 class IIIFAnnotationAnalyst(Analyst):
 
-    def __init__(self):
-        super(IIIFAnnotationAnalyst, self).__init__()
-
     def get_comments(self, task_run_df):
         """Return a list of comments."""
         comments = []
