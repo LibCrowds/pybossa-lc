@@ -22,4 +22,6 @@ class Z3950Analyst(Analyst):
 
     def get_transcriptions_df(self, task_run_df):
         """Return a dataframe of transcriptions."""
-        return task_run_df[['control_number', 'reference']]
+        replaced_keys = dict(shelfmark='reference', oclc='control_number')
+        updated_df = self.replace_df_keys(task_run_df, **replaced_keys)
+        return updated_df[['control_number', 'reference']]
