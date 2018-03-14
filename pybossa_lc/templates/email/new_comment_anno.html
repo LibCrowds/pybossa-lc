@@ -7,9 +7,17 @@ Hello,
 The following comment has just been generated:
 <br>
 <br>
+<strong>User:</strong> {{ creator }}
+<strong>Comment:</strong> {{ comment }}
+<strong>Source:</strong> {{ source }}
+<br>
+<br>
+Here's the full Annotation:
+<br>
+<br>
 <pre>
   <code>
-    {{ annotation }}
+    {{ annotation | tojson }}
   </code>
 </pre>
 <br>

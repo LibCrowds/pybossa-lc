@@ -450,14 +450,20 @@ class Analyst():
 
     def email_comment_anno(self, anno):
         """Email a comment annotation to administrators."""
-        if not current_app.config.get('EMAIL_COMMENT_ANNOTATIONS'):
+        should_send = current_app.config.get('EMAIL_COMMENT_ANNOTATIONS')
+        if not should_send:  # pragma: no cover
             return
 
         admins = current_app.config.get('ADMINS')
-        json_anno = json.dumps(anno, indent=2, sort_keys=True)
+        creator = anno.get('creator', {}).get('name', None)
+        comment = anno['body']['value']
         msg = dict(subject='New Comment Annotation', recipients=admins)
         msg['body'] = render_template('/account/email/new_comment_anno.md',
-                                      annotation=json_anno)
+                                      creator=creator,
+                                      comment=comment,
+                                      annotation=anno)
         msg['html'] = render_template('/account/email/new_comment_anno.html',
-                                      annotation=json_anno)
+                                      creator=creator,
+                                      comment=comment,
+                                      annotation=anno)
         MAIL_QUEUE.enqueue(send_mail, msg)

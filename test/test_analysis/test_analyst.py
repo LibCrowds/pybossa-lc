@@ -832,7 +832,6 @@ class TestAnalyst(Test):
         user = UserFactory.create(name=name, fullname=fullname)
         url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
         anno = self.analyst.create_commenting_anno(target, value, user.id)
-        print anno
         assert_dict_equal(anno, {
             '@context': 'http://www.w3.org/ns/anno.jsonld',
             'motivation': 'commenting',
@@ -859,3 +858,45 @@ class TestAnalyst(Test):
             },
             'target': target
         })
+
+    @with_context
+    @patch('pybossa_lc.analysis.send_mail')
+    @patch('pybossa_lc.analysis.render_template')
+    @patch('pybossa_lc.analysis.Queue.enqueue')
+    def test_comment_annotations_emailed(self, mock_enqueue, mock_render,
+                                         mock_send_mail):
+        """Test that comment annotation emails are sent."""
+        mock_render.return_value = True
+        comment = 'foo'
+        creator = 'bar'
+        fake_anno = {
+            'creator': {
+                'id': 'example.com/user1',
+                'type': 'Person',
+                'name': creator,
+                'nickname': 'nick'
+            },
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': comment,
+                'format': 'text/plain'
+            }
+        }
+        self.analyst.email_comment_anno(fake_anno)
+
+        expected_render_args = [
+          call('/account/email/new_comment_anno.md', annotation=fake_anno,
+               creator=creator, comment=comment),
+          call('/account/email/new_comment_anno.html', annotation=fake_anno,
+               creator=creator, comment=comment)
+        ]
+        assert_equal(mock_render.call_args_list, expected_render_args)
+
+        expected_msg = {
+            'body': True,
+            'html': True,
+            'subject': 'New Comment Annotation',
+            'recipients': flask_app.config.get('ADMINS')
+        }
+        mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
