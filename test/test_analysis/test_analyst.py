@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 """Test analysis helpers."""
 
+import json
 import numpy
 import pandas
 from mock import patch, call
@@ -883,12 +884,13 @@ class TestAnalyst(Test):
                 'format': 'text/plain'
             }
         }
+        json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
         self.analyst.email_comment_anno(fake_anno)
 
         expected_render_args = [
-          call('/account/email/new_comment_anno.md', annotation=fake_anno,
+          call('/account/email/new_comment_anno.md', annotation=json_anno,
                creator=creator, comment=comment),
-          call('/account/email/new_comment_anno.html', annotation=fake_anno,
+          call('/account/email/new_comment_anno.html', annotation=json_anno,
                creator=creator, comment=comment)
         ]
         assert_equal(mock_render.call_args_list, expected_render_args)

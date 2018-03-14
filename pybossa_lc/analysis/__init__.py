@@ -457,13 +457,14 @@ class Analyst():
         admins = current_app.config.get('ADMINS')
         creator = anno.get('creator', {}).get('name', None)
         comment = anno['body']['value']
+        json_anno = json.dumps(anno, indent=2, sort_keys=True)
         msg = dict(subject='New Comment Annotation', recipients=admins)
         msg['body'] = render_template('/account/email/new_comment_anno.md',
                                       creator=creator,
                                       comment=comment,
-                                      annotation=anno)
+                                      annotation=json_anno)
         msg['html'] = render_template('/account/email/new_comment_anno.html',
                                       creator=creator,
                                       comment=comment,
-                                      annotation=anno)
+                                      annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)

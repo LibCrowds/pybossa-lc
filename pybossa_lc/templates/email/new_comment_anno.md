@@ -4,12 +4,12 @@ The following comment has just been generated:
 
 **User**: {{ creator }}
 **Comment**: {{ comment }}
-**Source**: {{ source }}
+**Target**: {{ target }}
 
 Here's the full Annotation:
 
 ```
-{{ annotation | tojson }}
+{{ annotation }}
 ```
 
 Note that these messages can be disabled by setting EMAIL_COMMENT_ANNOTATIONS

@@ -7,9 +7,11 @@ Hello,
 The following comment has just been generated:
 <br>
 <br>
-<strong>User:</strong> {{ creator }}
-<strong>Comment:</strong> {{ comment }}
-<strong>Source:</strong> {{ source }}
+<ul style="list-style: none;">
+  <li><strong>User:</strong> {{ creator }}</li>
+  <li><strong>Comment:</strong> {{ comment }}</li>
+  <li><strong>Target:</strong> {{ target }}</li>
+</ul>
 <br>
 <br>
 Here's the full Annotation:
@@ -17,7 +19,7 @@ Here's the full Annotation:
 <br>
 <pre>
   <code>
-    {{ annotation | tojson }}
+    {{ annotation }}
   </code>
 </pre>
 <br>
