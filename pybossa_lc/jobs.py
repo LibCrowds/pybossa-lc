@@ -29,7 +29,7 @@ def queue_startup_jobs():
             'name': populate_empty_results,
             'args': [],
             'kwargs': {},
-            'timeout': current_app.config.get('TIMEOUT'),
+            'timeout': 24 * HOUR,
             'queue': 'medium'
         })
     if extra_startup_tasks.get('reanalyse_all_results'):
@@ -37,7 +37,7 @@ def queue_startup_jobs():
             'name': reanalyse_all_results,
             'args': [],
             'kwargs': {},
-            'timeout': current_app.config.get('TIMEOUT'),
+            'timeout': 24 * HOUR,
             'queue': 'medium'
         })
     if extra_startup_tasks.get('remove_bad_volumes'):
