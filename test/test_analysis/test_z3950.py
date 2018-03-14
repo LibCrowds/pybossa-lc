@@ -3,6 +3,7 @@
 
 import pandas
 from nose.tools import *
+from freezegun import freeze_time
 from default import Test, with_context, db
 from factories import TaskFactory, TaskRunFactory, CategoryFactory
 from factories import ProjectFactory
@@ -69,8 +70,8 @@ class TestZ3950Analyst(Test):
         })
 
     @with_context
-    def test_analysis_with_empty_ansers(self):
-        """Test Z3950 analysis with empty answers."""
+    def test_analysis_with_no_transcriptions(self):
+        """Test Z3950 analysis with no transcriptions."""
         n_answers = 3
         target = 'example.com'
         task = self.create_task_with_context(n_answers, target)
@@ -86,8 +87,8 @@ class TestZ3950Analyst(Test):
         })
 
     @with_context
-    def test_analysis_with_old_keys(self):
-        """Test Z3950 analysis with old keys."""
+    def test_analysis_with_transcriptions_and_old_keys(self):
+        """Test Z3950 analysis with transcriptions and old keys."""
         n_answers = 3
         target = 'example.com'
         task = self.create_task_with_context(n_answers, target)
