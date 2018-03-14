@@ -889,12 +889,11 @@ class TestAnalyst(Test):
         json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
         self.analyst.email_comment_anno(task, fake_anno)
 
-        raw_image = 'example.com/full/600,/0/default.jpg'
         expected_render_args = [
             call('/account/email/new_comment_anno.md', annotation=json_anno,
-                 creator=creator, comment=comment, raw_image=raw_image),
+                 creator=creator, comment=comment, raw_image=None),
             call('/account/email/new_comment_anno.html', annotation=json_anno,
-                 creator=creator, comment=comment, raw_image=raw_image)
+                 creator=creator, comment=comment, raw_image=None)
         ]
         assert_equal(mock_render.call_args_list, expected_render_args)
 

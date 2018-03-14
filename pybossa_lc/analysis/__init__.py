@@ -272,8 +272,8 @@ class Analyst():
 
     def get_raw_image_from_target(self, task):
         """Get the raw image from a target."""
-        if 'target' in task.info:  # IIIF tasks
-            target_base = task.info['target'].rstrip('/info.json')
+        if 'tileSource' in task.info:  # IIIF tasks
+            target_base = task.info['tileSource'].rstrip('/info.json')
             return target_base + '/full/600,/0/default.jpg'
         elif 'link' in task.info:  # Flickr tasks
             return task.info['url']
