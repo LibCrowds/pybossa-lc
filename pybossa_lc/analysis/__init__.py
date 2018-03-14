@@ -61,7 +61,7 @@ class Analyst():
             comment_anno = self.create_commenting_anno(target, value, user_id)
             annotations.append(comment_anno)
             if not silent:
-                self.email_comment_anno(comment_anno)
+                self.email_comment_anno(task, comment_anno)
 
         # Handle tags
         tags = self.get_tags(task_run_df)
@@ -265,10 +265,19 @@ class Analyst():
         """Get the target for different types of task."""
         from pybossa.core import task_repo
         task = task_repo.get_task(task_id)
-        if 'target' in task.info:  # IIF Annotation tasks
+        if 'target' in task.info:  # IIIF tasks
             return task.info['target']
         elif 'link' in task.info:  # Flickr tasks
             return task.info['link']
+
+    def get_raw_image_from_target(self, task):
+        """Get the raw image from a target."""
+        if 'target' in task.info:  # IIIF tasks
+            target_base = task.info['target'].rstrip('/info.json')
+            return target_base + '/full/600,/0/default.jpg'
+        elif 'link' in task.info:  # Flickr tasks
+            return task.info['url']
+        return None
 
     def get_xsd_datetime(self):
         """Return timestamp expressed in the UTC xsd:datetime format."""
@@ -448,7 +457,7 @@ class Analyst():
 
         return clusters
 
-    def email_comment_anno(self, anno):
+    def email_comment_anno(self, task, anno):
         """Email a comment annotation to administrators."""
         should_send = current_app.config.get('EMAIL_COMMENT_ANNOTATIONS')
         if not should_send:  # pragma: no cover
@@ -457,14 +466,17 @@ class Analyst():
         admins = current_app.config.get('ADMINS')
         creator = anno.get('creator', {}).get('name', None)
         comment = anno['body']['value']
+        raw_image = self.get_raw_image_from_target(task)
         json_anno = json.dumps(anno, indent=2, sort_keys=True)
         msg = dict(subject='New Comment Annotation', recipients=admins)
         msg['body'] = render_template('/account/email/new_comment_anno.md',
                                       creator=creator,
                                       comment=comment,
+                                      raw_image=raw_image,
                                       annotation=json_anno)
         msg['html'] = render_template('/account/email/new_comment_anno.html',
                                       creator=creator,
                                       comment=comment,
+                                      raw_image=raw_image,
                                       annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)

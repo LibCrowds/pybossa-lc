@@ -4,7 +4,10 @@ The following comment has just been generated:
 
 - **User**: {{ creator }}
 - **Comment**: {{ comment }}
-- **Target**: {{ target }}
+
+{% if raw_image %}
+![The annotated image]({{ raw_image }})
+{% endif %}
 
 Here's the full Annotation:
 

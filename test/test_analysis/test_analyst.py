@@ -870,6 +870,7 @@ class TestAnalyst(Test):
         mock_render.return_value = True
         comment = 'foo'
         creator = 'bar'
+        target = 'example.com'
         fake_anno = {
             'creator': {
                 'id': 'example.com/user1',
@@ -884,14 +885,16 @@ class TestAnalyst(Test):
                 'format': 'text/plain'
             }
         }
+        task = self.create_task_with_context(1, target)
         json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
-        self.analyst.email_comment_anno(fake_anno)
+        self.analyst.email_comment_anno(task, fake_anno)
 
+        raw_image = 'example.com/full/600,/0/default.jpg'
         expected_render_args = [
-          call('/account/email/new_comment_anno.md', annotation=json_anno,
-               creator=creator, comment=comment),
-          call('/account/email/new_comment_anno.html', annotation=json_anno,
-               creator=creator, comment=comment)
+            call('/account/email/new_comment_anno.md', annotation=json_anno,
+                 creator=creator, comment=comment, raw_image=raw_image),
+            call('/account/email/new_comment_anno.html', annotation=json_anno,
+                 creator=creator, comment=comment, raw_image=raw_image)
         ]
         assert_equal(mock_render.call_args_list, expected_render_args)
 

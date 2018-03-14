@@ -10,8 +10,12 @@ The following comment has just been generated:
 <ul>
   <li><strong>User:</strong> {{ creator }}</li>
   <li><strong>Comment:</strong> {{ comment }}</li>
-  <li><strong>Target:</strong> {{ target }}</li>
 </ul>
+<br>
+<br>
+{% if raw_image %}
+<img src="{{ raw_image }}" alt="The annotated image"></img>
+{% endif %}
 <br>
 <br>
 Here's the full Annotation:
