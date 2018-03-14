@@ -2,9 +2,9 @@ Hello,
 
 The following comment has just been generated:
 
-**User**: {{ creator }}
-**Comment**: {{ comment }}
-**Target**: {{ target }}
+- **User**: {{ creator }}
+- **Comment**: {{ comment }}
+- **Target**: {{ target }}
 
 Here's the full Annotation:
 
