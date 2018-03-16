@@ -891,9 +891,11 @@ class TestAnalyst(Test):
 
         expected_render_args = [
             call('/account/email/new_comment_anno.md', annotation=json_anno,
-                 creator=creator, comment=comment, raw_image=None),
+                 creator=creator, comment=comment, raw_image=None,
+                 share_url=None),
             call('/account/email/new_comment_anno.html', annotation=json_anno,
-                 creator=creator, comment=comment, raw_image=None)
+                 creator=creator, comment=comment, raw_image=None,
+                 share_url=None)
         ]
         assert_equal(mock_render.call_args_list, expected_render_args)
 
@@ -904,3 +906,19 @@ class TestAnalyst(Test):
             'recipients': flask_app.config.get('ADMINS')
         }
         mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
+
+    @with_context
+    def test_get_flickr_share_url(self):
+        """Test the correct share URL is returned for a Flickr task."""
+        link = 'example.com/image.jpg'
+        task = TaskFactory.create(info=dict(link=link))
+        share_url = self.analyst.get_share_url(task)
+        assert_equal(share_url, link)
+
+    @with_context
+    def test_get_iiif_share_url(self):
+        """Test the correct share URL is returned for a IIIF task."""
+        shareUrl = 'example.com/image.jpg'
+        task = TaskFactory.create(info=dict(shareUrl=shareUrl))
+        share_url = self.analyst.get_share_url(task)
+        assert_equal(share_url, shareUrl)

@@ -279,6 +279,14 @@ class Analyst():
             return task.info['url']
         return None
 
+    def get_share_url(self, task):
+        """Get the share URL for a task."""
+        if 'shareUrl' in task.info:  # IIIF tasks
+            return task.info['shareUrl']
+        elif 'link' in task.info:  # Flickr tasks
+            return task.info['link']
+        return None
+
     def get_xsd_datetime(self):
         """Return timestamp expressed in the UTC xsd:datetime format."""
         return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -467,16 +475,19 @@ class Analyst():
         creator = anno.get('creator', {}).get('name', None)
         comment = anno['body']['value']
         raw_image = self.get_raw_image_from_target(task)
+        share_url = self.get_share_url(task)
         json_anno = json.dumps(anno, indent=2, sort_keys=True)
         msg = dict(subject='New Comment Annotation', recipients=admins)
         msg['body'] = render_template('/account/email/new_comment_anno.md',
                                       creator=creator,
                                       comment=comment,
                                       raw_image=raw_image,
+                                      share_url=share_url,
                                       annotation=json_anno)
         msg['html'] = render_template('/account/email/new_comment_anno.html',
                                       creator=creator,
                                       comment=comment,
                                       raw_image=raw_image,
+                                      share_url=share_url,
                                       annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)
