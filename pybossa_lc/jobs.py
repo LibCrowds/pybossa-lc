@@ -100,6 +100,7 @@ def reanalyse_all_results():
                 msg = 'WARNING: Project {} has an invalid task presenter'
                 print(msg.format(project.id))
                 continue
+            print('Analysing all results for project {}'.format(project.id))
             analyst.analyse_all(project.id)
 
 
