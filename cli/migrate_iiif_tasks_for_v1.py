@@ -82,6 +82,12 @@ def run():
                         }
                     }
 
+                # Add url, url_b and url_m for consistency with other importers
+                urlbase = task.info['tileSource'].rstrip('/info.json')
+                task.info['url'] = urlbase + '/full/max/0/default.jpg'
+                task.info['url_m'] = urlbase + '/full/240,/0/default.jpg'
+                task.info['url_b'] = urlbase + '/full/1024,/0/default.jpg'
+
                 new_info = json.dumps(task.info)
                 query = text('''UPDATE task
                              SET info=:info
