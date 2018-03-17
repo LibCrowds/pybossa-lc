@@ -84,22 +84,9 @@ class TestIIIFImporter(Test):
                                                          canvas_index)
         assert link == expected_url
 
-    def test_get_bl_link(self):
-        """Test get BL share link."""
-        _id = 'ark:/81055/vdc_100022589138.0x000002'
-        base = 'http://api.bl.uk/metadata/iiif'
-        manifest_uri = '{}/{}/manifest.json'.format(base, _id)
-        importer = BulkTaskIIIFImporter(manifest_uri, None)
-        canvas_index = 10
-        link = importer._get_link(manifest_uri, canvas_index)
-        expected_base = 'http://access.bl.uk/item/viewer/'
-        expected_url = '{0}{1}#?cv={2}'.format(expected_base, _id,
-                                               canvas_index)
-        assert link == expected_url
-
     @with_context
-    def test_get_select_task_data_from_manifest(self):
-        """Test that select task data is generated from a manifest."""
+    def test_get_task_data_from_manifest(self):
+        """Test that task data is generated from a manifest."""
         manifest_uri = self.manifest['@id']
         importer = BulkTaskIIIFImporter(manifest_uri, None)
         task_data = importer._get_task_data(self.manifest)
@@ -111,98 +98,8 @@ class TestIIIFImporter(Test):
                 'manifest': manifest_uri,
                 'target': canvases[idx]['@id'],
                 'link': importer._get_link(manifest_uri, idx),
-                'tileSource': '{}/info.json'.format(img)
+                'tileSource': '{}/info.json'.format(img),
+                'url': '{}/full/max/0/default.jpg'.format(img),
+                'url_m': '{}/full/240,/0/default.jpg'.format(img),
+                'url_b': '{}/full/1024,/0/default.jpg'.format(img)
             })
-
-    @with_context
-    def test_get_transcribe_task_data_from_manifest(self):
-        """Test that transcribe task data is generated from a manifest."""
-        manifest_uri = self.manifest['@id']
-        importer = BulkTaskIIIFImporter(manifest_uri, None)
-        task_data = importer._get_task_data(self.manifest)
-        canvases = self.manifest['sequences'][0]['canvases']
-        assert len(task_data) == len(canvases)
-        for idx, task in enumerate(task_data):
-            img = canvases[idx]['images'][0]['resource']['service']['@id']
-            assert_dict_equal(task, {
-                'manifest': manifest_uri,
-                'target': canvases[idx]['@id'],
-                'link': importer._get_link(manifest_uri, idx),
-                'tileSource': '{}/info.json'.format(img)
-            })
-
-    @with_context
-    def test_enhance_task_data_from_tagging_parent(self):
-        """Test that a transcription task is created for each parent result."""
-        annotations = []
-        n_annos = 3
-        target = 'http://example.org/iiif/book1/canvas/p1'
-        for i in range(n_annos):
-            anno = copy.deepcopy(self.select_annotation)
-            selection = '?xywh={0},{0},{0},{0}'.format(i)
-            anno['target']['source'] = target
-            anno['target']['selector']['value'] = selection
-            annotations.append(anno)
-
-        project = ProjectFactory.create()
-        task = TaskFactory.create(project=project, n_answers=1)
-        TaskRunFactory.create(task=task)
-        result = self.result_repo.filter_by(project_id=project.id)[0]
-        result.info = dict(annotations=annotations)
-        self.result_repo.update(result)
-        task_data = [
-            {
-                'target': target,
-                'mode': 'transcribe'
-            }
-        ]
-        importer = BulkTaskIIIFImporter(None, None)
-        task_data = importer._enhance_task_data(task_data, project.id)
-        assert len(task_data) == len(annotations)
-        for i in range(n_annos):
-            data = task_data[i]
-            assert data['highlights'] == [
-                {
-                    'x': float(i),
-                    'y': float(i),
-                    'width': float(i),
-                    'height': float(i)
-                }
-            ]
-            assert data['bounds'] == {
-                'x': float(i) + -200,
-                'y': float(i) + 0,
-                'width': float(i) + 400,
-                'height': float(i) + 0
-            }
-            assert data['parent_task_id'] == task.id
-
-    @with_context
-    @raises(ValueError)
-    def test_enhance_task_data_throws_error_with_unhandled_motivation(self):
-        """Test that an unhandled motivvation throws an error."""
-        project = ProjectFactory.create()
-        task = TaskFactory.create(project=project, n_answers=1)
-        TaskRunFactory.create(task=task)
-        result = self.result_repo.filter_by(project_id=project.id)[0]
-        result.info = dict(annotations=[self.transcribe_annotation])
-        self.result_repo.update(result)
-        task_data = [
-            {
-                'target': 'some_target',
-                'mode': 'select'
-            }
-        ]
-        importer = BulkTaskIIIFImporter(None, None)
-        importer._enhance_task_data(task_data, project.id)
-
-    @with_context
-    @raises(ValueError)
-    def test_enhance_task_data_throws_error_with_empty_result(self):
-        """Test that an empty result throws an error."""
-        project = ProjectFactory.create()
-        task = TaskFactory.create(project=project, n_answers=1)
-        TaskRunFactory.create(task=task)
-        task_data = []
-        importer = BulkTaskIIIFImporter(None, None)
-        importer._enhance_task_data(task_data, project.id)
