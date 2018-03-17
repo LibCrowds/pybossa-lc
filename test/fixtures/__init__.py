@@ -21,7 +21,6 @@ class TemplateFixtures(object):
         self.rules_tmpl = dict(trim_punctuation=False,
                                whitespace='',
                                case='',
-                               target_from_select_parent=False,
                                date_format=True,
                                dayfirst=True,
                                yearfirst=False)
