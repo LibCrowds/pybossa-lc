@@ -22,7 +22,7 @@ def get_xsd_datetime():
 
 
 def get_anno_base(motivation):
-    """Return the base fo ra new Web Annotation."""
+    """Return the base for a new Web Annotation."""
     ts_now = get_xsd_datetime()
     spa_server_name = app.config.get('SPA_SERVER_NAME')
     github_repo = app.config.get('GITHUB_REPO')
