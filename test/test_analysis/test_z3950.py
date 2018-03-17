@@ -3,7 +3,7 @@
 
 import pandas
 from nose.tools import *
-unfrom freezegun import freeze_time
+from freezegun import freeze_time
 from default import Test, with_context, db
 from factories import TaskFactory, TaskRunFactory, CategoryFactory
 from factories import ProjectFactory
