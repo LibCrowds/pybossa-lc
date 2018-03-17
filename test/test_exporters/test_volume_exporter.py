@@ -119,7 +119,7 @@ class TestVolumeExporter(Test):
                 tmpl.name: {
                     tag: [value]
                 },
-                'task_state': 'completed'
+                'task_state': 'completed',
                 'link': [None]
             }))
             expected_data.append(expected_row)
