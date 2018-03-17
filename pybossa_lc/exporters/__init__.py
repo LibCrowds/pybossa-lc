@@ -113,10 +113,10 @@ class VolumeExporter(Exporter):
                         tmpl_data[key] = values
                     target_data[tmpl_name] = tmpl_data
 
-                    # Add share URLs
-                    share_urls = target_data.get('share_url', [])
-                    share_urls.append(result['share_url'])
-                    target_data['share_url'] = list(set(share_urls))
+                    # Add share links
+                    links = target_data.get('link', [])
+                    links.append(result['link'])
+                    target_data['link'] = list(set(links))
 
                     # Add task state
                     current_state = result.get('task_state')

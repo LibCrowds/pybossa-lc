@@ -72,30 +72,30 @@ class TestIIIFImporter(Test):
         count = importer.count_tasks()
         assert count == n_tasks
 
-    def test_get_default_share_url(self):
-        """Test get default share URL."""
+    def test_get_default_link(self):
+        """Test get default share link."""
         _id = '123'
         manifest_uri = 'http://example.com/iiif/{}/manifest.json'.format(_id)
         importer = BulkTaskIIIFImporter(manifest_uri, None)
         canvas_index = 10
-        share_url = importer._get_share_url(manifest_uri, canvas_index)
+        link = importer._get_link(manifest_uri, canvas_index)
         base = 'http://universalviewer.io/uv.html'
         expected_url = '{0}?manifest={1}#?cv={2}'.format(base, manifest_uri,
                                                          canvas_index)
-        assert share_url == expected_url
+        assert link == expected_url
 
-    def test_get_bl_share_url(self):
-        """Test get BL share URL."""
+    def test_get_bl_link(self):
+        """Test get BL share link."""
         _id = 'ark:/81055/vdc_100022589138.0x000002'
         base = 'http://api.bl.uk/metadata/iiif'
         manifest_uri = '{}/{}/manifest.json'.format(base, _id)
         importer = BulkTaskIIIFImporter(manifest_uri, None)
         canvas_index = 10
-        share_url = importer._get_share_url(manifest_uri, canvas_index)
+        link = importer._get_link(manifest_uri, canvas_index)
         expected_base = 'http://access.bl.uk/item/viewer/'
         expected_url = '{0}{1}#?cv={2}'.format(expected_base, _id,
                                                canvas_index)
-        assert share_url == expected_url
+        assert link == expected_url
 
     @with_context
     def test_get_select_task_data_from_manifest(self):
@@ -110,9 +110,8 @@ class TestIIIFImporter(Test):
             assert_dict_equal(task, {
                 'manifest': manifest_uri,
                 'target': canvases[idx]['@id'],
-                'shareUrl': importer._get_share_url(manifest_uri, idx),
-                'tileSource': '{}/info.json'.format(img),
-                'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img)
+                'link': importer._get_link(manifest_uri, idx),
+                'tileSource': '{}/info.json'.format(img)
             })
 
     @with_context
@@ -128,9 +127,8 @@ class TestIIIFImporter(Test):
             assert_dict_equal(task, {
                 'manifest': manifest_uri,
                 'target': canvases[idx]['@id'],
-                'shareUrl': importer._get_share_url(manifest_uri, idx),
-                'tileSource': '{}/info.json'.format(img),
-                'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img)
+                'link': importer._get_link(manifest_uri, idx),
+                'tileSource': '{}/info.json'.format(img)
             })
 
     @with_context

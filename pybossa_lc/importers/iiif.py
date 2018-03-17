@@ -43,8 +43,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                 'tileSource': '{}/info.json'.format(img),
                 'target': canvases[i]['@id'],
                 'manifest': manifest_uri,
-                'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
-                'shareUrl': self._get_share_url(manifest_uri, i)
+                'link': self._get_link(manifest_uri, i)
             }
             data.append(row)
         return data
@@ -94,7 +93,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
                           x['highlights'][0]['x']
                       ))
 
-    def _get_share_url(self, manifest_uri, canvas_index):
+    def _get_link(self, manifest_uri, canvas_index):
         """Return a Universal Viewer URL for sharing."""
         base = 'http://universalviewer.io/uv.html'
         query = '#?cv={}'.format(canvas_index)

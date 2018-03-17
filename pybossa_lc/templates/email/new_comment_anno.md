@@ -4,7 +4,7 @@ The following comment has just been generated:
 
 - **User**: {{ creator }}
 - **Comment**: {{ comment }}
-- **Share URL**: {{ share_url }}
+- **Link**: {{ link }}
 
 {% if raw_image %}
 ![The annotated image]({{ raw_image }})

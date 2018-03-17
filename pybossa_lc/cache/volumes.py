@@ -16,7 +16,7 @@ def get_tmpl_results(volume_id):
                result.project_id, result.created, result.last_version,
                result.info,
                project.info->'template_id' AS template_id,
-               task.info->'shareUrl' AS share_url,
+               task.info->'link' AS link,
                task.state AS task_state
                FROM result, project, category, task
                WHERE result.project_id = project.id
@@ -35,7 +35,7 @@ def get_tmpl_results(volume_id):
                       created=row.created,
                       last_version=row.last_version,
                       task_state=row.task_state,
-                      share_url=row.share_url,
+                      link=row.link,
                       info=row.info or {})
         tmpl_results = data.get(tmpl_id, [])
         tmpl_results.append(result)
