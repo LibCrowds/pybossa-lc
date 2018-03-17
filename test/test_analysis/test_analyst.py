@@ -1,13 +1,14 @@
 # -*- coding: utf8 -*-
 """Test analysis helpers."""
 
+import json
 import numpy
 import pandas
 from mock import patch, call
 from freezegun import freeze_time
 from factories import TaskFactory, TaskRunFactory, ProjectFactory, UserFactory
 from factories import CategoryFactory
-from default import db, Test, with_context
+from default import db, Test, with_context, flask_app
 from nose.tools import *
 from pybossa.core import result_repo, task_repo
 from pybossa.repositories import ResultRepository, TaskRepository
@@ -173,6 +174,13 @@ class TestAnalyst(Test):
         taskrun = TaskRunFactory.create(info=info)
         df = self.analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['_info'].tolist(), [info['info']])
+
+    @with_context
+    def test_user_ids_in_task_run_dataframe(self):
+        """Test that user IDs are included in the task run dataframe."""
+        taskrun = TaskRunFactory.create()
+        df = self.analyst.get_task_run_df(taskrun.task_id)
+        assert_equal(df['user_id'].tolist(), [taskrun.user_id])
 
     def test_titlecase_normalisation(self):
         """Test titlecase normalisation."""
@@ -510,18 +518,21 @@ class TestAnalyst(Test):
                                         mock_get_tags,
                                         mock_get_transcriptions_df,
                                         mock_get_comments):
-        """Test that a comment annotation is created."""
+        """Test that a comment annotation is created during analysis."""
         n_answers = 3
         target = 'example.com'
         task = self.create_task_with_context(n_answers, target)
-        comment = 'foo'
+        user_id = 1
+        value = 'foo'
+        comment = (user_id, value)
         mock_get_comments.return_value = [comment]
         mock_create_comment_anno.return_value = {}
         TaskRunFactory.create_batch(n_answers, task=task, info={})
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         self.analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 1)
-        mock_create_comment_anno.assert_called_once_with(target, comment)
+        mock_create_comment_anno.assert_called_once_with(target, value,
+                                                         user_id)
 
     @with_context
     @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
@@ -781,3 +792,133 @@ class TestAnalyst(Test):
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(result.info['annotations'], [])
         assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    def test_get_generator(self):
+        """Test that the correct annotation generator is returned."""
+        generator = self.analyst.get_anno_generator()
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        github_repo = flask_app.config.get('GITHUB_REPO')
+        assert_dict_equal(generator, {
+            "id": github_repo,
+            "type": "Software",
+            "name": "LibCrowds",
+            "homepage": spa_server_name
+        })
+
+    @with_context
+    def test_get_creator(self):
+        """Test that the correct annotation creator is returned."""
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        user = UserFactory.create()
+        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        creator = self.analyst.get_anno_creator(user)
+        assert_dict_equal(creator, {
+            'id': url,
+            'type': 'Person',
+            'name': user.fullname,
+            'nickname': user.name
+        })
+
+    @with_context
+    @freeze_time("19-11-1984")
+    def test_create_commenting_anno(self):
+        """Test that a commenting annotation is created correctly."""
+        name = 'foo'
+        fullname = 'bar'
+        target = 'baz'
+        value = 'qux'
+        github_repo = flask_app.config.get('GITHUB_REPO')
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        user = UserFactory.create(name=name, fullname=fullname)
+        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        anno = self.analyst.create_commenting_anno(target, value, user.id)
+        assert_dict_equal(anno, {
+            '@context': 'http://www.w3.org/ns/anno.jsonld',
+            'motivation': 'commenting',
+            'type': 'Annotation',
+            'generated': '1984-11-19T00:00:00Z',
+            'created': '1984-11-19T00:00:00Z',
+            'generator': {
+                "id": github_repo,
+                "type": "Software",
+                "name": "LibCrowds",
+                "homepage": spa_server_name
+            },
+            'creator': {
+                'id': url,
+                'type': 'Person',
+                'name': fullname,
+                'nickname': name
+            },
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': value,
+                'format': 'text/plain'
+            },
+            'target': target
+        })
+
+    @with_context
+    @patch('pybossa_lc.analysis.send_mail')
+    @patch('pybossa_lc.analysis.render_template')
+    @patch('pybossa_lc.analysis.Queue.enqueue')
+    def test_comment_annotations_emailed(self, mock_enqueue, mock_render,
+                                         mock_send_mail):
+        """Test that comment annotation emails are sent."""
+        mock_render.return_value = True
+        comment = 'foo'
+        creator = 'bar'
+        target = 'example.com'
+        fake_anno = {
+            'creator': {
+                'id': 'example.com/user1',
+                'type': 'Person',
+                'name': creator,
+                'nickname': 'nick'
+            },
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': comment,
+                'format': 'text/plain'
+            }
+        }
+        task = self.create_task_with_context(1, target)
+        json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
+        self.analyst.email_comment_anno(task, fake_anno)
+
+        expected_render_args = [
+            call('/account/email/new_comment_anno.md', annotation=json_anno,
+                 creator=creator, comment=comment, raw_image=None,
+                 share_url=None),
+            call('/account/email/new_comment_anno.html', annotation=json_anno,
+                 creator=creator, comment=comment, raw_image=None,
+                 share_url=None)
+        ]
+        assert_equal(mock_render.call_args_list, expected_render_args)
+
+        expected_msg = {
+            'body': True,
+            'html': True,
+            'subject': 'New Comment Annotation',
+            'recipients': flask_app.config.get('ADMINS')
+        }
+        mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
+
+    @with_context
+    def test_get_flickr_share_url(self):
+        """Test the correct share URL is returned for a Flickr task."""
+        link = 'example.com/image.jpg'
+        task = TaskFactory.create(info=dict(link=link))
+        share_url = self.analyst.get_share_url(task)
+        assert_equal(share_url, link)
+
+    @with_context
+    def test_get_iiif_share_url(self):
+        """Test the correct share URL is returned for a IIIF task."""
+        shareUrl = 'example.com/image.jpg'
+        task = TaskFactory.create(info=dict(shareUrl=shareUrl))
+        share_url = self.analyst.get_share_url(task)
+        assert_equal(share_url, shareUrl)

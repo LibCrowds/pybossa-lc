@@ -29,9 +29,9 @@ class TestIIIFAnnotationAnalyst(Test):
         }
         self.transcriptions_df = pandas.DataFrame(transcription_data)
 
-        comment_annos = []
+        self.comment_annos = []
         for comment in self.comments:
-            comment_annos.append({
+            self.comment_annos.append({
                 'motivation': 'commenting',
                 'body': {
                     'type': 'TextualBody',
@@ -42,10 +42,10 @@ class TestIIIFAnnotationAnalyst(Test):
                 'target': 'example.com'
             })
 
-        tagging_annos = []
+        self.tagging_annos = []
         for tag, rect_list in self.tags.items():
             for rect in rect_list:
-                tagging_annos.append({
+                self.tagging_annos.append({
                     'motivation': 'tagging',
                     'body': {
                         'type': 'TextualBody',
@@ -65,10 +65,10 @@ class TestIIIFAnnotationAnalyst(Test):
                     }
                 })
 
-        transcription_annos = []
+        self.transcription_annos = []
         for tag, value_list in transcription_data.items():
             for value in value_list:
-                transcription_annos.append({
+                self.transcription_annos.append({
                     'motivation': 'describing',
                     'body': [
                         {
@@ -87,10 +87,11 @@ class TestIIIFAnnotationAnalyst(Test):
                 })
 
         self.data = {
+            'user_id': [1, 2, 3],
             'info': [
-                comment_annos,
-                tagging_annos,
-                transcription_annos
+                self.comment_annos,
+                self.tagging_annos,
+                self.transcription_annos
             ]
         }
 
@@ -98,10 +99,25 @@ class TestIIIFAnnotationAnalyst(Test):
         """Test IIIF Annotation comments are returned."""
         task_run_df = pandas.DataFrame(self.data)
         comments = self.iiif_analyst.get_comments(task_run_df)
-        assert_equal(comments, self.comments)
+        expected = [(1, comment) for comment in self.comments]
+        assert_equal(comments, expected)
 
     def test_get_tags(self):
         """Test IIIF Annotation tags are returned."""
+        task_run_df = pandas.DataFrame(self.data)
+        tags = self.iiif_analyst.get_tags(task_run_df)
+        assert_dict_equal(tags, self.tags)
+
+    def test_get_tags_with_body_list(self):
+        """Test IIIF Annotation tags are returned when body is a list."""
+        self.tagging_annos[0]['body'] = [
+            self.tagging_annos[0]['body'],
+            {
+                'type': 'TextualBody',
+                'purpose': 'classifying',
+                'value': 'foo'
+            }
+        ]
         task_run_df = pandas.DataFrame(self.data)
         tags = self.iiif_analyst.get_tags(task_run_df)
         assert_dict_equal(tags, self.tags)

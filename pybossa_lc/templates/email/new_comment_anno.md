@@ -2,6 +2,16 @@ Hello,
 
 The following comment has just been generated:
 
+- **User**: {{ creator }}
+- **Comment**: {{ comment }}
+- **Share URL**: {{ share_url }}
+
+{% if raw_image %}
+![The annotated image]({{ raw_image }})
+{% endif %}
+
+Here's the full Annotation:
+
 ```
 {{ annotation }}
 ```

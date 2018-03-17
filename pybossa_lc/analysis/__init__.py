@@ -28,12 +28,9 @@ MAIL_QUEUE = Queue('email', connection=sentinel.master)
 @six.add_metaclass(ABCMeta)
 class Analyst():
 
-    def __init__(self):
-        self.required_keys = []
-
     @abstractmethod
     def get_comments(self, task_run_df):
-        """Return a list of comments."""
+        """Return a list of tuples with the format (user_id, comment)."""
         pass
 
     @abstractmethod
@@ -56,17 +53,15 @@ class Analyst():
         target = self.get_task_target(result.task_id)
         annotations = []
 
-        # Verify that required keys exist
-        if not all(key in task_run_df for key in self.required_keys):
-            raise ValueError('Missing required keys')
-
         # Handle comments
         comments = self.get_comments(task_run_df)
-        for value in comments:
-            comment_anno = self.create_commenting_anno(target, value)
+        for comment in comments:
+            user_id = comment[0]
+            value = comment[1]
+            comment_anno = self.create_commenting_anno(target, value, user_id)
             annotations.append(comment_anno)
             if not silent:
-                self.email_comment_anno(comment_anno)
+                self.email_comment_anno(task, comment_anno)
 
         # Handle tags
         tags = self.get_tags(task_run_df)
@@ -153,7 +148,7 @@ class Analyst():
         return True
 
     def get_task_run_df(self, task_id):
-        """Load an Array of task runs into a dataframe."""
+        """Load task run info into a dataframe."""
         from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task_id)
         data = [self.explode_info(tr) for tr in task_runs]
@@ -180,11 +175,13 @@ class Analyst():
         project = project_repo.get(project_id)
         template_id = project.info.get('template_id')
         if not template_id:
-            raise ValueError('Invalid project template')
+            msg = 'Invalid project template: Project {}'.format(project.id)
+            raise ValueError(msg)
 
         tmpl = project_tmpl_repo.get(template_id)
         if not tmpl:  # pragma: no cover
-            raise ValueError('Invalid project template')
+            msg = 'Invalid project template: Project {}'.format(project.id)
+            raise ValueError(msg)
 
         return tmpl
 
@@ -268,10 +265,27 @@ class Analyst():
         """Get the target for different types of task."""
         from pybossa.core import task_repo
         task = task_repo.get_task(task_id)
-        if 'target' in task.info:  # IIF Annotation tasks
+        if 'target' in task.info:  # IIIF tasks
             return task.info['target']
         elif 'link' in task.info:  # Flickr tasks
             return task.info['link']
+
+    def get_raw_image_from_target(self, task):
+        """Get the raw image from a target."""
+        if 'tileSource' in task.info:  # IIIF tasks
+            target_base = task.info['tileSource'].rstrip('/info.json')
+            return target_base + '/full/600,/0/default.jpg'
+        elif 'link' in task.info:  # Flickr tasks
+            return task.info['url']
+        return None
+
+    def get_share_url(self, task):
+        """Get the share URL for a task."""
+        if 'shareUrl' in task.info:  # IIIF tasks
+            return task.info['shareUrl']
+        elif 'link' in task.info:  # Flickr tasks
+            return task.info['link']
+        return None
 
     def get_xsd_datetime(self):
         """Return timestamp expressed in the UTC xsd:datetime format."""
@@ -300,6 +314,17 @@ class Analyst():
             "homepage": spa_server_name
         }
 
+    def get_anno_creator(self, user):
+        """Return a reference to a LibCrowds user."""
+        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        return {
+            "id": url,
+            "type": "Person",
+            "name": user.fullname,
+            "nickname": user.name
+        }
+
     def get_anno_base(self, motivation):
         """Return the base fo ra new Web Annotation."""
         ts_now = self.get_xsd_datetime()
@@ -312,8 +337,9 @@ class Analyst():
             "generator": self.get_anno_generator()
         }
 
-    def create_commenting_anno(self, target, value):
+    def create_commenting_anno(self, target, value, user_id=None):
         """Create a Web Annotation with the commenting motivation."""
+        from pybossa.core import user_repo
         anno = self.get_anno_base('commenting')
         anno['target'] = target
         anno['body'] = {
@@ -322,6 +348,10 @@ class Analyst():
             "purpose": "commenting",
             "format": "text/plain"
         }
+
+        user = user_repo.get(user_id)
+        if user:
+            anno['creator'] = self.get_anno_creator(user)
         return anno
 
     def create_tagging_anno(self, target, value):
@@ -435,16 +465,29 @@ class Analyst():
 
         return clusters
 
-    def email_comment_anno(self, anno):
+    def email_comment_anno(self, task, anno):
         """Email a comment annotation to administrators."""
-        if not current_app.config.get('EMAIL_COMMENT_ANNOTATIONS'):
+        should_send = current_app.config.get('EMAIL_COMMENT_ANNOTATIONS')
+        if not should_send:  # pragma: no cover
             return
 
         admins = current_app.config.get('ADMINS')
+        creator = anno.get('creator', {}).get('name', None)
+        comment = anno['body']['value']
+        raw_image = self.get_raw_image_from_target(task)
+        share_url = self.get_share_url(task)
         json_anno = json.dumps(anno, indent=2, sort_keys=True)
         msg = dict(subject='New Comment Annotation', recipients=admins)
         msg['body'] = render_template('/account/email/new_comment_anno.md',
+                                      creator=creator,
+                                      comment=comment,
+                                      raw_image=raw_image,
+                                      share_url=share_url,
                                       annotation=json_anno)
         msg['html'] = render_template('/account/email/new_comment_anno.html',
+                                      creator=creator,
+                                      comment=comment,
+                                      raw_image=raw_image,
+                                      share_url=share_url,
                                       annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)

@@ -9,13 +9,11 @@ MATCH_PERCENTAGE = 60
 
 class Z3950Analyst(Analyst):
 
-    def __init__(self):
-        super(Z3950Analyst, self).__init__()
-        self.required_keys = ['control_number', 'reference', 'comments']
-
     def get_comments(self, task_run_df):
         """Return a list of comments."""
-        return [comment for comment in task_run_df['comments'].tolist()
+        comments = task_run_df['comments'].tolist()
+        user_ids = task_run_df['user_id'].tolist()
+        return [(user_ids[i], comment) for i, comment in enumerate(comments)
                 if comment]
 
     def get_tags(self, task_run_df):
@@ -24,4 +22,6 @@ class Z3950Analyst(Analyst):
 
     def get_transcriptions_df(self, task_run_df):
         """Return a dataframe of transcriptions."""
-        return task_run_df[['control_number', 'reference']]
+        replaced_keys = dict(shelfmark='reference', oclc='control_number')
+        updated_df = self.replace_df_keys(task_run_df, **replaced_keys)
+        return updated_df[['control_number', 'reference']]

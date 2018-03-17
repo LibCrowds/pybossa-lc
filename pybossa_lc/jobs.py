@@ -29,7 +29,7 @@ def queue_startup_jobs():
             'name': populate_empty_results,
             'args': [],
             'kwargs': {},
-            'timeout': current_app.config.get('TIMEOUT'),
+            'timeout': 24 * HOUR,
             'queue': 'medium'
         })
     if extra_startup_tasks.get('reanalyse_all_results'):
@@ -37,7 +37,7 @@ def queue_startup_jobs():
             'name': reanalyse_all_results,
             'args': [],
             'kwargs': {},
-            'timeout': current_app.config.get('TIMEOUT'),
+            'timeout': 24 * HOUR,
             'queue': 'medium'
         })
     if extra_startup_tasks.get('remove_bad_volumes'):
@@ -80,6 +80,10 @@ def populate_empty_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             analyst = get_analyst(presenter)
+            if not analyst:
+                msg = 'WARNING: Project {} has an invalid task presenter'
+                print(msg.format(project.id))
+                continue
             analyst.analyse_empty(project.id)
 
 
@@ -92,6 +96,11 @@ def reanalyse_all_results():
         cat_projects = project_repo.filter_by(category_id=category.id)
         for project in cat_projects:
             analyst = get_analyst(presenter)
+            if not analyst:
+                msg = 'WARNING: Project {} has an invalid task presenter'
+                print(msg.format(project.id))
+                continue
+            print('Analysing all results for project {}'.format(project.id))
             analyst.analyse_all(project.id)
 
 
