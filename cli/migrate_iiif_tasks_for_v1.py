@@ -37,9 +37,6 @@ def run():
         projects = db_results.fetchall()
         print('Updating {} projects'.format(len(projects)))
         for project in projects:
-            print project
-
-
 
             # Get the project's results
             query = text('''SELECT task.id, task.info
