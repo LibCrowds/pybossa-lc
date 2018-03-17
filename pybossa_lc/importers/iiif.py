@@ -42,7 +42,7 @@ class BulkTaskIIIFImporter(BulkTaskImport):
             row = {
                 'tileSource': '{}/info.json'.format(img),
                 'target': canvases[i]['@id'],
-                'info': manifest_uri,
+                'manifest': manifest_uri,
                 'thumbnailUrl': '{}/full/256,/0/default.jpg'.format(img),
                 'shareUrl': self._get_share_url(manifest_uri, i)
             }

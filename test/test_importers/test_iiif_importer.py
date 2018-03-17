@@ -108,7 +108,7 @@ class TestIIIFImporter(Test):
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
             assert_dict_equal(task, {
-                'info': manifest_uri,
+                'manifest': manifest_uri,
                 'target': canvases[idx]['@id'],
                 'shareUrl': importer._get_share_url(manifest_uri, idx),
                 'tileSource': '{}/info.json'.format(img),
@@ -126,7 +126,7 @@ class TestIIIFImporter(Test):
         for idx, task in enumerate(task_data):
             img = canvases[idx]['images'][0]['resource']['service']['@id']
             assert_dict_equal(task, {
-                'info': manifest_uri,
+                'manifest': manifest_uri,
                 'target': canvases[idx]['@id'],
                 'shareUrl': importer._get_share_url(manifest_uri, idx),
                 'tileSource': '{}/info.json'.format(img),
