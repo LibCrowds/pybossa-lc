@@ -103,7 +103,6 @@ class AnalysisRulesForm(Form):
         ('upper', 'Uppercase'),
     ], default='')
     trim_punctuation = BooleanField()
-    concatenate = BooleanField()
     target_from_select_parent = BooleanField()
     date_format = BooleanField()
     dayfirst = BooleanField()
