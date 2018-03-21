@@ -73,8 +73,7 @@ def _get_iiif_annotation_data(volume, parent_id):
     source = volume.get('source', '')
     match = re.search(pattern, source)
     if match:
-        return dict(type='iiif-annotation', manifest_uri=source,
-                    parent_id=parent_id)
+        return dict(type='iiif', manifest_uri=source)
 
 
 def _get_flickr_data(volume):

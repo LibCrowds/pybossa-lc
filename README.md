@@ -12,6 +12,7 @@ Key features:
 
 - Analyses task run data and stores final results as Web Annotations
 - Defines a templating system for configuring and generating projects
+- Replaces default PYBOSSA emails with custom templates
 
 For details of how project creation and results analysis works in LibCrowds,
 see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
