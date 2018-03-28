@@ -12,6 +12,7 @@ from pybossa.core import project_repo
 from pybossa.core import uploader, importer
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
+from pybossa.importers import BulkImportException
 
 from ..utils import *
 from ..forms import VolumeForm, ExportForm
@@ -125,13 +126,22 @@ def update_volume(short_name, volume_id):
 
     if request.method == 'POST':
         # Process task import form
-        if request.form.get('btn') == 'Import':
+        if (request.form.get('btn') == 'Import'
+            or request.body.get('btn') == 'Import'):
             import_form = GenericBulkTaskImportForm()(volume['importer'],
                                                       request.body)
             if import_form.validate():
                 volume['data'] = import_form.get_import_data()
-                update()
-                flash('Volume updated', 'success')
+                import_data = import_form.get_import_data()
+                try:
+                    importer.count_tasks_to_import(**import_data)
+                    update()
+                    flash('Volume updated', 'success')
+                except BulkImportException as err:
+                    flash(err.message, 'error')
+
+            else:
+                flash('Please correct the errors', 'error')
 
         # Process volume details form
         elif request.form.get('btn') != 'Upload':
@@ -181,7 +191,7 @@ def update_volume(short_name, volume_id):
 
     response = dict(form=form, all_importers=all_importers,
                     upload_form=upload_form, import_form=import_form,
-                    category=category, volume=volume)
+                    volume=volume)
     return handle_content_type(response)
 
 
