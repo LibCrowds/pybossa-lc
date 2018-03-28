@@ -177,8 +177,9 @@ def update_volume(short_name, volume_id):
             else:
                 flash('You must provide a file', 'error')
 
-    response = dict(form=form, upload_form=upload_form,
-                    import_form=import_form, category=category, volume=volume)
+    response = dict(form=form, all_importers=all_importers,
+                    upload_form=upload_form, import_form=import_form,
+                    category=category, volume=volume)
     return handle_content_type(response)
 
 
