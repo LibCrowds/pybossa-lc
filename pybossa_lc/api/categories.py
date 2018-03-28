@@ -55,7 +55,7 @@ def get_volumes(short_name):
 @login_required
 @BLUEPRINT.route('/<short_name>/volumes/new', methods=['GET', 'POST'])
 def new_volume(short_name):
-    """List or add volumes."""
+    """Add a new volume."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
@@ -68,20 +68,22 @@ def new_volume(short_name):
     all_importers = importer.get_all_importer_names()
     form.importer.choices = [(name, name) for name in all_importers]
 
+    new_volume = None
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
-        new_vol = dict(id=volume_id,
+        new_volume = dict(id=volume_id,
                        name=form.name.data,
                        short_name=form.short_name.data,
                        importer=form.importer.data)
-        volumes.append(new_vol)
+        volumes.append(new_volume)
         category.info['volumes'] = volumes
         project_repo.update_category(category)
         flash("Volume added", 'success')
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, all_importers=all_importers)
+    response = dict(form=form, new_volume=new_volume,
+                    all_importers=all_importers)
     return handle_content_type(response)
 
 
