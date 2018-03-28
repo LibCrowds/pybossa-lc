@@ -110,6 +110,7 @@ def update_volume(short_name, volume_id):
     form.importer.choices = [(name, name) for name in all_importers]
 
     upload_form = AvatarUploadForm()
+    import_form = GenericBulkTaskImportForm()(volume['importer'])
 
     def update():
         """Helper function to update the current volume."""
@@ -123,7 +124,17 @@ def update_volume(short_name, volume_id):
         project_repo.update_category(category)
 
     if request.method == 'POST':
-        if request.form.get('btn') != 'Upload':
+        # Process task import form
+        if request.form.get('btn') == 'Import':
+            import_form = GenericBulkTaskImportForm()(volume['importer'],
+                                                      request.body)
+            if import_form.validate():
+                volume['data'] = import_form.get_import_data()
+                importer.count_tasks_to_import(**import_form)
+                volume['n_tasks'] = n_tasks
+
+        # Process volume details form
+        elif request.form.get('btn') != 'Upload':
             form = VolumeForm(request.body)
             all_importers = importer.get_all_importer_names()
             form.importer.choices = [(name, name) for name in all_importers]
@@ -137,6 +148,7 @@ def update_volume(short_name, volume_id):
             else:
                 flash('Please correct the errors', 'error')
 
+        # Process thumbnail upload form
         else:
             if upload_form.validate_on_submit():
                 _file = request.files['avatar']
@@ -167,8 +179,8 @@ def update_volume(short_name, volume_id):
             else:
                 flash('You must provide a file', 'error')
 
-    response = dict(form=form, upload_form=upload_form, category=category,
-                    volume=volume)
+    response = dict(form=form, upload_form=upload_form,
+                    import_form=import_form, category=category, volume=volume)
     return handle_content_type(response)
 
 
