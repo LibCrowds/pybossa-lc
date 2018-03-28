@@ -11,7 +11,8 @@ from pybossa.util import redirect_content_type
 from pybossa.core import project_repo
 from pybossa.core import uploader, importer
 from pybossa.auth import ensure_authorized_to
-from pybossa.forms.forms import AvatarUploadForm
+from pybossa.forms.forms import AvatarUploadForm, VolumeForm
+from pybossa.forms.forms import GenericBulkTaskImportForm
 
 from ..utils import *
 from ..forms import *
