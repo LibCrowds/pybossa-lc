@@ -71,7 +71,6 @@ def new_volume(short_name):
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
         new_vol = dict(id=volume_id,
-                       source=form.source.data,
                        importer=form.importer.data,
                        name=form.name.data,
                        short_name=form.short_name.data)
@@ -132,7 +131,6 @@ def update_volume(short_name, volume_id):
                 volume['name'] = form.name.data
                 volume['short_name'] = form.short_name.data
                 volume['importer'] = form.importer.data
-                volume['source'] = form.source.data
                 update()
                 flash('Volume updated', 'success')
             else:

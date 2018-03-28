@@ -139,8 +139,6 @@ class VolumeForm(Form):
                                           pb_validator.NotAllowedChars(),
                                           UniqueVolumeField('short_name')])
     importer = SelectField('Importer')
-    source = TextField('Source', [validators.Required(),
-                                  UniqueVolumeField('source')])
 
 
 class ExportFieldForm(Form):
