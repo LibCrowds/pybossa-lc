@@ -11,11 +11,10 @@ from pybossa.util import redirect_content_type
 from pybossa.core import project_repo
 from pybossa.core import uploader, importer
 from pybossa.auth import ensure_authorized_to
-from pybossa.forms.forms import AvatarUploadForm, VolumeForm
-from pybossa.forms.forms import GenericBulkTaskImportForm
+from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 
 from ..utils import *
-from ..forms import *
+from ..forms import VolumeForm, ExportForm
 from ..exporters.csv_volume_exporter import CsvVolumeExporter
 from ..exporters.json_volume_exporter import JsonVolumeExporter
 
