@@ -25,19 +25,6 @@ class TestProjectsApi(web.Helper):
         self.flickr_album_id = '12345'
         self.flickr_album_uri = '{}{}'.format(flickr_url, self.flickr_album_id)
 
-    # @with_context
-    # def test_get_valid_iiif_annotation_data(self):
-    #     """Test the pattern for valid IIIF manifest URIs."""
-    #     volume = {
-    #         'name': 'some_manifest',
-    #         'source': self.manifest_uri
-    #     }
-    #     parent_id = 123
-    #     data = projects_api._get_iiif_annotation_data(volume, parent_id)
-    #     expected = dict(type='iiif-annotation', manifest_uri=self.manifest_uri,
-    #                     parent_id=parent_id)
-    #     assert_equals(data, expected)
-
     @with_context
     def test_get_invalid_iiif_annotation_data(self):
         """Test the pattern for invalid IIIF manifest URIs."""
