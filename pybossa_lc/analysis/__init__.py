@@ -341,9 +341,10 @@ class Analyst():
             "format": "text/plain"
         }
 
-        user = user_repo.get(user_id)
-        if user:
-            anno['creator'] = self.get_anno_creator(user)
+        if user_id:
+            user = user_repo.get(user_id)
+            if user:
+                anno['creator'] = self.get_anno_creator(user)
         return anno
 
     def create_tagging_anno(self, target, value):
