@@ -9,7 +9,7 @@ from flask.ext.login import login_required, current_user
 from pybossa.util import handle_content_type, get_avatar_url
 from pybossa.util import redirect_content_type
 from pybossa.core import project_repo
-from pybossa.core import uploader
+from pybossa.core import uploader, importer
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm
 
@@ -65,11 +65,14 @@ def new_volume(short_name):
 
     form = VolumeForm(request.body)
     form.category_id.data = category.id
+    all_importers = importer.get_all_importer_names()
+    form.importer.choices = [(name, name) for name in all_importers]
 
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
         new_vol = dict(id=volume_id,
                        source=form.source.data,
+                       importer=form.importer.data,
                        name=form.name.data,
                        short_name=form.short_name.data)
         volumes.append(new_vol)
@@ -79,7 +82,8 @@ def new_volume(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, volumes=volumes, category=category)
+    response = dict(form=form, volumes=volumes, category=category,
+                     all_importers=all_importers)
     return handle_content_type(response)
 
 
@@ -102,6 +106,9 @@ def update_volume(short_name, volume_id):
 
     form = VolumeForm(**volume)
     form.category_id.data = category.id
+    all_importers = importer.get_all_importer_names()
+    form.importer.choices = [(name, name) for name in all_importers]
+
     upload_form = AvatarUploadForm()
 
     def update():
@@ -118,14 +125,19 @@ def update_volume(short_name, volume_id):
     if request.method == 'POST':
         if request.form.get('btn') != 'Upload':
             form = VolumeForm(request.body)
+            all_importers = importer.get_all_importer_names()
+            form.importer.choices = [(name, name) for name in all_importers]
+
             if form.validate():
                 volume['name'] = form.name.data
                 volume['short_name'] = form.short_name.data
+                volume['importer'] = form.importer.data
                 volume['source'] = form.source.data
                 update()
                 flash('Volume updated', 'success')
             else:
                 flash('Please correct the errors', 'error')
+
         else:
             if upload_form.validate_on_submit():
                 _file = request.files['avatar']

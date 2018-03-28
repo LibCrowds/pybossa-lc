@@ -138,6 +138,7 @@ class VolumeForm(Form):
     short_name = TextField('Short Name', [validators.Required(),
                                           pb_validator.NotAllowedChars(),
                                           UniqueVolumeField('short_name')])
+    importer = SelectField('Importer')
     source = TextField('Source', [validators.Required(),
                                   UniqueVolumeField('source')])
 
