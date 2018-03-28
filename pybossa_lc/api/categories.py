@@ -130,8 +130,6 @@ def update_volume(short_name, volume_id):
                                                       request.body)
             if import_form.validate():
                 volume['data'] = import_form.get_import_data()
-                importer.count_tasks_to_import(**import_form)
-                volume['n_tasks'] = n_tasks
 
         # Process volume details form
         elif request.form.get('btn') != 'Upload':
