@@ -130,6 +130,8 @@ def update_volume(short_name, volume_id):
                                                       request.body)
             if import_form.validate():
                 volume['data'] = import_form.get_import_data()
+                update()
+                flash('Volume updated', 'success')
 
         # Process volume details form
         elif request.form.get('btn') != 'Upload':
