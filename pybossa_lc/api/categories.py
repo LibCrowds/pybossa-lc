@@ -111,7 +111,8 @@ def update_volume(short_name, volume_id):
     form.importer.choices = [(name, name) for name in all_importers]
 
     upload_form = AvatarUploadForm()
-    import_form = GenericBulkTaskImportForm()(volume['importer'])
+    import_form = GenericBulkTaskImportForm()(volume['importer'],
+                                              **volume.get('data', {}))
 
     def update():
         """Helper function to update the current volume."""
