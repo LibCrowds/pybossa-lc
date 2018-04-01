@@ -26,40 +26,6 @@ class TestProjectsApi(web.Helper):
         self.flickr_album_uri = '{}{}'.format(flickr_url, self.flickr_album_id)
 
     @with_context
-    def test_get_invalid_iiif_annotation_data(self):
-        """Test the pattern for invalid IIIF manifest URIs."""
-        manifest_uri = 'http://api.bl.uk/ark:/1/vdc_123/somethingelse'
-        volume = {
-            'name': 'some_manifest',
-            'source': manifest_uri
-        }
-        template_id = 'foo'
-        data = projects_api._get_iiif_annotation_data(volume, None)
-        assert not data
-
-    @with_context
-    def test_get_valid_flickr_data(self):
-        """Test the pattern for valid Flickr URIs."""
-        volume = {
-            'name': 'my_album',
-            'source': self.flickr_album_uri
-        }
-        data = projects_api._get_flickr_data(volume)
-        expected = dict(type='flickr', album_id=self.flickr_album_id)
-        assert_equals(data, expected)
-
-    @with_context
-    def test_get_invalid_flickr_data(self):
-        """Test the pattern for invalid Flickr URIs."""
-        invalid_url = 'http://www.flickr.com/photos/132066275@N04'
-        volume = {
-            'name': 'my_album',
-            'source': invalid_url
-        }
-        data = projects_api._get_flickr_data(volume)
-        assert not data
-
-    @with_context
     @patch('pybossa_lc.api.projects.enqueue_job')
     @patch('pybossa.core.importer.count_tasks_to_import')
     def test_task_import_queued_for_large_sets(self, mock_count, mock_enqueue):

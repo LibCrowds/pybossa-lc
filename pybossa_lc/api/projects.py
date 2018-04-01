@@ -46,11 +46,16 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} task{}.'.format(n_tasks, plural)
 
 
-def validate_parent(parent_id, presenter):
+def validate_parent(parent_id, template):
     """Validate a parent project."""
-    if presenter != 'iiif-annotation':
-        flash('Only IIIF annotation projects can be built from a parent',
-              'error')
+    parent = project_repo.get(parent_id)
+    parent_tmpl_id = template.get('parent_template_id')
+    if not parent_tmpl_id:
+        flash('This template should not be built from a parent', 'error')
+        return False
+
+    if parent.info.get('template_id') != parent_tmpl_id:
+        flash('Parent is not of the correct template type', 'error')
         return False
 
     empty_results = result_repo.filter_by(info=None, project_id=parent_id)
@@ -65,24 +70,6 @@ def validate_parent(parent_id, presenter):
         return False
 
     return True
-
-
-def _get_iiif_annotation_data(volume, parent_id):
-    """Return IIIF manifest data."""
-    pattern = r'^(https?:\/\/).*\/manifest\.json$'
-    source = volume.get('source', '')
-    match = re.search(pattern, source)
-    if match:
-        return dict(type='iiif', manifest_uri=source)
-
-
-def _get_flickr_data(volume):
-    """Return Flickr data."""
-    pattern = r'(?<=albums/)\d+(?=/|$)'
-    source = volume.get('source', '').strip()
-    match = re.search(pattern, source)
-    if match:
-        return dict(type='flickr', album_id=match.group(0))
 
 
 @login_required
@@ -148,20 +135,9 @@ def handle_valid_project_form(form, template, volume, category,
     has_parent = form.parent_id.data and form.parent_id.data != 'None'
     parent_id = int(form.parent_id.data) if has_parent else None
 
-    # Get the task import data
-    import_data = {}
-    if presenter == 'z3950':
-        import_data = _get_flickr_data(volume)
-    elif presenter == 'iiif-annotation':
-        import_data = _get_iiif_annotation_data(volume, parent_id)
-    if not import_data:
-        err_msg = "Invalid volume details for the task presenter type"
-        flash(err_msg, 'error')
-        return
-
     # Validate a parent
     if parent_id:
-        validate_parent(parent_id, presenter)
+        validate_parent(parent_id, template)
 
     # Check for similar projects
     if volume['id'] in built_templates[template.id]:
@@ -170,7 +146,7 @@ def handle_valid_project_form(form, template, volume, category,
         return
 
     # Create
-    webhook = '{0}libcrowds/analysis'.format(request.url_root)
+    webhook = '{0}lc/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
                       description=template.description,
@@ -181,12 +157,15 @@ def handle_valid_project_form(form, template, volume, category,
                           'template_id': template.id
                       },
                       webhook=webhook,
+                      published=True,
                       category_id=category.id,
                       owners_ids=[current_user.id])
     project_repo.save(project)
 
     # Attempt to generate the tasks
     success = True
+    import_data = volume.get('data', {})
+    import_data['type'] = volume.get('importer')
     try:
         msg = _import_tasks(project, **import_data)
         flash(msg, 'success')
