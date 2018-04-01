@@ -14,6 +14,7 @@ class ProjectTemplate(object):
         self.description = kwargs['description']
         self.category_id = kwargs['category_id']
         self.owner_id = kwargs['owner_id']
+        self.parent_template_id = None
         self.min_answers = kwargs.get('min_answers', 3)
         self.max_answers = kwargs.get('max_answers', 3)
         self.tutorial = kwargs.get('tutorial', '')

@@ -76,17 +76,26 @@ def update_template(template_id):
         abort(400)
 
     ensure_authorized_to('update', user)
+    form = ProjectTemplateForm(**template.to_dict())
 
+    # Add category choices
     categories = project_repo.get_all_categories()
     category_choices = [(c.id, c.name) for c in categories]
-    form = ProjectTemplateForm(**template.to_dict())
     form.category_id.choices = category_choices
     if not form.category_id.data:
         form.category_id.data = category_choices[0][0]
 
+    # Add parent template choices
+    category_id = int(form.category_id.data)
+    templates = project_tmpl_repo.get_by_category_id(category_id)
+    parent_tmpl_choices = [(t.id, t.name) for t in templates]
+    parent_tmpl_choices.append(('None', ''))
+    form.parent_template_id.choices = parent_tmpl_choices
+
     if request.method == 'POST':
         form = ProjectTemplateForm(request.body)
         form.category_id.choices = category_choices
+        form.parent_template_id.choices = parent_tmpl_choices
 
         if form.validate():
             changes = get_changes(form, template)

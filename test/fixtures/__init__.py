@@ -32,6 +32,7 @@ class TemplateFixtures(object):
                                tutorial='Do stuff',
                                description='This project is amazing',
                                category_id=self.category.id,
+                               parent_template_id=None,
                                min_answers=3,
                                max_answers=3,
                                pending=True,
