@@ -108,6 +108,8 @@ def update_template(template_id):
                 template.pending = True
                 project_tmpl_repo.update_pending(template)
                 flash('Updates submitted for approval', 'success')
+            else:  # pragma: no cover
+                flash('Nothing changed', 'info')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
@@ -158,7 +160,9 @@ def update_template_task(template_id):
                 template.pending = True
                 project_tmpl_repo.update_pending(template)
                 flash('Updates submitted for approval', 'success')
-        else:
+            else:  # pragma: no cover
+                flash('Nothing changed', 'info')
+        else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
     z3950_databases = form.database.choices if presenter == 'z3950' else []
@@ -203,6 +207,8 @@ def update_template_rules(template_id):
                 template.pending = True
                 project_tmpl_repo.update_pending(template)
                 flash('Updates submitted for approval', 'success')
+            else:  # pragma: no cover
+                flash('Nothing changed', 'info')
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
