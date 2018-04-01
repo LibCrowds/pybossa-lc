@@ -59,7 +59,9 @@ class ProjectTemplateForm(Form):
     description = TextField('Description', [validators.Required()])
     tutorial = TextAreaField('Tutorial')
     category_id = SelectField('Category', coerce=int)
-    parent_template_id = SelectField('Parent')
+    parent_template_id = SelectField('Parent', choices=[
+        ('None', '')
+    ])
     min_answers = IntegerField('Min Answers', [validators.Required()],
                                default=3)
     max_answers = IntegerField('Max Answers', [validators.Required()],
