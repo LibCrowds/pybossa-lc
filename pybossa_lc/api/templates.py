@@ -98,6 +98,10 @@ def update_template(template_id):
         form.parent_template_id.choices = parent_tmpl_choices
 
         if form.validate():
+            # Replace 'None' string with None
+            if form.parent_template_id.data == 'None':
+                form.parent_template_id.data = None
+
             changes = get_changes(form, template)
             if changes:
                 template.update(form.data)
