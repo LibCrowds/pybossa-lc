@@ -102,7 +102,7 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['volume_id'], vol['id'])
         assert_equal(project.description, tmpl.description)
         assert_equal(project.category_id, tmpl.category_id)
-        assert_equal(project.published, False)
+        assert_equal(project.published, True)
 
     @with_context
     @patch('pybossa_lc.api.projects.importer')
@@ -135,4 +135,4 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['volume_id'], vol['id'])
         assert_equal(project.description, tmpl.description)
         assert_equal(project.category_id, tmpl.category_id)
-        assert_equal(project.published, False)
+        assert_equal(project.published, True)
