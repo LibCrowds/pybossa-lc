@@ -127,8 +127,8 @@ def update_volume(short_name, volume_id):
 
     if request.method == 'POST':
         # Process task import form
-        if (request.form.get('btn') == 'Import'
-            or request.body.get('btn') == 'Import'):
+        if (request.form.get('btn') == 'Import' or
+                request.body.get('btn') == 'Import'):
             import_form = GenericBulkTaskImportForm()(volume['importer'],
                                                       request.body)
             if import_form.validate():

@@ -171,4 +171,3 @@ class TestProjectsApi(web.Helper):
         expected = call(task_repo, project.id, type='z3950',
                         album_id=self.flickr_album_id)
         assert_equal(mock_importer.create_tasks.call_args_list, [expected])
-
