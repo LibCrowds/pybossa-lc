@@ -2,7 +2,7 @@
 """Test projects API."""
 
 import json
-from mock import patch
+from mock import patch, call
 from nose.tools import *
 from helper import web
 from default import with_context, db, Fixtures
@@ -23,7 +23,6 @@ class TestProjectsApi(web.Helper):
         self.manifest_uri = 'http://api.bl.uk/ark:/1/vdc_123/manifest.json'
         flickr_url = 'http://www.flickr.com/photos/132066275@N04/albums/'
         self.flickr_album_id = '12345'
-        self.flickr_album_uri = '{}{}'.format(flickr_url, self.flickr_album_id)
 
     @with_context
     @patch('pybossa_lc.api.projects.enqueue_job')
@@ -73,12 +72,11 @@ class TestProjectsApi(web.Helper):
 
     @with_context
     @patch('pybossa_lc.api.projects.importer')
-    def test_iiif_project_creation(self, mock_importer):
-        """Test that a IIIF select project is created."""
-        mock_importer.count_tasks_to_import.return_value = 1
+    def test_project_created_with_correct_details(self, mock_importer):
+        """Test that a project is created with the correct details."""
         self.register(name=Fixtures.name)
         self.signin()
-        vol = dict(id='123abc', name='My Volume', source=self.manifest_uri)
+        vol = dict(id='123abc', name='My Volume')
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
@@ -91,18 +89,55 @@ class TestProjectsApi(web.Helper):
         form_data = dict(name='foo',
                          short_name='bar',
                          template_id=tmpl.id,
-                         volume_id=vol['id'],
-                         parent_id='None')
+                         volume_id=vol['id'])
+        res = self.app_post_json(endpoint, data=form_data)
+        res_data = json.loads(res.data)
+        project = self.project_repo.get(1)
+
+        # Check project details
+        assert_equal(project.name, form_data['name'])
+        assert_equal(project.short_name, form_data['short_name'])
+        assert_equal(project.webhook, 'http://localhost/lc/analysis')
+        assert_equal(project.published, True)
+        assert_equal(project.description, tmpl.description)
+        assert_equal(project.category_id, tmpl.category_id)
+        assert_dict_equal(project.info, {
+            'template_id': tmpl.id,
+            'volume_id': vol['id']
+        })
+
+    @with_context
+    @patch('pybossa_lc.api.projects.importer')
+    def test_iiif_project_creation(self, mock_importer):
+        """Test that a IIIF select project is created."""
+        mock_importer.count_tasks_to_import.return_value = 1
+        self.register(name=Fixtures.name)
+        self.signin()
+        vol = dict(id='123abc', name='My Volume', importer='iiif',
+                   data=dict(manifest_uri=self.manifest_uri))
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        category.info = dict(presenter='iiif-annotation', volumes=[vol],
+                             templates=[tmpl.to_dict()])
+        self.project_repo.update_category(category)
+
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=tmpl.id,
+                         volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
         project = self.project_repo.get(1)
-        assert_equal(project.info['template_id'], tmpl.id)
-        assert_equal(project.info['volume_id'], vol['id'])
-        assert_equal(project.description, tmpl.description)
-        assert_equal(project.category_id, tmpl.category_id)
-        assert_equal(project.published, True)
+
+        # Check correct task data imported
+        expected = call(task_repo, project.id, type='iiif',
+                        manifest_uri=self.manifest_uri)
+        assert_equal(mock_importer.create_tasks.call_args_list, [expected])
 
     @with_context
     @patch('pybossa_lc.api.projects.importer')
@@ -111,7 +146,8 @@ class TestProjectsApi(web.Helper):
         mock_importer.count_tasks_to_import.return_value = 1
         self.register(name=Fixtures.name)
         self.signin()
-        vol = dict(id='123abc', name='My Volume', source=self.flickr_album_uri)
+        vol = dict(id='123abc', name='My Volume', importer='z3950',
+                   data=dict(album_id=self.flickr_album_id))
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
@@ -124,15 +160,15 @@ class TestProjectsApi(web.Helper):
         form_data = dict(name='foo',
                          short_name='bar',
                          template_id=tmpl.id,
-                         volume_id=vol['id'],
-                         parent_id='None')
+                         volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
         project = self.project_repo.get(1)
-        assert_equal(project.info['template_id'], tmpl.id)
-        assert_equal(project.info['volume_id'], vol['id'])
-        assert_equal(project.description, tmpl.description)
-        assert_equal(project.category_id, tmpl.category_id)
-        assert_equal(project.published, True)
+
+        # Check correct task data imported
+        expected = call(task_repo, project.id, type='z3950',
+                        album_id=self.flickr_album_id)
+        assert_equal(mock_importer.create_tasks.call_args_list, [expected])
+
