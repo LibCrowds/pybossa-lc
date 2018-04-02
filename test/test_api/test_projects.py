@@ -171,3 +171,33 @@ class TestProjectsApi(web.Helper):
         expected = call(task_repo, project.id, type='z3950',
                         album_id=self.flickr_album_id)
         assert_equal(mock_importer.create_tasks.call_args_list, [expected])
+
+    @with_context
+    @patch('pybossa_lc.api.projects.importer')
+    def test_project_created_with_volume_avatar(self, mock_importer):
+        """Test that a project is created with the volume's avatar."""
+        self.register(name=Fixtures.name)
+        self.signin()
+        vol = dict(id='123abc', name='My Volume', container='foo',
+                   thumbnail='bar.png', thumbnail_url='/foo/bar.png')
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        category.info = dict(presenter='iiif-annotation', volumes=[vol],
+                             templates=[tmpl.to_dict()])
+        self.project_repo.update_category(category)
+
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=tmpl.id,
+                         volume_id=vol['id'])
+        res = self.app_post_json(endpoint, data=form_data)
+        res_data = json.loads(res.data)
+        project = self.project_repo.get(1)
+
+        # Check project avatar details
+        assert_equal(project.info['container'], vol['container'])
+        assert_equal(project.info['thumbnail'], vol['thumbnail'])
+        assert_equal(project.info['thumbnail_url'], vol['thumbnail_url'])

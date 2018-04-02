@@ -141,6 +141,13 @@ def handle_valid_project_form(form, template, volume, category):
                       published=True,
                       category_id=category.id,
                       owners_ids=[current_user.id])
+
+    # Add avatar
+    if volume.get('container') and volume.get('thumbnail'):
+        project.info['container'] = volume['container']
+        project.info['thumbnail'] = volume['thumbnail']
+        project.info['thumbnail_url'] = volume.get('thumbnail_url')
+
     project_repo.save(project)
 
     # Attempt to generate the tasks
