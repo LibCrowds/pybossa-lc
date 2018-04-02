@@ -81,7 +81,8 @@ def new(category_short_name):
         abort(404)
 
     ensure_authorized_to('create', Project)
-    templates = project_tmpl_repo.get_by_category_id(category.id)
+
+    enhanced_tmpls = get_enhanced_templates(category)
     volumes = category.info.get('volumes', [])
     projects = project_repo.filter_by(category_id=category.id)
 
@@ -92,55 +93,37 @@ def new(category_short_name):
         flash(err_msg, 'error')
         return redirect_content_type(url_for('home.home'))
 
-    template_choices = [(tmpl.id, tmpl.name) for tmpl in templates]
+    form = ProjectForm(request.body)
+
     volume_choices = [(v['id'], v['name']) for v in volumes]
+    form.volume_id.choices = volume_choices
+
     parent_choices = [(p.id, p.name) for p in projects]
     parent_choices.append(('None', ''))
-
-    form = ProjectForm(request.body)
-    form.template_id.choices = template_choices
-    form.volume_id.choices = volume_choices
     form.parent_id.choices = parent_choices
 
-    built_templates = get_built_templates(category)
+    template_choices = [(tmpl['id'], tmpl['name']) for tmpl in enhanced_tmpls]
+    form.template_id.choices = template_choices
 
     if request.method == 'POST':
         if form.validate():
             tmpl = project_tmpl_repo.get(form.template_id.data)
             volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
-            handle_valid_project_form(form, tmpl, volume, category,
-                                      built_templates)
+            handle_valid_project_form(form, tmpl, volume, category)
 
         else:
             flash('Please correct the errors', 'error')
 
-    tmpl_dicts = [tmpl.to_dict() for tmpl in templates]
-    response = dict(form=form, templates=tmpl_dicts, volumes=volumes,
-                    built_templates=built_templates)
+    response = dict(form=form, templates=enhanced_tmpls, volumes=volumes)
     return handle_content_type(response)
 
 
-def handle_valid_project_form(form, template, volume, category,
-                              built_templates):
-    """Handle a seemingly valid project form."""
+def handle_valid_project_form(form, template, volume, category):
+    """Handle a valid project form."""
     presenter = category.info.get('presenter')
     task = template.task
     if not task:
         flash('The selected template is incomplete', 'error')
-        return
-
-    # Get parent ID
-    has_parent = form.parent_id.data and form.parent_id.data != 'None'
-    parent_id = int(form.parent_id.data) if has_parent else None
-
-    # Validate a parent
-    if parent_id:
-        validate_parent(parent_id, template)
-
-    # Check for similar projects
-    if volume['id'] in built_templates[template.id]:
-        err_msg = "A project already exists for that volume and template."
-        flash(err_msg, 'error')
         return
 
     # Create
@@ -186,17 +169,26 @@ def handle_valid_project_form(form, template, volume, category,
         return redirect_content_type(url_for('home.home'))
 
 
-def get_built_templates(category):
-    """Get dict of templates against volumes for all current projects."""
+def get_enhanced_templates(category):
+    """Get templates with details of available volumes and parents for each."""
     templates = project_tmpl_repo.get_by_category_id(category.id)
-    built_templates = {tmpl.id: [] for tmpl in templates}
+    volumes = category.info.get('volumes', [])
     projects = project_repo.filter_by(category_id=category.id)
-    for p in projects:
-        tmpl_id = p.info.get('template_id')
-        vol_id = p.info.get('volume_id')
-        if tmpl_id and vol_id and tmpl_id in built_templates.keys():
-            tmpl_vols = built_templates.get(tmpl_id, [])
-            if vol_id not in tmpl_vols:
-                tmpl_vols.append(vol_id)
-                built_templates[tmpl_id] = tmpl_vols
-    return built_templates
+
+    # Remove incomplete templates
+    tmpl_dicts = [tmpl.to_dict() for tmpl in templates if tmpl.task]
+
+    for tmpl in tmpl_dicts:
+        # Add available volumes
+        available_vols = [vol['id'] for vol in volumes[:]]
+        for project in projects:
+            tmpl_id = project.info.get('template_id')
+            if tmpl_id != tmpl['id']:
+                continue
+
+            vol_id = project.info.get('volume_id')
+            available_vols = filter(lambda x: x != vol_id, available_vols)
+
+        tmpl['available_volumes'] = available_vols
+
+    return tmpl_dicts
