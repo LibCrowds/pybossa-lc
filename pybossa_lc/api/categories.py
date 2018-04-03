@@ -125,21 +125,30 @@ def update_volume(short_name, volume_id):
         category.info['volumes'] = volumes
         project_repo.update_category(category)
 
+    cat_projects = project_repo.filter_by(category_id=category.id)
+    has_projects = len([p for p in cat_projects
+                        if p.info.get('volume_id') == volume_id]) > 0
+
     if request.method == 'POST':
         # Process task import form
         if (request.form.get('btn') == 'Import' or
                 request.body.get('btn') == 'Import'):
+
             import_form = GenericBulkTaskImportForm()(volume['importer'],
                                                       request.body)
             if import_form.validate():
-                volume['data'] = import_form.get_import_data()
-                import_data = import_form.get_import_data()
-                try:
-                    importer.count_tasks_to_import(**import_data)
-                    update()
-                    flash('Volume updated', 'success')
-                except BulkImportException as err:
-                    flash(err.message, 'error')
+                if has_projects:
+                    flash('Update failed as projects have already been built',
+                          'error')
+                else:
+                    volume['data'] = import_form.get_import_data()
+                    import_data = import_form.get_import_data()
+                    try:
+                        importer.count_tasks_to_import(**import_data)
+                        update()
+                        flash('Volume updated', 'success')
+                    except BulkImportException as err:
+                        flash(err.message, 'error')
 
             else:
                 flash('Please correct the errors', 'error')
@@ -151,11 +160,15 @@ def update_volume(short_name, volume_id):
             form.importer.choices = [(name, name) for name in all_importers]
 
             if form.validate():
-                volume['name'] = form.name.data
-                volume['short_name'] = form.short_name.data
-                volume['importer'] = form.importer.data
-                update()
-                flash('Volume updated', 'success')
+                if has_projects:
+                    flash('Update failed as projects have already been built',
+                          'error')
+                else:
+                    volume['name'] = form.name.data
+                    volume['short_name'] = form.short_name.data
+                    volume['importer'] = form.importer.data
+                    update()
+                    flash('Volume updated', 'success')
             else:
                 flash('Please correct the errors', 'error')
 
@@ -192,7 +205,7 @@ def update_volume(short_name, volume_id):
 
     response = dict(form=form, all_importers=all_importers,
                     upload_form=upload_form, import_form=import_form,
-                    volume=volume)
+                    volume=volume, has_projects=has_projects)
     return handle_content_type(response)
 
 
