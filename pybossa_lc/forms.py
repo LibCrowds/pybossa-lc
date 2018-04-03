@@ -115,7 +115,6 @@ class ProjectForm(Form):
     """A form for creating projects from templates."""
     volume_id = SelectField('Volume')
     template_id = SelectField('Template')
-    parent_id = SelectField('Parent Project')
     name_msg = "This name is already taken."
     name = TextField('Name',
                      [validators.Required(),

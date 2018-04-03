@@ -46,32 +46,6 @@ def _import_tasks(project, **import_data):
     return 'The project was generated with {} task{}.'.format(n_tasks, plural)
 
 
-def validate_parent(parent_id, template):
-    """Validate a parent project."""
-    parent = project_repo.get(parent_id)
-    parent_tmpl_id = template.get('parent_template_id')
-    if not parent_tmpl_id:
-        flash('This template should not be built from a parent', 'error')
-        return False
-
-    if parent.info.get('template_id') != parent_tmpl_id:
-        flash('Parent is not of the correct template type', 'error')
-        return False
-
-    empty_results = result_repo.filter_by(info=None, project_id=parent_id)
-    if empty_results:
-        flash('Parent contains incomplete results', 'error')
-        return False
-
-    incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
-                                                 project_id=parent_id)
-    if incomplete_tasks:
-        flash('Parent contains incomplete tasks', 'error')
-        return False
-
-    return True
-
-
 @login_required
 @BLUEPRINT.route('/<category_short_name>/new', methods=['GET', 'POST'])
 def new(category_short_name):
@@ -84,7 +58,6 @@ def new(category_short_name):
 
     enhanced_tmpls = get_enhanced_templates(category)
     volumes = category.info.get('volumes', [])
-    projects = project_repo.filter_by(category_id=category.id)
 
     # Check for a valid task presenter
     presenter = category.info.get('presenter')
@@ -97,10 +70,6 @@ def new(category_short_name):
 
     volume_choices = [(v['id'], v['name']) for v in volumes]
     form.volume_id.choices = volume_choices
-
-    parent_choices = [(p.id, p.name) for p in projects]
-    parent_choices.append(('None', ''))
-    form.parent_id.choices = parent_choices
 
     template_choices = [(tmpl['id'], tmpl['name']) for tmpl in enhanced_tmpls]
     form.template_id.choices = template_choices
@@ -179,8 +148,9 @@ def get_enhanced_templates(category):
     tmpl_dicts = [tmpl.to_dict() for tmpl in templates if tmpl.task]
 
     for tmpl in tmpl_dicts:
-        # Add available volumes
         available_vols = [vol['id'] for vol in volumes[:]]
+
+        # Check built projects
         for project in projects:
             tmpl_id = project.info.get('template_id')
             if tmpl_id != tmpl['id']:
@@ -189,6 +159,32 @@ def get_enhanced_templates(category):
             vol_id = project.info.get('volume_id')
             available_vols = filter(lambda x: x != vol_id, available_vols)
 
+        # Check for valid parents
+        p_tmpl_id = tmpl.get('parent_template_id')
+        if p_tmpl_id:
+            available_vols = [vol_id for vol_id in available_vols
+                              if get_parent(p_tmpl_id, vol_id)]
+
         tmpl['available_volumes'] = available_vols
 
     return tmpl_dicts
+
+def get_parent(parent_template_id, volume_id):
+    """Return a valid parent project."""
+    projects = project_repo.filter_by(category_id=category.id)
+    try:
+        return [p for p in projects
+                if p.info.get('template_id') == parent_template_id and
+                p.info.get('volume_id') == volume_id and validate_parent(p)][0]
+    except IndexError:
+        return None
+
+def validate_parent(project, template):
+    """Validate a parent project."""
+    empty_results = result_repo.filter_by(info=None, project_id=project.id)
+    incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
+                                                 project_id=project.id)
+    if empty_results or incomplete_tasks:
+        return False
+
+    return True
