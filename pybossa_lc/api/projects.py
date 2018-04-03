@@ -117,7 +117,8 @@ def handle_valid_project_form(form, template, volume, category):
             flash(msg, 'error')
             return
 
-        parent = get_parent(template.parent_template_id, volume['id'])
+        parent = get_parent(template.parent_template_id, volume['id'],
+                            category)
         if not parent:
             msg = 'There is no valid parent for this template and volume.'
             flash(msg, 'error')
@@ -176,13 +177,13 @@ def get_enhanced_templates(category):
         p_tmpl_id = tmpl.get('parent_template_id')
         if p_tmpl_id:
             available_vols = [vol_id for vol_id in available_vols
-                              if get_parent(p_tmpl_id, vol_id)]
+                              if get_parent(p_tmpl_id, vol_id, category)]
 
         tmpl['available_volumes'] = available_vols
 
     return tmpl_dicts
 
-def get_parent(parent_template_id, volume_id):
+def get_parent(parent_template_id, volume_id, category):
     """Return a valid parent project."""
     projects = project_repo.filter_by(category_id=category.id)
     try:
