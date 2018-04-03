@@ -120,13 +120,6 @@ def new(category_short_name):
 
 def handle_valid_project_form(form, template, volume, category):
     """Handle a valid project form."""
-    presenter = category.info.get('presenter')
-    task = template.task
-    if not task:
-        flash('The selected template is incomplete', 'error')
-        return
-
-    # Create
     webhook = '{0}lc/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
