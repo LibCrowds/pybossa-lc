@@ -127,8 +127,8 @@ def handle_valid_project_form(form, template, volume, category):
             return
 
         parent_manifest_uri = url_for('.iiif_parent_manifest',
-                                     category_short_name=category.short_name,
-                                     project_id=parent.id)
+                                      category_short_name=category.short_name,
+                                      project_id=parent.id)
         volume['data'] = dict(manifest_uri=parent_manifest_uri)
 
     project_repo.save(project)
@@ -190,6 +190,7 @@ def get_enhanced_templates(category):
 
     return tmpl_dicts
 
+
 def get_parent(parent_template_id, volume_id, category):
     """Return a valid parent project."""
     projects = project_repo.filter_by(category_id=category.id)
@@ -200,6 +201,7 @@ def get_parent(parent_template_id, volume_id, category):
     except IndexError:
         return None
 
+
 def validate_parent(project):
     """Validate a parent project."""
     empty_results = result_repo.filter_by(info=None, project_id=project.id)
@@ -209,6 +211,7 @@ def validate_parent(project):
         return False
 
     return True
+
 
 @BLUEPRINT.route('/<category_short_name>/parent/iiif/<int:project_id>')
 def iiif_parent_manifest(category_short_name, project_id):
