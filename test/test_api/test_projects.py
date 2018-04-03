@@ -203,7 +203,7 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['thumbnail'], vol['thumbnail'])
         assert_equal(project.info['thumbnail_url'], vol['thumbnail_url'])
 
-    def test_available_volumes_returned_with_templates():
+    def test_available_volumes_returned_with_templates(self):
         """Test that only available projects are returned with templates."""
         pass
 
