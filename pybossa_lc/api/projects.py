@@ -110,6 +110,19 @@ def handle_valid_project_form(form, template, volume, category):
         project.info['thumbnail'] = volume['thumbnail']
         project.info['thumbnail_url'] = volume.get('thumbnail_url')
 
+    # Check for parent
+    if template.parent_template_id:
+        if template.importer != 'iiif':
+            msg = 'Only IIIF projects can be built from parents.'
+            flash(msg, 'error')
+            return
+
+        parent = get_parent(template.parent_template_id, volume['id'])
+        if not parent:
+            msg = 'There is no valid parent for this template and volume.'
+            flash(msg, 'error')
+            return
+
     project_repo.save(project)
 
     # Attempt to generate the tasks
