@@ -99,7 +99,8 @@ def handle_valid_project_form(form, template, volume, category):
                       owner_id=current_user.id,
                       info={
                           'volume_id': volume['id'],
-                          'template_id': template.id
+                          'template_id': template.id,
+                          'tags': form.tags.data
                       },
                       webhook=webhook,
                       published=True,
