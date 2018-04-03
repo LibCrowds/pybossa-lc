@@ -40,14 +40,6 @@ def queue_startup_jobs():
             'timeout': 24 * HOUR,
             'queue': 'medium'
         })
-    if extra_startup_tasks.get('remove_bad_volumes'):
-        enqueue_job({
-            'name': remove_bad_volumes,
-            'args': [],
-            'kwargs': {},
-            'timeout': current_app.config.get('TIMEOUT'),
-            'queue': 'low'
-        })
 
 
 def check_for_invalid_templates():
@@ -102,25 +94,6 @@ def reanalyse_all_results():
                 continue
             print('Analysing all results for project {}'.format(project.id))
             analyst.analyse_all(project.id)
-
-
-def remove_bad_volumes():
-    """Remove volumes that don't comply with the correct data structure."""
-    from pybossa.core import project_repo
-    categories = project_repo.get_all_categories()
-    required = ['id', 'name', 'source', 'short_name']
-    for category in categories:
-        if not isinstance(category.info, dict):
-            category.info = {}
-
-        volumes = category.info.get('volumes', [])
-        if not isinstance(volumes, list):
-            volumes = []
-
-        vols = [v for v in volumes if all(key in v.keys() for key in required)]
-
-        category.info['volumes'] = vols
-        project_repo.update_category(category)
 
 
 def make_announcement(title, body, url, media_url=None, admin=False):
