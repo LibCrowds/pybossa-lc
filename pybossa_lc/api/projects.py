@@ -192,7 +192,7 @@ def get_parent(parent_template_id, volume_id):
     except IndexError:
         return None
 
-def validate_parent(project, template):
+def validate_parent(project):
     """Validate a parent project."""
     empty_results = result_repo.filter_by(info=None, project_id=project.id)
     incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
