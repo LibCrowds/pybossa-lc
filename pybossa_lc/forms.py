@@ -130,9 +130,6 @@ class ProjectForm(Form):
                                                 message=sn_msg),
                             pb_validator.ReservedName('project', current_app)])
 
-    # Will be added as a dictionary with JSON response
-    tags = FormField(Form)
-
 
 class VolumeForm(Form):
     """A form for creating volumes."""
