@@ -69,22 +69,21 @@ def new_volume(short_name):
     all_importers = importer.get_all_importer_names()
     form.importer.choices = [(name, name) for name in all_importers]
 
-    new_volume = None
+    new_vol = None
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
-        new_volume = dict(id=volume_id,
+        new_vol = dict(id=volume_id,
                           name=form.name.data,
                           short_name=form.short_name.data,
                           importer=form.importer.data)
-        volumes.append(new_volume)
+        volumes.append(new_vol)
         category.info['volumes'] = volumes
         project_repo.update_category(category)
         flash("Volume added", 'success')
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(form=form, new_volume=new_volume,
-                    all_importers=all_importers)
+    response = dict(form=form, new_volume=new_vol, all_importers=all_importers)
     return handle_content_type(response)
 
 
