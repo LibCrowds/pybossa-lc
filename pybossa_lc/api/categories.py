@@ -313,3 +313,27 @@ def update_export(short_name, export_id):
 
     response = dict(export_formats=export_fmts, form=form)
     return handle_content_type(response)
+
+
+@BLUEPRINT.route('/<short_name>/tags')
+def get_tags(short_name):
+    """Return all tags currently associated with the category's projects."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    projects = project_repo.filter_by(category_id=category.id)
+    project_tags = [(k, v) for project in projects
+                    for k, v in project.info.get('tags', {}).items()]
+
+    tags = {}
+    for tag in project_tags:
+        key = tag[0]
+        value = tag[1]
+        tag_values = tags.get(key, [])
+        tag_values.append(value)
+        tag_values = list(set(tag_values))
+        tags[key] = tag_values
+
+    response = dict(tags=tags)
+    return handle_content_type(response)
