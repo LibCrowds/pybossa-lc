@@ -7,6 +7,7 @@ from nose.tools import *
 from helper import web
 from default import with_context, db, Fixtures
 from factories import ProjectFactory, CategoryFactory
+from factories import TaskFactory, TaskRunFactory
 from pybossa.jobs import import_tasks
 from pybossa.core import task_repo
 from pybossa.repositories import ProjectRepository
@@ -43,7 +44,7 @@ class TestProjectsApi(web.Helper):
     @with_context
     @patch('pybossa.core.importer.create_tasks')
     @patch('pybossa.core.importer.count_tasks_to_import', return_value=300)
-    def test_task_import_for_smaller_sets(self, mock_count, mock_create):
+    def test_task_import_direct_for_small_sets(self, mock_count, mock_create):
         """Test that task imports are created immediately when 300 or less."""
         project = ProjectFactory.create()
         data = dict(foo='bar')
@@ -57,18 +58,6 @@ class TestProjectsApi(web.Helper):
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         res = self.app_post_json(endpoint)
         assert_equal(res.status_code, 401)
-
-    @with_context
-    def test_project_creation_fails_with_invalid_presenter(self):
-        """Test that project creation fails with an invalid task presenter."""
-        self.register()
-        self.signin()
-        category = CategoryFactory(info=dict(presenter='foo'))
-        endpoint = '/lc/projects/{}/new'.format(category.short_name)
-        res = self.app_post_json(endpoint)
-        res_data = json.loads(res.data)
-        msg = 'Invalid task presenter, please contact an administrator'
-        assert_equal(res_data['flash'], msg)
 
     @with_context
     @patch('pybossa_lc.api.projects.importer')
@@ -105,6 +94,18 @@ class TestProjectsApi(web.Helper):
             'template_id': tmpl.id,
             'volume_id': vol['id']
         })
+
+    @with_context
+    def test_project_creation_fails_with_invalid_presenter(self):
+        """Test that project creation fails with an invalid task presenter."""
+        self.register()
+        self.signin()
+        category = CategoryFactory(info=dict(presenter='foo'))
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        res = self.app_post_json(endpoint)
+        res_data = json.loads(res.data)
+        msg = 'Invalid task presenter, please contact an administrator'
+        assert_equal(res_data['flash'], msg)
 
     @with_context
     @patch('pybossa_lc.api.projects.importer')
@@ -201,3 +202,19 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['container'], vol['container'])
         assert_equal(project.info['thumbnail'], vol['thumbnail'])
         assert_equal(project.info['thumbnail_url'], vol['thumbnail_url'])
+
+    def test_available_volumes_returned_with_templates()
+        """Test that only available projects are returned with templates."""
+        pass
+
+    def test_parent_invalid_if_empty_results(self):
+        """Test that a parent is invalid with empty results."""
+        pass
+
+    def test_parent_invalid_if_incompleted_tasks(self):
+        """Test that a parent is invalid with incomplete tasks."""
+        pass
+
+    def test_parent_valid_if_complete(self):
+        """Test that a parent is valid if complete and results analysed."""
+        pass
