@@ -127,26 +127,3 @@ class TestIIIFAnnotationAnalyst(Test):
         task_run_df = pandas.DataFrame(self.data)
         df = self.iiif_analyst.get_transcriptions_df(task_run_df)
         assert_dict_equal(df.to_dict(), self.transcriptions_df.to_dict())
-
-    # @with_context
-    # def test_set_target_from_selection_parent(self):
-    #     """Test target set from a selection parent."""
-    #     rect = dict(x=1, y=2, width=3, height=4)
-    #     info = dict(highlights=[rect])
-    #     task = TaskFactory.create(n_answers=1, info=info)
-    #     target = 'http://example.com'
-    #     anno = {
-    #         'target': target
-    #     }
-    #     iiif_annotation.set_target_from_selection_parent(anno, task)
-    #     assert_dict_equal(anno['target'], {
-    #         'source': target,
-    #         'selector': {
-    #             'conformsTo': 'http://www.w3.org/TR/media-frags/',
-    #             'type': 'FragmentSelector',
-    #             'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
-    #                                                     rect['y'],
-    #                                                     rect['width'],
-    #                                                     rect['height'])
-    #         }
-    #     })
