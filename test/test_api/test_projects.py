@@ -112,7 +112,7 @@ class TestProjectsApi(web.Helper):
     def test_iiif_project_creation(self, mock_importer):
         """Test that a IIIF select project is created."""
         mock_importer.count_tasks_to_import.return_value = 1
-        self.register(name=Fixtures.name)
+        self.register()
         self.signin()
         vol = dict(id='123abc', name='My Volume', importer='iiif',
                    data=dict(manifest_uri=self.manifest_uri))
@@ -145,7 +145,7 @@ class TestProjectsApi(web.Helper):
     def test_z3950_project_creation(self, mock_importer):
         """Test that a Z39.50 project is created."""
         mock_importer.count_tasks_to_import.return_value = 1
-        self.register(name=Fixtures.name)
+        self.register()
         self.signin()
         vol = dict(id='123abc', name='My Volume', importer='z3950',
                    data=dict(album_id=self.flickr_album_id))
@@ -177,7 +177,7 @@ class TestProjectsApi(web.Helper):
     @patch('pybossa_lc.api.projects.importer')
     def test_project_created_with_volume_avatar(self, mock_importer):
         """Test that a project is created with the volume's avatar."""
-        self.register(name=Fixtures.name)
+        self.register()
         self.signin()
         vol = dict(id='123abc', name='My Volume', container='foo',
                    thumbnail='bar.png', thumbnail_url='/foo/bar.png')
@@ -205,7 +205,7 @@ class TestProjectsApi(web.Helper):
     @with_context
     def test_unbuilt_volumes_returned_with_templates(self):
         """Test that only available volumes are returned with templates."""
-        self.register(name=Fixtures.name)
+        self.register()
         self.signin()
         user = self.user_repo.get(1)
         vol1 = dict(id='123abc', name='My Volume')
@@ -249,3 +249,40 @@ class TestProjectsApi(web.Helper):
 
         assert_equal(res_tmpl1['available_volumes'], [vol2['id']])
         assert_equal(res_tmpl2['available_volumes'], [])
+
+    # @with_context
+    # def test_valid_parent_template_identified(self):
+    #     """Test that child project built from parent."""
+    #     self.register()
+    #     user = self.user_repo.get(1)
+    #     vol = dict(id='123abc', name='My Volume')
+    #     category = CategoryFactory()
+    #     tmpl_fixtures = TemplateFixtures(category)
+    #     select_task = tmpl_fixtures.iiif_select_tmpl
+    #     tmpl1 = tmpl_fixtures.create_template(task_tmpl=select_task)
+    #     tmpl2 = tmpl_fixtures.create_template(task_tmpl=select_task)
+    #     tmpl2.parent_template_id = tmpl1.id
+
+    #     category.info = dict(presenter='iiif-annotation',
+    #                          volumes=[vol],
+    #                          templates=[tmpl1.to_dict(), tmpl2.to_dict()])
+    #     self.project_repo.update_category(category)
+
+    #     parent = ProjectFactory(owner=user, category=category,
+    #                             info=dict(template_id=tmpl1.id,
+    #                                       volume_id=vol['id']))
+
+    #     n_tasks = 30
+    #     tasks = TaskFactory.create_batch(n_tasks, n_answers=1, project=parent)
+    #     for task in tasks:
+    #         TaskRunFactory.create(project=parent, task=task)
+
+    #     endpoint = '/lc/projects/{}/new'.format(category.short_name)
+    #     form_data = dict(name='foo',
+    #                      short_name='bar',
+    #                      template_id=tmpl2.id,
+    #                      volume_id=vol['id'])
+    #     res = self.app_post_json(endpoint, data=data)
+    #     res_data = json.loads(res.data)
+    #     msg = 'The project was generated with {} tasks.'.format(n_tasks)
+    #     assert_equal(res_data['flash'], msg)
