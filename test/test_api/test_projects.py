@@ -10,7 +10,7 @@ from factories import ProjectFactory, CategoryFactory
 from factories import TaskFactory, TaskRunFactory
 from pybossa.jobs import import_tasks
 from pybossa.core import task_repo
-from pybossa.repositories import ProjectRepository
+from pybossa.repositories import ProjectRepository, UserRepository
 
 from pybossa_lc.api import projects as projects_api
 from ..fixtures import TemplateFixtures
@@ -21,6 +21,7 @@ class TestProjectsApi(web.Helper):
     def setUp(self):
         super(TestProjectsApi, self).setUp()
         self.project_repo = ProjectRepository(db)
+        self.user_repo = UserRepository(db)
         self.manifest_uri = 'http://api.bl.uk/ark:/1/vdc_123/manifest.json'
         flickr_url = 'http://www.flickr.com/photos/132066275@N04/albums/'
         self.flickr_album_id = '12345'
@@ -80,7 +81,6 @@ class TestProjectsApi(web.Helper):
                          template_id=tmpl.id,
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
-        res_data = json.loads(res.data)
         project = self.project_repo.get(1)
 
         # Check project details
@@ -151,8 +151,8 @@ class TestProjectsApi(web.Helper):
                    data=dict(album_id=self.flickr_album_id))
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        z3950_task = tmpl_fixtures.z3950_tmpl
+        tmpl = tmpl_fixtures.create_template(task_tmpl=z3950_task)
         category.info = dict(presenter='z3950', volumes=[vol],
                              templates=[tmpl.to_dict()])
         self.project_repo.update_category(category)
@@ -195,7 +195,6 @@ class TestProjectsApi(web.Helper):
                          template_id=tmpl.id,
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
-        res_data = json.loads(res.data)
         project = self.project_repo.get(1)
 
         # Check project avatar details
@@ -203,18 +202,50 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['thumbnail'], vol['thumbnail'])
         assert_equal(project.info['thumbnail_url'], vol['thumbnail_url'])
 
-    def test_available_volumes_returned_with_templates(self):
-        """Test that only available projects are returned with templates."""
-        pass
+    @with_context
+    def test_unbuilt_volumes_returned_with_templates(self):
+        """Test that only available volumes are returned with templates."""
+        self.register(name=Fixtures.name)
+        self.signin()
+        user = self.user_repo.get(1)
+        vol1 = dict(id='123abc', name='My Volume')
+        vol2 = dict(id='456def', name='My Other Volume')
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        tmpl1 = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl2 = tmpl_fixtures.create_template(task_tmpl=select_task)
 
-    def test_parent_invalid_if_empty_results(self):
-        """Test that a parent is invalid with empty results."""
-        pass
+        # Incomplete template to be ignored
+        tmpl3 = tmpl_fixtures.create_template()
 
-    def test_parent_invalid_if_incompleted_tasks(self):
-        """Test that a parent is invalid with incomplete tasks."""
-        pass
+        category.info = dict(presenter='iiif-annotation',
+                             volumes=[vol1, vol2],
+                             templates=[
+                                 tmpl1.to_dict(),
+                                 tmpl2.to_dict(),
+                                 tmpl3.to_dict()
+                             ])
+        self.project_repo.update_category(category)
 
-    def test_parent_valid_if_complete(self):
-        """Test that a parent is valid if complete and results analysed."""
-        pass
+        # Leave one volume available for tmpl1
+        ProjectFactory(owner=user, category=category,
+                       info=dict(template_id=tmpl1.id, volume_id=vol1['id']))
+
+        # Leave no volumes available for tmpl2
+        ProjectFactory(owner=user, category=category,
+                       info=dict(template_id=tmpl2.id, volume_id=vol1['id']))
+        ProjectFactory(owner=user, category=category,
+                       info=dict(template_id=tmpl2.id, volume_id=vol2['id']))
+
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        res = self.app_get_json(endpoint)
+        res_data = json.loads(res.data)
+        templates = res_data['templates']
+
+        res_tmpl1 = next((t for t in templates if t['id'] == tmpl1.id), None)
+        res_tmpl2 = next((t for t in templates if t['id'] == tmpl2.id), None)
+        assert_equal([res_tmpl1['id'], res_tmpl2['id']], [tmpl1.id, tmpl2.id])
+
+        assert_equal(res_tmpl1['available_volumes'], [vol2['id']])
+        assert_equal(res_tmpl2['available_volumes'], [])
