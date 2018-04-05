@@ -73,9 +73,9 @@ def new_volume(short_name):
     if request.method == 'POST' and form.validate():
         volume_id = str(uuid.uuid4())
         new_vol = dict(id=volume_id,
-                          name=form.name.data,
-                          short_name=form.short_name.data,
-                          importer=form.importer.data)
+                       name=form.name.data,
+                       short_name=form.short_name.data,
+                       importer=form.importer.data)
         volumes.append(new_vol)
         category.info['volumes'] = volumes
         project_repo.update_category(category)
