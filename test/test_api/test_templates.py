@@ -119,7 +119,7 @@ class TestTemplatesApi(web.Helper):
 
     @with_context
     def test_analysis_rules_added(self):
-        """Test analysis rules are added for IIIF templates."""
+        """Test analysis rules are added."""
         template = self.create_tmpl_with_context(Fixtures.name, 'z3950')
         endpoint = '/lc/templates/{}/rules'.format(template.id)
         res = self.app_post_json(endpoint, data=self.tmpl_fixtures.rules_tmpl)

@@ -23,7 +23,8 @@ class TemplateFixtures(object):
                                case='',
                                date_format=True,
                                dayfirst=True,
-                               yearfirst=False)
+                               yearfirst=False,
+                               remove_fragment_selector=False)
 
     def create_template(self, task_tmpl=None, rules_tmpl=None):
         task = task_tmpl or {}

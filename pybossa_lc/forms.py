@@ -109,6 +109,7 @@ class AnalysisRulesForm(Form):
     date_format = BooleanField()
     dayfirst = BooleanField()
     yearfirst = BooleanField()
+    remove_fragment_selector = BooleanField()
 
 
 class ProjectForm(Form):
