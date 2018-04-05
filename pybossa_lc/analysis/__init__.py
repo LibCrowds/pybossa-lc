@@ -99,6 +99,10 @@ class Analyst():
         elif not df.empty:
             self.update_n_answers_required(task, tmpl.max_answers)
 
+        # Apply rule to strip fragment selectors
+        if tmpl.rules.get('remove_fragment_selector'):
+            map(self.strip_fragment_selector, annotations)
+
         result.last_version = True
         result.info = dict(annotations=annotations)
         result_repo.update(result)
@@ -484,3 +488,9 @@ class Analyst():
                                       link=link,
                                       annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)
+
+    def strip_fragment_selector(self, anno):
+        """Strip a fragment selector from an annotation, if present."""
+        if isinstance(anno['target'], dict) and 'source' in anno['target']:
+            anno['target'] = anno['target']['source']
+        return anno

@@ -28,15 +28,16 @@ class TestAnalyst(Test):
         self.result_repo = ResultRepository(db)
         self.task_repo = TaskRepository(db)
 
-    def create_task_with_context(self, n_answers, target, max_answers=None):
+    def create_task_with_context(self, n_answers, target, max_answers=None,
+                                 rules=None):
         """Create a category, project and tasks."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create_template()
         tmpl.min_answers = n_answers
         tmpl.max_answers = max_answers or n_answers
-        tmpl.rules = dict(case='title', whitespace='full_stop',
-                          trim_punctuation=True)
+        if rules:
+            tmpl.rules = rules
         project_info = dict(template_id=tmpl.id)
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
@@ -464,7 +465,9 @@ class TestAnalyst(Test):
         n_answers = 3
         target = 'example.com'
         tag = 'foo'
-        task = self.create_task_with_context(n_answers, target)
+        rules = dict(case='title', whitespace='full_stop',
+                     trim_punctuation=True)
+        task = self.create_task_with_context(n_answers, target, rules=rules)
         data = {
             tag: ['OR 123  456.', 'Or.123.456. ', 'or 123 456']
         }
@@ -906,3 +909,40 @@ class TestAnalyst(Test):
             'recipients': flask_app.config.get('ADMINS')
         }
         mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
+
+    @with_context
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    def test_fragment_selector_stripped(self,
+                                        mock_get_tags,
+                                        mock_get_transcriptions_df,
+                                        mock_get_comments):
+        """Test a fragment selector is stripped if rule applied."""
+        n_answers = 3
+        source = 'example.com'
+        target = {
+            'source': source,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh=100,100,100,100'
+            }
+        }
+        rules = dict(remove_fragment_selector=True)
+        task = self.create_task_with_context(n_answers, target, rules=rules)
+
+        tag = 'foo'
+        data = {
+            tag: ['bar'] * n_answers
+        }
+        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
+        for value in data[tag]:
+            TaskRunFactory.create(task=task, info={
+                tag: value
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.analyst.analyse(result.id)
+        annotations = result.info['annotations']
+        assert_equal(len(annotations), 1)
+        assert_equal(annotations[0]['target'], source)
