@@ -92,6 +92,28 @@ def new(category_short_name):
 def handle_valid_project_form(form, template, volume, category):
     """Handle a valid project form."""
     webhook = '{0}lc/analysis'.format(request.url_root)
+
+    # Check for parent
+    if template.parent_template_id:
+        if volume.get('importer') != 'iiif':
+            msg = 'Only IIIF projects can be built from parents.'
+            flash(msg, 'error')
+            return
+
+        parent = get_parent(template.parent_template_id, volume['id'],
+                            category)
+        if not parent:
+            msg = 'There is no valid parent for this template and volume.'
+            flash(msg, 'error')
+            return
+
+        parent_manifest_uri = url_for('.iiif_parent_manifest',
+                                      category_short_name=category.short_name,
+                                      project_id=parent.id,
+                                      _external=True)
+        volume['data'] = dict(manifest_uri=parent_manifest_uri)
+
+    # Create project
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
                       description=template.description,
@@ -112,25 +134,6 @@ def handle_valid_project_form(form, template, volume, category):
         project.info['thumbnail'] = volume['thumbnail']
         project.info['thumbnail_url'] = volume.get('thumbnail_url')
 
-    # Check for parent
-    if template.parent_template_id:
-        if volume.get('importer') != 'iiif':
-            msg = 'Only IIIF projects can be built from parents.'
-            flash(msg, 'error')
-            return
-
-        parent = get_parent(template.parent_template_id, volume['id'],
-                            category)
-        if not parent:
-            msg = 'There is no valid parent for this template and volume.'
-            flash(msg, 'error')
-            return
-
-        parent_manifest_uri = url_for('.iiif_parent_manifest',
-                                      category_short_name=category.short_name,
-                                      project_id=parent.id)
-        volume['data'] = dict(manifest_uri=parent_manifest_uri)
-
     project_repo.save(project)
 
     # Attempt to generate the tasks
@@ -140,10 +143,10 @@ def handle_valid_project_form(form, template, volume, category):
     try:
         msg = _import_tasks(project, **import_data)
         flash(msg, 'success')
-    except BulkImportException as err_msg:
+    except BulkImportException as err:
         success = False
         project_repo.delete(project)
-        flash(err_msg, 'error')
+        flash(err.message, 'error')
 
     except Exception as inst:  # pragma: no cover
         success = False
@@ -204,7 +207,8 @@ def get_parent(parent_template_id, volume_id, category):
 
 def validate_parent(project):
     """Validate a parent project."""
-    empty_results = result_repo.filter_by(info=None, project_id=project.id)
+    empty_results = [r for r in result_repo.filter_by(project_id=project.id)
+                     if not r.info]
     incomplete_tasks = task_repo.filter_tasks_by(state='ongoing',
                                                  project_id=project.id)
     if empty_results or incomplete_tasks:

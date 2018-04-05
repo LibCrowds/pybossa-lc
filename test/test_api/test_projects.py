@@ -9,8 +9,8 @@ from default import with_context, db, Fixtures
 from factories import ProjectFactory, CategoryFactory
 from factories import TaskFactory, TaskRunFactory
 from pybossa.jobs import import_tasks
-from pybossa.core import task_repo
-from pybossa.repositories import ProjectRepository, UserRepository
+from pybossa.core import task_repo, result_repo, project_repo, user_repo
+from pybossa.repositories import UserRepository
 
 from pybossa_lc.api import projects as projects_api
 from ..fixtures import TemplateFixtures
@@ -20,8 +20,6 @@ class TestProjectsApi(web.Helper):
 
     def setUp(self):
         super(TestProjectsApi, self).setUp()
-        self.project_repo = ProjectRepository(db)
-        self.user_repo = UserRepository(db)
         self.manifest_uri = 'http://api.bl.uk/ark:/1/vdc_123/manifest.json'
         flickr_url = 'http://www.flickr.com/photos/132066275@N04/albums/'
         self.flickr_album_id = '12345'
@@ -73,7 +71,7 @@ class TestProjectsApi(web.Helper):
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
-        self.project_repo.update_category(category)
+        project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
@@ -81,7 +79,7 @@ class TestProjectsApi(web.Helper):
                          template_id=tmpl.id,
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
-        project = self.project_repo.get(1)
+        project = project_repo.get(1)
 
         # Check project details
         assert_equal(project.name, form_data['name'])
@@ -122,7 +120,7 @@ class TestProjectsApi(web.Helper):
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
-        self.project_repo.update_category(category)
+        project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
@@ -133,7 +131,7 @@ class TestProjectsApi(web.Helper):
         res_data = json.loads(res.data)
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
-        project = self.project_repo.get(1)
+        project = project_repo.get(1)
 
         # Check correct task data imported
         expected = call(task_repo, project.id, type='iiif',
@@ -155,7 +153,7 @@ class TestProjectsApi(web.Helper):
         tmpl = tmpl_fixtures.create_template(task_tmpl=z3950_task)
         category.info = dict(presenter='z3950', volumes=[vol],
                              templates=[tmpl.to_dict()])
-        self.project_repo.update_category(category)
+        project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
@@ -166,7 +164,7 @@ class TestProjectsApi(web.Helper):
         res_data = json.loads(res.data)
         msg = 'The project was generated with 1 task.'
         assert_equal(res_data['flash'], msg)
-        project = self.project_repo.get(1)
+        project = project_repo.get(1)
 
         # Check correct task data imported
         expected = call(task_repo, project.id, type='z3950',
@@ -187,7 +185,7 @@ class TestProjectsApi(web.Helper):
         tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
-        self.project_repo.update_category(category)
+        project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
@@ -195,7 +193,7 @@ class TestProjectsApi(web.Helper):
                          template_id=tmpl.id,
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
-        project = self.project_repo.get(1)
+        project = project_repo.get(1)
 
         # Check project avatar details
         assert_equal(project.info['container'], vol['container'])
@@ -207,7 +205,7 @@ class TestProjectsApi(web.Helper):
         """Test that only available volumes are returned with templates."""
         self.register()
         self.signin()
-        user = self.user_repo.get(1)
+        user = user_repo.get(1)
         vol1 = dict(id='123abc', name='My Volume')
         vol2 = dict(id='456def', name='My Other Volume')
         category = CategoryFactory()
@@ -226,7 +224,7 @@ class TestProjectsApi(web.Helper):
                                  tmpl2.to_dict(),
                                  tmpl3.to_dict()
                              ])
-        self.project_repo.update_category(category)
+        project_repo.update_category(category)
 
         # Leave one volume available for tmpl1
         ProjectFactory(owner=user, category=category,
@@ -250,39 +248,129 @@ class TestProjectsApi(web.Helper):
         assert_equal(res_tmpl1['available_volumes'], [vol2['id']])
         assert_equal(res_tmpl2['available_volumes'], [])
 
-    # @with_context
-    # def test_valid_parent_template_identified(self):
-    #     """Test that child project built from parent."""
-    #     self.register()
-    #     user = self.user_repo.get(1)
-    #     vol = dict(id='123abc', name='My Volume')
-    #     category = CategoryFactory()
-    #     tmpl_fixtures = TemplateFixtures(category)
-    #     select_task = tmpl_fixtures.iiif_select_tmpl
-    #     tmpl1 = tmpl_fixtures.create_template(task_tmpl=select_task)
-    #     tmpl2 = tmpl_fixtures.create_template(task_tmpl=select_task)
-    #     tmpl2.parent_template_id = tmpl1.id
+    @with_context
+    def test_child_projects_not_built_from_non_iiif_templates(self):
+        """Test that only IIIF projects can be built from parents."""
+        self.register()
+        user = user_repo.get(1)
+        vol = dict(id='123abc', name='My Volume', importer='foo')
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        parent_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        child_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        child_tmpl.parent_template_id = parent_tmpl.id
 
-    #     category.info = dict(presenter='iiif-annotation',
-    #                          volumes=[vol],
-    #                          templates=[tmpl1.to_dict(), tmpl2.to_dict()])
-    #     self.project_repo.update_category(category)
+        category.info = dict(presenter='iiif-annotation',
+                             volumes=[vol],
+                             templates=[parent_tmpl.to_dict(),
+                                        child_tmpl.to_dict()])
+        project_repo.update_category(category)
+        parent = ProjectFactory(owner=user, category=category,
+                                info=dict(template_id=parent_tmpl.id,
+                                          volume_id=vol['id']))
 
-    #     parent = ProjectFactory(owner=user, category=category,
-    #                             info=dict(template_id=tmpl1.id,
-    #                                       volume_id=vol['id']))
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=child_tmpl.id,
+                         volume_id=vol['id'])
+        res = self.app_post_json(endpoint, data=form_data)
+        res_data = json.loads(res.data)
+        msg = 'Only IIIF projects can be built from parents.'
+        assert_equal(res_data['flash'], msg)
 
-    #     n_tasks = 30
-    #     tasks = TaskFactory.create_batch(n_tasks, n_answers=1, project=parent)
-    #     for task in tasks:
-    #         TaskRunFactory.create(project=parent, task=task)
+    @with_context
+    def test_child_projects_not_built_from_incomplete_parents(self):
+        """Test that child projects are not built from incomplete parents."""
+        self.register()
+        user = user_repo.get(1)
+        vol = dict(id='123abc', name='My Volume', importer='iiif')
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        parent_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        child_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        child_tmpl.parent_template_id = parent_tmpl.id
 
-    #     endpoint = '/lc/projects/{}/new'.format(category.short_name)
-    #     form_data = dict(name='foo',
-    #                      short_name='bar',
-    #                      template_id=tmpl2.id,
-    #                      volume_id=vol['id'])
-    #     res = self.app_post_json(endpoint, data=data)
-    #     res_data = json.loads(res.data)
-    #     msg = 'The project was generated with {} tasks.'.format(n_tasks)
-    #     assert_equal(res_data['flash'], msg)
+        category.info = dict(presenter='iiif-annotation',
+                             volumes=[vol],
+                             templates=[parent_tmpl.to_dict(),
+                                        child_tmpl.to_dict()])
+        project_repo.update_category(category)
+
+        parent = ProjectFactory(owner=user, category=category,
+                                info=dict(template_id=parent_tmpl.id,
+                                          volume_id=vol['id']))
+
+        n_tasks = 3
+        tasks = TaskFactory.create_batch(n_tasks, n_answers=1, project=parent)
+
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=child_tmpl.id,
+                         volume_id=vol['id'])
+
+        # Check parent with incomplete tasks and results
+        res = self.app_post_json(endpoint, data=form_data)
+        res_data = json.loads(res.data)
+        msg = 'There is no valid parent for this template and volume.'
+        assert_equal(res_data['flash'], msg)
+
+        # Check parent with incomplete results
+        for task in tasks:
+            TaskRunFactory.create(user=user, project=parent, task=task)
+        res = self.app_post_json(endpoint, data=form_data)
+        res_data = json.loads(res.data)
+        msg = 'There is no valid parent for this template and volume.'
+        assert_equal(res_data['flash'], msg)
+
+    @with_context
+    @patch('pybossa.core.importer.create_tasks')
+    @patch('pybossa.core.importer.count_tasks_to_import', return_value=1)
+    def test_project_built_from_valid_parent_template(self, mock_count,
+                                                      mock_create_tasks):
+        """Test that child project built from parent."""
+        self.register()
+        user = user_repo.get(1)
+        vol = dict(id='123abc', name='My Volume', importer='iiif')
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        parent_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        child_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        child_tmpl.parent_template_id = parent_tmpl.id
+
+        category.info = dict(presenter='iiif-annotation',
+                             volumes=[vol],
+                             templates=[parent_tmpl.to_dict(),
+                                        child_tmpl.to_dict()])
+        project_repo.update_category(category)
+
+        parent = ProjectFactory(id=42, owner=user, category=category,
+                                info=dict(template_id=parent_tmpl.id,
+                                          volume_id=vol['id']))
+
+        n_tasks = 3
+        tasks = TaskFactory.create_batch(n_tasks, n_answers=1, project=parent)
+        for task in tasks:
+            TaskRunFactory.create(user=user, project=parent, task=task)
+        results = result_repo.filter_by(project_id=parent.id)
+        for result in results:
+            result.info = 'foo'
+            result_repo.update(result)
+
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=child_tmpl.id,
+                         volume_id=vol['id'])
+
+        self.app_post_json(endpoint, data=form_data)
+
+        url_base = 'http://localhost/lc/projects/{0}/parent/iiif/{1}'
+        parent_manifest_uri = url_base.format(category.short_name, parent.id)
+        expected_call = call(task_repo, 1, type='iiif',
+                             manifest_uri=parent_manifest_uri)
+        assert_equal(mock_create_tasks.call_args_list, [expected_call])
