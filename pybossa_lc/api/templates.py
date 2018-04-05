@@ -29,7 +29,7 @@ def get_changes(form, template, key=None):
     tmpl_dict = template.to_dict()
     if key:
         return {k: v for k, v in form.data.items()
-                if not tmpl_dict[key] or tmpl_dict[key][k] != v}
+                if not tmpl_dict.get(key) or tmpl_dict[key].get(k) != v}
     else:
         return {k: v for k, v in form.data.items() if tmpl_dict[k] != v}
 
