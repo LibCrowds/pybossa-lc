@@ -136,7 +136,8 @@ def results():
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/results/analyse/all/<int:category_id>')
+@BLUEPRINT.route('/results/analyse/all/<int:category_id>',
+                 methods=['GET', 'POST'])
 def analyse_all_results(category_id):
     """Analyse all results for a category."""
     category = project_repo.get_category(category_id)
@@ -159,7 +160,8 @@ def analyse_all_results(category_id):
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/results/analyse/empty/<int:category_id>')
+@BLUEPRINT.route('/results/analyse/empty/<int:category_id>',
+                 methods=['GET', 'POST'])
 def analyse_empty_results(category_id):
     """Analyse empty results for a category."""
     category = project_repo.get_category(category_id)
