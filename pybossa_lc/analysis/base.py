@@ -21,7 +21,7 @@ from flask import current_app, render_template
 from rq import Queue
 from abc import ABCMeta, abstractmethod
 from pybossa.core import sentinel
-from pybossa.jobs import project_export, send_mail
+from pybossa.jobs import send_mail
 
 
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
@@ -115,8 +115,6 @@ class BaseAnalyst():
         results = result_repo.filter_by(project_id=project_id)
         for result in results:
             self.analyse(result.id)
-        if results:
-            project_export(project_id)
 
     def analyse_empty(self, project_id):
         """Analyse all empty results for a project."""
@@ -125,8 +123,6 @@ class BaseAnalyst():
         empty_results = [r for r in results if not r.info]
         for result in empty_results:
             self.analyse(result.id)
-        if empty_results:
-            project_export(project_id)
 
     def drop_keys(self, task_run_df, keys):
         """Drop keys from the info fields of a task run dataframe."""

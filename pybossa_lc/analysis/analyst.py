@@ -5,6 +5,8 @@ from .z3950 import Z3950Analyst
 from .iiif_annotation import IIIFAnnotationAnalyst
 from . import AnalysisException
 
+from pybossa.jobs import project_export
+
 
 class Analyst(object):
 
@@ -30,6 +32,7 @@ class Analyst(object):
             msg = 'Invalid task presenter: {}'.format(presenter)
             raise AnalysisException(msg)
         analyst.analyse_all(project_id)
+        project_export(project_id)
 
     def analyse_empty(self, presenter, project_id):
         """Analyse empty results."""
@@ -38,3 +41,4 @@ class Analyst(object):
             msg = 'Invalid task presenter: {}'.format(presenter)
             raise AnalysisException(msg)
         analyst.analyse_empty(project_id)
+        project_export(project_id)
