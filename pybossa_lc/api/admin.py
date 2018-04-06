@@ -13,7 +13,7 @@ from pybossa.jobs import send_mail, enqueue_job
 
 from .. import project_tmpl_repo
 from ..cache import results as results_cache
-from ..jobs import analyse_all
+from ..jobs import analyse_all, analyse_empty
 
 
 BLUEPRINT = Blueprint('lc_admin', __name__)
