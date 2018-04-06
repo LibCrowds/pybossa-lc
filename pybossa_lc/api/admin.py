@@ -133,30 +133,48 @@ def results():
     response = dict(unanalysed_categories=unanalysed_categories)
     return handle_content_type(response)
 
-# @login_required
-# @admin_required
-# @BLUEPRINT.route('/results/analyse/<int:category_id>')
-# def analyse_results(category_id):
-#     """Analyse all results for a category."""
-#     category = project_repo.get_category(category_id)
-#     if not category:
-#         abort(404)
 
-#     presenter = category.info.get('presenter')
-#     cat_projects = project_repo.filter_by(category_id=category.id)
-#     for project in cat_projects:
-#         # analyst = get_analyst(presenter)
-#         if not analyst:
-#             msg = 'WARNING: Project {} has an invalid task presenter'
-#             print(msg.format(project.id))
-#             continue
-#         analyst.analyse_all(project.id)
+@login_required
+@admin_required
+@BLUEPRINT.route('/results/analyse/all/<int:category_id>')
+def analyse_all_results(category_id):
+    """Analyse all results for a category."""
+    category = project_repo.get_category(category_id)
+    if not category:
+        abort(404)
+
+    if request.method == 'POST':
+        presenter = category.info.get('presenter')
+        projects = project_repo.filter_by(category_id=category.id)
+        for project in projects:
+            analyse_all(project.id, presenter)
+        flash('Analysis of all results queued', 'success')
+        csrf = None
+    else:
+        csrf = generate_csrf()
+
+    response = dict(csrf=csrf)
+    return handle_content_type(response)
 
 
-#     if request.method == 'POST':
-#         csrf = None
-#     else:
-#         csrf = generate_csrf()
+@login_required
+@admin_required
+@BLUEPRINT.route('/results/analyse/empty/<int:category_id>')
+def analyse_empty_results(category_id):
+    """Analyse empty results for a category."""
+    category = project_repo.get_category(category_id)
+    if not category:
+        abort(404)
 
-#     response = dict(unanalysed_categories=unanalysed_categories)
-#     return handle_content_type(response)
+    if request.method == 'POST':
+        presenter = category.info.get('presenter')
+        projects = project_repo.filter_by(category_id=category.id)
+        for project in projects:
+            analyse_empty(project.id, presenter)
+        flash('Analysis of empty results queued', 'success')
+        csrf = None
+    else:
+        csrf = generate_csrf()
+
+    response = dict(csrf=csrf)
+    return handle_content_type(response)
