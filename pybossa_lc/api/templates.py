@@ -203,6 +203,7 @@ def update_template_rules(template_id):
         if form.validate():
             changes = get_changes(form, template, key='rules')
             if changes:
+                template.rules = template.rules or {}  # Cover old null rules
                 template.rules.update(form.data)
                 template.pending = True
                 project_tmpl_repo.update_pending(template)
