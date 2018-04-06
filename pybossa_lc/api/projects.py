@@ -8,7 +8,7 @@ import requests
 from flask import Response, Blueprint, flash, request, abort, current_app
 from flask import jsonify, make_response
 from flask.ext.login import login_required, current_user
-from pybossa.core import csrf, project_repo
+from pybossa.core import project_repo
 from pybossa.model.project import Project
 from pybossa.auth import ensure_authorized_to
 from pybossa.core import importer

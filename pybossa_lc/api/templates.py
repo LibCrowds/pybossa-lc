@@ -241,5 +241,8 @@ def delete(template_id):
             flash('Approved templates can only be deleted by administrators',
                   'warning')
 
-    response = dict(can_delete=not approved, template=template.to_dict())
+    csrf = generate_csrf()
+
+    response = dict(csrf=csrf, can_delete=not approved,
+                    template=template.to_dict())
     return handle_content_type(response)
