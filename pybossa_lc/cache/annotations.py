@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-"""Templates cache module."""
+"""Annotations cache module."""
 
 import json
 from sqlalchemy import text
@@ -11,7 +11,7 @@ session = db.slave_session
 
 
 def get(id):
-    """Return a template by ID."""
+    """Return an annotation by ID."""
     anno_query = json.dumps([{"id": id}])
     sql = text('''SELECT info->>'annotations' AS annotations
                FROM result
