@@ -11,6 +11,7 @@ from pybossa.repositories import ProjectRepository, ResultRepository
 
 from ..fixtures import TemplateFixtures
 from pybossa_lc.analysis.z3950 import Z3950Analyst
+from pybossa_lc.analysis.analyst import Analyst
 
 
 class TestZ3950Analyst(Test):

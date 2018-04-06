@@ -4,10 +4,10 @@
 import pandas
 import itertools
 
-from . import Analyst
+from .base import BaseAnalyst
 
 
-class IIIFAnnotationAnalyst(Analyst):
+class IIIFAnnotationAnalyst(BaseAnalyst):
 
     def get_comments(self, task_run_df):
         """Return a list of comments."""

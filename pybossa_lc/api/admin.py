@@ -117,6 +117,7 @@ def reject_template(template_id):
     response = dict(template=template.to_dict(), csrf=csrf)
     return handle_content_type(response)
 
+
 @login_required
 @admin_required
 @BLUEPRINT.route('/results')

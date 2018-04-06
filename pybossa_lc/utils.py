@@ -5,8 +5,6 @@ from collections import namedtuple
 from pybossa.core import project_repo, announcement_repo
 from pybossa.cache.projects import overall_progress
 
-from . import z3950_analyst, iiif_annotation_analyst
-
 
 def get_volume_object(vol_dict):
     """Return a volume object."""
@@ -43,11 +41,3 @@ def get_projects_with_unknown_volumes(category):
     return [dict(id=p.id, name=p.name, short_name=p.short_name)
             for p in projects if not p.info.get('volume_id') or
             p.info.get('volume_id') not in volume_ids]
-
-
-def get_analyst(presenter):
-    """Return the analyst."""
-    if presenter == 'iiif-annotation':
-        return iiif_annotation_analyst
-    elif presenter == 'z3950':
-        return z3950_analyst

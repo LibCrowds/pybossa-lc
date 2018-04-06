@@ -50,18 +50,3 @@ class TestJobs(Test):
                 'admin': True,
                 'url': spa_server_name + endpoint.format(project.short_name)
             }, [a.info for a in announcements])
-
-    @with_context
-    @patch('pybossa_lc.jobs.get_analyst')
-    def test_populate_empty_results(self, mock_get_analyst):
-        """Check that empty IIIF Annotation results are analysed."""
-        mock_analyst = MagicMock()
-        mock_get_analyst.return_value = mock_analyst
-        presenter = 'foo'
-        category = CategoryFactory(info=dict(presenter=presenter))
-        project = ProjectFactory.create(category=category)
-        task = TaskFactory.create(project=project, n_answers=1)
-        TaskRunFactory.create(task=task)
-        jobs.populate_empty_results()
-        mock_get_analyst.assert_called_once_with(presenter)
-        mock_analyst.analyse_empty.assert_called_once_with(project.id)

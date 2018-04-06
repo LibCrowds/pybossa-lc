@@ -15,15 +15,15 @@ from pybossa.repositories import ResultRepository, TaskRepository
 from pybossa.repositories import ProjectRepository
 
 from ..fixtures import TemplateFixtures
-from pybossa_lc.analysis import Analyst
+from pybossa_lc.analysis.base import BaseAnalyst
 
 
 class TestAnalyst(Test):
 
     def setUp(self):
         super(TestAnalyst, self).setUp()
-        Analyst.__abstractmethods__ = frozenset()
-        self.analyst = Analyst()
+        BaseAnalyst.__abstractmethods__ = frozenset()
+        self.base_analyst = BaseAnalyst()
         self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
         self.task_repo = TaskRepository(db)
@@ -47,7 +47,7 @@ class TestAnalyst(Test):
                                   info=task_info)
 
     @with_context
-    @patch("pybossa_lc.analysis.Analyst.analyse")
+    @patch("pybossa_lc.analysis.base.BaseAnalyst.analyse")
     def test_analyse_all(self, mock_analyse):
         """Test that all results are analysed."""
         project = ProjectFactory()
@@ -57,12 +57,12 @@ class TestAnalyst(Test):
         result = self.result_repo.get_by(task_id=tasks[0].id)
         result.info = dict(annotations=[{}])
         self.result_repo.update(result)
-        self.analyst.analyse_all(project.id)
+        self.base_analyst.analyse_all(project.id)
         expected = [call(t.id) for t in tasks]
         assert_equal(mock_analyse.call_args_list, expected)
 
     @with_context
-    @patch("pybossa_lc.analysis.Analyst.analyse")
+    @patch("pybossa_lc.analysis.base.BaseAnalyst.analyse")
     def test_analyse_empty(self, mock_analyse):
         """Test that all results are analysed."""
         project = ProjectFactory()
@@ -73,7 +73,7 @@ class TestAnalyst(Test):
         result.info = dict(annotations=[{}])
         self.result_repo.update(result)
         all_results = self.result_repo.filter_by(project_id=project.id)
-        self.analyst.analyse_empty(project.id)
+        self.base_analyst.analyse_empty(project.id)
         expected = [call(r.task_id) for r in all_results if not r.info]
         assert_equal(mock_analyse.call_args_list, expected)
 
@@ -86,7 +86,7 @@ class TestAnalyst(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         excluded = ['foo']
-        df = self.analyst.drop_keys(df, excluded)
+        df = self.base_analyst.drop_keys(df, excluded)
         assert_not_in('foo', df.keys())
         assert_in('bar', df.keys())
 
@@ -99,7 +99,7 @@ class TestAnalyst(Test):
             'foo': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        df = self.analyst.drop_empty_rows(df)
+        df = self.base_analyst.drop_empty_rows(df)
         assert_equals(df['foo'].tolist(), ['bar'])
 
     @with_context
@@ -110,7 +110,7 @@ class TestAnalyst(Test):
             'baz': None
         }]
         df = pandas.DataFrame(data, range(len(data)))
-        df = self.analyst.drop_empty_rows(df)
+        df = self.base_analyst.drop_empty_rows(df)
         expected = {'foo': {0: 'bar'}, 'baz': {0: None}}
         assert_dict_equal(df.to_dict(), expected)
 
@@ -123,7 +123,7 @@ class TestAnalyst(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         min_answers = 2
-        has_matches = self.analyst.has_n_matches(min_answers, df)
+        has_matches = self.base_analyst.has_n_matches(min_answers, df)
         assert_equal(has_matches, False)
 
     @with_context
@@ -135,7 +135,7 @@ class TestAnalyst(Test):
         df = pandas.DataFrame(data, range(len(data)))
         df = df.replace('', numpy.nan)
         min_answers = 2
-        has_matches = self.analyst.has_n_matches(min_answers, df)
+        has_matches = self.base_analyst.has_n_matches(min_answers, df)
         assert_equal(has_matches, False)
 
     @with_context
@@ -148,7 +148,7 @@ class TestAnalyst(Test):
         }]
         df = pandas.DataFrame(data, range(len(data)))
         min_answers = 2
-        has_matches = self.analyst.has_n_matches(min_answers, df)
+        has_matches = self.base_analyst.has_n_matches(min_answers, df)
         assert_equal(has_matches, True)
 
     @with_context
@@ -156,7 +156,7 @@ class TestAnalyst(Test):
         """Test the task run dataframe with a dict as the info."""
         info = {'foo': 'bar'}
         taskrun = TaskRunFactory.create(info=info)
-        df = self.analyst.get_task_run_df(taskrun.task_id)
+        df = self.base_analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['foo'].tolist(), [info['foo']])
         assert_equal(df['info'].tolist(), [info])
 
@@ -165,7 +165,7 @@ class TestAnalyst(Test):
         """Test the task run dataframe with a list as the info."""
         info = [{'foo': 'bar'}, {'baz': 'qux'}]
         taskrun = TaskRunFactory.create(info=info)
-        df = self.analyst.get_task_run_df(taskrun.task_id)
+        df = self.base_analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['info'].tolist(), [info])
 
     @with_context
@@ -173,68 +173,68 @@ class TestAnalyst(Test):
         """Test that protected info keys are prefixed."""
         info = {'foo': 'bar', 'info': 'baz'}
         taskrun = TaskRunFactory.create(info=info)
-        df = self.analyst.get_task_run_df(taskrun.task_id)
+        df = self.base_analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['_info'].tolist(), [info['info']])
 
     @with_context
     def test_user_ids_in_task_run_dataframe(self):
         """Test that user IDs are included in the task run dataframe."""
         taskrun = TaskRunFactory.create()
-        df = self.analyst.get_task_run_df(taskrun.task_id)
+        df = self.base_analyst.get_task_run_df(taskrun.task_id)
         assert_equal(df['user_id'].tolist(), [taskrun.user_id])
 
     def test_titlecase_normalisation(self):
         """Test titlecase normalisation."""
         rules = dict(case='title')
-        norm = self.analyst.normalise_transcription('Some words', rules)
+        norm = self.base_analyst.normalise_transcription('Some words', rules)
         assert_equal(norm, 'Some Words')
 
     def test_lowercase_normalisation(self):
         """Test lowercase normalisation."""
         rules = dict(case='lower')
-        norm = self.analyst.normalise_transcription('Some words', rules)
+        norm = self.base_analyst.normalise_transcription('Some words', rules)
         assert_equal(norm, 'some words')
 
     def test_uppercase_normalisation(self):
         """Test uppercase normalisation."""
         rules = dict(case='upper')
-        norm = self.analyst.normalise_transcription('Some words', rules)
+        norm = self.base_analyst.normalise_transcription('Some words', rules)
         assert_equal(norm, 'SOME WORDS')
 
     def test_whitespace_normalisation(self):
         """Test whitespace normalisation."""
         rules = dict(whitespace='normalise')
-        norm = self.analyst.normalise_transcription(' Two  Words', rules)
+        norm = self.base_analyst.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two Words')
 
     def test_whitespace_replace_underscore(self):
         """Test replacing whitespace with underscore normalisation."""
         rules = dict(whitespace='underscore')
-        norm = self.analyst.normalise_transcription(' Two  Words', rules)
+        norm = self.base_analyst.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two_Words')
 
     def test_whitespace_replace_full_stop(self):
         """Test replacing whitespace with full stop normalisation."""
         rules = dict(whitespace='full_stop')
-        norm = self.analyst.normalise_transcription(' Two  Words', rules)
+        norm = self.base_analyst.normalise_transcription(' Two  Words', rules)
         assert_equal(norm, 'Two.Words')
 
     def test_trim_punctuation_normalisation(self):
         """Test trim punctuation normalisation."""
         rules = dict(trim_punctuation=True)
-        norm = self.analyst.normalise_transcription(':Oh, a word.', rules)
+        norm = self.base_analyst.normalise_transcription(':Oh, a word.', rules)
         assert_equal(norm, 'Oh, a word')
 
     def test_date_conversion(self):
         """Test date conversion."""
         rules = dict(date_format=True, dayfirst=True)
-        norm = self.analyst.normalise_transcription('19/11/1984', rules)
+        norm = self.base_analyst.normalise_transcription('19/11/1984', rules)
         assert_equal(norm, '1984-11-19')
 
     def test_date_conversion_with_invalid_date(self):
         """Test date conversion with invalid date."""
         rules = dict(date_format=True, dayfirst=True)
-        norm = self.analyst.normalise_transcription('Not a date', rules)
+        norm = self.base_analyst.normalise_transcription('Not a date', rules)
         assert_equal(norm, '')
 
     @with_context
@@ -243,7 +243,7 @@ class TestAnalyst(Test):
         n_original_answers = 1
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
-        self.analyst.update_n_answers_required(task)
+        self.base_analyst.update_n_answers_required(task)
         assert_equal(task.n_answers, n_original_answers + 1)
         assert_equal(task.state, 'ongoing')
 
@@ -253,46 +253,46 @@ class TestAnalyst(Test):
         n_original_answers = 2
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
-        self.analyst.update_n_answers_required(task)
+        self.base_analyst.update_n_answers_required(task)
         assert_equal(task.n_answers, n_original_answers)
         assert_equal(task.state, 'ongoing')
 
     @with_context
     def test_n_answers_not_increased_when_max_answers_reached(self):
         """Test n answers not updated when max answers reached."""
-        n_original_answers = 3
-        task = TaskFactory.create(n_answers=n_original_answers)
-        TaskRunFactory.create_batch(n_original_answers, task=task)
-        self.analyst.update_n_answers_required(task,
-                                               max_answers=n_original_answers)
-        assert_equal(task.n_answers, n_original_answers)
+        n_answers = 3
+        task = TaskFactory.create(n_answers=n_answers)
+        TaskRunFactory.create_batch(n_answers, task=task)
+        self.base_analyst.update_n_answers_required(task,
+                                                    max_answers=n_answers)
+        assert_equal(task.n_answers, n_answers)
         assert_equal(task.state, 'completed')
 
     def test_overlap_ratio_is_1_with_equal_rects(self):
         """Test for an overlap ratio of 1."""
         rect = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
-        overlap = self.analyst.get_overlap_ratio(rect, rect)
+        overlap = self.base_analyst.get_overlap_ratio(rect, rect)
         assert_equal(overlap, 1)
 
     def test_overlap_ratio_is_0_with_adjacent_rects(self):
         """Test for an overlap ratio of 0."""
         r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         r2 = {'x': 100, 'y': 201, 'w': 100, 'h': 100}
-        overlap = self.analyst.get_overlap_ratio(r1, r2)
+        overlap = self.base_analyst.get_overlap_ratio(r1, r2)
         assert_equal(overlap, 0)
 
     def test_overlap_ratio_with_partially_overlapping_rects(self):
         """Test for an overlap ratio of 0.33."""
         r1 = {'x': 100, 'y': 100, 'w': 100, 'h': 100}
         r2 = {'x': 150, 'y': 100, 'w': 100, 'h': 100}
-        overlap = self.analyst.get_overlap_ratio(r1, r2)
+        overlap = self.base_analyst.get_overlap_ratio(r1, r2)
         assert_equal('{:.2f}'.format(overlap), '0.33')
 
     def test_overlap_ratio_where_union_is_zero(self):
         """Test for an overlap ratio where the union is zero."""
         r1 = {'x': 0, 'y': 0, 'w': 100, 'h': 100}
         r2 = {'x': 101, 'y': 0, 'w': 100, 'h': 100}
-        overlap = self.analyst.get_overlap_ratio(r1, r2)
+        overlap = self.base_analyst.get_overlap_ratio(r1, r2)
         assert_equal(overlap, 0)
 
     def test_rect_from_selection(self):
@@ -307,7 +307,7 @@ class TestAnalyst(Test):
                 }
             }
         }
-        rect = self.analyst.get_rect_from_selection_anno(fake_anno)
+        rect = self.base_analyst.get_rect_from_selection_anno(fake_anno)
         assert_dict_equal(rect, coords)
 
     def test_rect_from_selection_with_floats(self):
@@ -322,13 +322,13 @@ class TestAnalyst(Test):
                 }
             }
         }
-        rect = self.analyst.get_rect_from_selection_anno(fake_anno)
+        rect = self.base_analyst.get_rect_from_selection_anno(fake_anno)
         assert_dict_equal(rect, {'x': 400, 'y': 200, 'w': 101, 'h': 151})
 
     @freeze_time("19-11-1984")
     def test_get_xsd_datetime(self):
         """Test that a timestamp is returned in the correct format."""
-        ts = self.analyst.get_xsd_datetime()
+        ts = self.base_analyst.get_xsd_datetime()
         assert_equal(ts, '1984-11-19T00:00:00Z')
 
     @with_context
@@ -346,7 +346,7 @@ class TestAnalyst(Test):
         CategoryFactory.create(info=cat_info)
         project_info = dict(template_id=tmpl1.id)
         project = ProjectFactory(info=project_info)
-        returned_tmpl = self.analyst.get_project_template(project.id)
+        returned_tmpl = self.base_analyst.get_project_template(project.id)
         assert_equal(returned_tmpl.to_dict(), tmpl1.to_dict())
 
     @with_context
@@ -358,14 +358,14 @@ class TestAnalyst(Test):
         project_info = dict(template_id='bar')
         UserFactory.create(info=user_info)
         project = ProjectFactory(info=project_info)
-        self.analyst.get_project_template(project.id)
+        self.base_analyst.get_project_template(project.id)
 
     @with_context
     @raises(ValueError)
     def test_get_non_existant_project_template(self):
         """Test that getting a non-existant template throws an error."""
         project = ProjectFactory()
-        self.analyst.get_project_template(project.id)
+        self.base_analyst.get_project_template(project.id)
 
     def test_dataframe_keys_replaced(self):
         """Test that dataframe keys are replaced and columns merged."""
@@ -380,18 +380,132 @@ class TestAnalyst(Test):
             }
         ]
         old_df = pandas.DataFrame(data, range(len(data)))
-        new_df = self.analyst.replace_df_keys(old_df, quux='baz')
+        new_df = self.base_analyst.replace_df_keys(old_df, quux='baz')
         assert_dict_equal(new_df.to_dict(), {
             'foo': {0: 'bar', 1: 'bar'},
             'baz': {0: 'qux', 1: 'qux'}
         })
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_project_template')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_describing_anno")
+    def test_get_generator(self):
+        """Test that the correct annotation generator is returned."""
+        generator = self.base_analyst.get_anno_generator()
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        github_repo = flask_app.config.get('GITHUB_REPO')
+        assert_dict_equal(generator, {
+            "id": github_repo,
+            "type": "Software",
+            "name": "LibCrowds",
+            "homepage": spa_server_name
+        })
+
+    @with_context
+    def test_get_creator(self):
+        """Test that the correct annotation creator is returned."""
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        user = UserFactory.create()
+        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        creator = self.base_analyst.get_anno_creator(user)
+        assert_dict_equal(creator, {
+            'id': url,
+            'type': 'Person',
+            'name': user.fullname,
+            'nickname': user.name
+        })
+
+    @with_context
+    @freeze_time("19-11-1984")
+    def test_create_commenting_anno(self):
+        """Test that a commenting annotation is created correctly."""
+        name = 'foo'
+        fullname = 'bar'
+        target = 'baz'
+        value = 'qux'
+        github_repo = flask_app.config.get('GITHUB_REPO')
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        user = UserFactory.create(name=name, fullname=fullname)
+        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        anno = self.base_analyst.create_commenting_anno(target, value, user.id)
+        assert_dict_equal(anno, {
+            '@context': 'http://www.w3.org/ns/anno.jsonld',
+            'motivation': 'commenting',
+            'type': 'Annotation',
+            'generated': '1984-11-19T00:00:00Z',
+            'created': '1984-11-19T00:00:00Z',
+            'generator': {
+                "id": github_repo,
+                "type": "Software",
+                "name": "LibCrowds",
+                "homepage": spa_server_name
+            },
+            'creator': {
+                'id': url,
+                'type': 'Person',
+                'name': fullname,
+                'nickname': name
+            },
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': value,
+                'format': 'text/plain'
+            },
+            'target': target
+        })
+
+    @with_context
+    @patch('pybossa_lc.analysis.base.send_mail')
+    @patch('pybossa_lc.analysis.base.render_template')
+    @patch('pybossa_lc.analysis.base.Queue.enqueue')
+    def test_comment_annotations_emailed(self, mock_enqueue, mock_render,
+                                         mock_send_mail):
+        """Test that comment annotation emails are sent."""
+        mock_render.return_value = True
+        comment = 'foo'
+        creator = 'bar'
+        target = 'example.com'
+        fake_anno = {
+            'creator': {
+                'id': 'example.com/user1',
+                'type': 'Person',
+                'name': creator,
+                'nickname': 'nick'
+            },
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': comment,
+                'format': 'text/plain'
+            }
+        }
+        task = self.create_task_with_context(1, target)
+        json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
+        self.base_analyst.email_comment_anno(task, fake_anno)
+
+        expected_render_args = [
+            call('/account/email/new_comment_anno.md', annotation=json_anno,
+                 creator=creator, comment=comment, raw_image=None,
+                 link=None),
+            call('/account/email/new_comment_anno.html', annotation=json_anno,
+                 creator=creator, comment=comment, raw_image=None,
+                 link=None)
+        ]
+        assert_equal(mock_render.call_args_list, expected_render_args)
+
+        expected_msg = {
+            'body': True,
+            'html': True,
+            'subject': 'New Comment Annotation',
+            'recipients': flask_app.config.get('ADMINS')
+        }
+        mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
+
+    @with_context
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_project_template')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
     def test_modified_annotations_are_not_updated(self,
                                                   mock_create_desc_anno,
                                                   mock_get_tmpl,
@@ -446,16 +560,16 @@ class TestAnalyst(Test):
         }
         mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
         mock_create_desc_anno.return_value = {}
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 2)
         mock_create_desc_anno.assert_called_once_with(target, new_value,
                                                       new_tag)
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_describing_anno")
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
     def test_transcriptions_are_normalised(self,
                                            mock_create_desc_anno,
                                            mock_get_tags,
@@ -479,14 +593,14 @@ class TestAnalyst(Test):
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         expected = 'Or.123.456'
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 1)
         mock_create_desc_anno.assert_called_once_with(target, expected, tag)
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     def test_empty_results(self,
                            mock_get_tags,
                            mock_get_transcriptions_df,
@@ -505,17 +619,17 @@ class TestAnalyst(Test):
                 tag: value
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(result.info, {
             'annotations': []
         })
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_commenting_anno")
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_commenting_anno')
     def test_comment_annotation_created(self,
                                         mock_create_comment_anno,
                                         mock_get_tags,
@@ -532,16 +646,16 @@ class TestAnalyst(Test):
         mock_create_comment_anno.return_value = {}
         TaskRunFactory.create_batch(n_answers, task=task, info={})
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 1)
         mock_create_comment_anno.assert_called_once_with(target, value,
                                                          user_id)
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_describing_anno")
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
     def test_with_matching_transcriptions(self,
                                           mock_create_desc_anno,
                                           mock_get_tags,
@@ -566,7 +680,7 @@ class TestAnalyst(Test):
         mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
         mock_create_desc_anno.return_value = {}
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 2)
         call_args_list = mock_create_desc_anno.call_args_list
         assert_equal(len(call_args_list), 2)
@@ -574,9 +688,9 @@ class TestAnalyst(Test):
         assert_in(call(target, val2, tag2), call_args_list)
 
     @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     def test_results_with_non_matching_answers(self,
                                                mock_get_tags,
                                                mock_get_transcriptions_df,
@@ -598,15 +712,15 @@ class TestAnalyst(Test):
         }
         mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(result.info['annotations'], [])
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_tagging_anno')
     def test_equal_regions_combined(self,
                                     mock_create_tagging_anno,
                                     mock_get_tags,
@@ -633,16 +747,16 @@ class TestAnalyst(Test):
         }
         TaskRunFactory.create_batch(n_answers, task=task)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 1)
         mock_create_tagging_anno.assert_called_once_with(expected_target, tag)
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_tagging_anno')
     def test_similar_regions_combined(self,
                                       mock_create_tagging_anno,
                                       mock_get_tags,
@@ -670,16 +784,16 @@ class TestAnalyst(Test):
         }
         TaskRunFactory.create_batch(n_answers, task=task)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 1)
         mock_create_tagging_anno.assert_called_once_with(expected_target, tag)
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
-    @patch("pybossa_lc.analysis.z3950.Analyst.create_tagging_anno")
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_tagging_anno')
     def test_different_regions_not_combined(self,
                                             mock_create_tagging_anno,
                                             mock_get_tags,
@@ -709,7 +823,7 @@ class TestAnalyst(Test):
         } for rect in rects]
         TaskRunFactory.create_batch(n_answers, task=task)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         assert_equal(len(result.info['annotations']), 3)
         call_args_list = mock_create_tagging_anno.call_args_list
         expected_calls = [call(expected_targets[i], tag)
@@ -718,9 +832,9 @@ class TestAnalyst(Test):
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     def test_redundancy_increased_when_not_max(self,
                                                mock_get_tags,
                                                mock_get_transcriptions_df,
@@ -740,16 +854,16 @@ class TestAnalyst(Test):
         }
         mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(result.info['annotations'], [])
         assert_equal(updated_task.n_answers, n_answers + 1)
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     def test_redundancy_not_increased_when_max(self,
                                                mock_get_tags,
                                                mock_get_transcriptions_df,
@@ -770,16 +884,16 @@ class TestAnalyst(Test):
         }
         mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(result.info['annotations'], [])
         assert_equal(updated_task.n_answers, n_answers)
 
     @with_context
     @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     def test_redundancy_not_increased(self,
                                       mock_get_tags,
                                       mock_get_transcriptions_df,
@@ -791,129 +905,15 @@ class TestAnalyst(Test):
         TaskRunFactory.create_batch(n_answers, task=task)
         mock_get_transcriptions_df.return_value = pandas.DataFrame({})
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(result.info['annotations'], [])
         assert_equal(updated_task.n_answers, n_answers)
 
     @with_context
-    def test_get_generator(self):
-        """Test that the correct annotation generator is returned."""
-        generator = self.analyst.get_anno_generator()
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        github_repo = flask_app.config.get('GITHUB_REPO')
-        assert_dict_equal(generator, {
-            "id": github_repo,
-            "type": "Software",
-            "name": "LibCrowds",
-            "homepage": spa_server_name
-        })
-
-    @with_context
-    def test_get_creator(self):
-        """Test that the correct annotation creator is returned."""
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        user = UserFactory.create()
-        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
-        creator = self.analyst.get_anno_creator(user)
-        assert_dict_equal(creator, {
-            'id': url,
-            'type': 'Person',
-            'name': user.fullname,
-            'nickname': user.name
-        })
-
-    @with_context
-    @freeze_time("19-11-1984")
-    def test_create_commenting_anno(self):
-        """Test that a commenting annotation is created correctly."""
-        name = 'foo'
-        fullname = 'bar'
-        target = 'baz'
-        value = 'qux'
-        github_repo = flask_app.config.get('GITHUB_REPO')
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        user = UserFactory.create(name=name, fullname=fullname)
-        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
-        anno = self.analyst.create_commenting_anno(target, value, user.id)
-        assert_dict_equal(anno, {
-            '@context': 'http://www.w3.org/ns/anno.jsonld',
-            'motivation': 'commenting',
-            'type': 'Annotation',
-            'generated': '1984-11-19T00:00:00Z',
-            'created': '1984-11-19T00:00:00Z',
-            'generator': {
-                "id": github_repo,
-                "type": "Software",
-                "name": "LibCrowds",
-                "homepage": spa_server_name
-            },
-            'creator': {
-                'id': url,
-                'type': 'Person',
-                'name': fullname,
-                'nickname': name
-            },
-            'body': {
-                'type': 'TextualBody',
-                'purpose': 'commenting',
-                'value': value,
-                'format': 'text/plain'
-            },
-            'target': target
-        })
-
-    @with_context
-    @patch('pybossa_lc.analysis.send_mail')
-    @patch('pybossa_lc.analysis.render_template')
-    @patch('pybossa_lc.analysis.Queue.enqueue')
-    def test_comment_annotations_emailed(self, mock_enqueue, mock_render,
-                                         mock_send_mail):
-        """Test that comment annotation emails are sent."""
-        mock_render.return_value = True
-        comment = 'foo'
-        creator = 'bar'
-        target = 'example.com'
-        fake_anno = {
-            'creator': {
-                'id': 'example.com/user1',
-                'type': 'Person',
-                'name': creator,
-                'nickname': 'nick'
-            },
-            'body': {
-                'type': 'TextualBody',
-                'purpose': 'commenting',
-                'value': comment,
-                'format': 'text/plain'
-            }
-        }
-        task = self.create_task_with_context(1, target)
-        json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
-        self.analyst.email_comment_anno(task, fake_anno)
-
-        expected_render_args = [
-            call('/account/email/new_comment_anno.md', annotation=json_anno,
-                 creator=creator, comment=comment, raw_image=None,
-                 link=None),
-            call('/account/email/new_comment_anno.html', annotation=json_anno,
-                 creator=creator, comment=comment, raw_image=None,
-                 link=None)
-        ]
-        assert_equal(mock_render.call_args_list, expected_render_args)
-
-        expected_msg = {
-            'body': True,
-            'html': True,
-            'subject': 'New Comment Annotation',
-            'recipients': flask_app.config.get('ADMINS')
-        }
-        mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
-
-    @with_context
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_comments')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.iiif_annotation.Analyst.get_tags')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     def test_fragment_selector_stripped(self,
                                         mock_get_tags,
                                         mock_get_transcriptions_df,
@@ -942,7 +942,7 @@ class TestAnalyst(Test):
                 tag: value
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.analyst.analyse(result.id)
+        self.base_analyst.analyse(result.id)
         annotations = result.info['annotations']
         assert_equal(len(annotations), 1)
         assert_equal(annotations[0]['target'], source)

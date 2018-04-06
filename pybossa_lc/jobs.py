@@ -6,8 +6,7 @@ from pybossa.core import project_repo, announcement_repo
 from pybossa.model.announcement import Announcement
 from pybossa.jobs import enqueue_job
 
-from .utils import get_analyst
-from . import project_tmpl_repo
+from . import project_tmpl_repo, analyst
 
 
 HOUR = 60 * 60
@@ -23,14 +22,6 @@ def queue_startup_jobs():
             'kwargs': {},
             'timeout': current_app.config.get('TIMEOUT'),
             'queue': 'high'
-        })
-    if extra_startup_tasks.get('populate_empty_results'):
-        enqueue_job({
-            'name': populate_empty_results,
-            'args': [],
-            'kwargs': {},
-            'timeout': 24 * HOUR,
-            'queue': 'medium'
         })
 
 
@@ -53,22 +44,6 @@ def check_for_invalid_templates():
                 url = get_launch_url(endpoint)
                 make_announcement('Invalid Template', project.name, url,
                                   admin=True)
-
-
-def populate_empty_results():
-    """Populate any empty results"""
-    from pybossa.core import project_repo
-    categories = project_repo.get_all_categories()
-    for category in categories:
-        presenter = category.info.get('presenter')
-        cat_projects = project_repo.filter_by(category_id=category.id)
-        for project in cat_projects:
-            analyst = get_analyst(presenter)
-            if not analyst:
-                msg = 'WARNING: Project {} has an invalid task presenter'
-                print(msg.format(project.id))
-                continue
-            analyst.analyse_empty(project.id)
 
 
 def make_announcement(title, body, url, media_url=None, admin=False):
@@ -100,12 +75,14 @@ def get_launch_url(endpoint):
 
 def analyse_all(project_id, presenter):
     """Queue analysis of all results for a project."""
-    analyst = get_analyst(presenter)
     timeout = 1 * HOUR
     if analyst:
         job = dict(name=analyst.analyse_all,
                    args=[],
-                   kwargs={'project_id': project_id},
+                   kwargs={
+                       'presenter': presenter,
+                       'project_id': project_id
+                   },
                    timeout=timeout,
                    queue='high')
         enqueue_job(job)
@@ -113,12 +90,14 @@ def analyse_all(project_id, presenter):
 
 def analyse_empty(project_id, presenter):
     """Queue analysis of all empty results for a proejct."""
-    analyst = get_analyst(presenter)
     timeout = 1 * HOUR
     if analyst:
         job = dict(name=analyst.analyse_empty,
                    args=[],
-                   kwargs={'project_id': project_id},
+                   kwargs={
+                       'presenter': presenter,
+                       'project_id': project_id
+                   },
                    timeout=timeout,
                    queue='high')
         enqueue_job(job)
@@ -126,11 +105,14 @@ def analyse_empty(project_id, presenter):
 
 def analyse_single(result_id, presenter):
     """Queue a single result for analysis."""
-    analyst = get_analyst(presenter)
     if analyst:
         job = dict(name=analyst.analyse,
                    args=[],
-                   kwargs={'result_id': result_id, 'silent': False},
+                   kwargs={
+                       'presenter': presenter,
+                       'result_id': result_id,
+                       'silent': False
+                   },
                    timeout=current_app.config.get('TIMEOUT'),
                    queue='high')
         enqueue_job(job)

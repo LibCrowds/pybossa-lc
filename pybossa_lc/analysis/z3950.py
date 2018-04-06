@@ -1,13 +1,10 @@
 # -*- coding: utf8 -*-
 """Z39.50 analysis module."""
 
-from . import Analyst
+from .base import BaseAnalyst
 
 
-MATCH_PERCENTAGE = 60
-
-
-class Z3950Analyst(Analyst):
+class Z3950Analyst(BaseAnalyst):
 
     def get_comments(self, task_run_df):
         """Return a list of comments."""
