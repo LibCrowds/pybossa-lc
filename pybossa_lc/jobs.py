@@ -32,14 +32,6 @@ def queue_startup_jobs():
             'timeout': 24 * HOUR,
             'queue': 'medium'
         })
-    if extra_startup_tasks.get('reanalyse_all_results'):
-        enqueue_job({
-            'name': reanalyse_all_results,
-            'args': [],
-            'kwargs': {},
-            'timeout': 24 * HOUR,
-            'queue': 'medium'
-        })
 
 
 def check_for_invalid_templates():
@@ -77,23 +69,6 @@ def populate_empty_results():
                 print(msg.format(project.id))
                 continue
             analyst.analyse_empty(project.id)
-
-
-def reanalyse_all_results():
-    """Reanalyse all results"""
-    from pybossa.core import project_repo
-    categories = project_repo.get_all_categories()
-    for category in categories:
-        presenter = category.info.get('presenter')
-        cat_projects = project_repo.filter_by(category_id=category.id)
-        for project in cat_projects:
-            analyst = get_analyst(presenter)
-            if not analyst:
-                msg = 'WARNING: Project {} has an invalid task presenter'
-                print(msg.format(project.id))
-                continue
-            print('Analysing all results for project {}'.format(project.id))
-            analyst.analyse_all(project.id)
 
 
 def make_announcement(title, body, url, media_url=None, admin=False):

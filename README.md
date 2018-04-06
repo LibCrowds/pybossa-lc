@@ -49,8 +49,7 @@ ANNOUNCEMENT_USER_ID = 1
 # Additional startup tasks
 EXTRA_STARTUP_TASKS = {
     'check_for_invalid_templates': False,
-    'populate_empty_results': False,
-    'reanalyse_all_results': False
+    'populate_empty_results': False
 }
 ```
 
