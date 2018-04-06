@@ -3,8 +3,7 @@
 
 import json
 from sqlalchemy import text
-from pybossa.core import db, timeouts
-from pybossa.cache import memoize, delete_memoized
+from pybossa.core import db
 
 
 session = db.slave_session
