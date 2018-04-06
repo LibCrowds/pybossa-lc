@@ -12,6 +12,7 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail, enqueue_job
 
 from .. import project_tmpl_repo
+from ..cache import results as results_cache
 from ..jobs import analyse_all
 
 
@@ -115,3 +116,46 @@ def reject_template(template_id):
 
     response = dict(template=template.to_dict(), csrf=csrf)
     return handle_content_type(response)
+
+@login_required
+@admin_required
+@BLUEPRINT.route('/results')
+def results():
+    """Return an overview of results for each category."""
+    unanalysed_categories = results_cache.get_unanalysed_by_category()
+
+    if request.method == 'POST':
+        csrf = None
+    else:
+        csrf = generate_csrf()
+
+    response = dict(unanalysed_categories=unanalysed_categories)
+    return handle_content_type(response)
+
+# @login_required
+# @admin_required
+# @BLUEPRINT.route('/results/analyse/<int:category_id>')
+# def analyse_results(category_id):
+#     """Analyse all results for a category."""
+#     category = project_repo.get_category(category_id)
+#     if not category:
+#         abort(404)
+
+#     presenter = category.info.get('presenter')
+#     cat_projects = project_repo.filter_by(category_id=category.id)
+#     for project in cat_projects:
+#         # analyst = get_analyst(presenter)
+#         if not analyst:
+#             msg = 'WARNING: Project {} has an invalid task presenter'
+#             print(msg.format(project.id))
+#             continue
+#         analyst.analyse_all(project.id)
+
+
+#     if request.method == 'POST':
+#         csrf = None
+#     else:
+#         csrf = generate_csrf()
+
+#     response = dict(unanalysed_categories=unanalysed_categories)
+#     return handle_content_type(response)
