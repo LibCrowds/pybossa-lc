@@ -17,7 +17,7 @@ class Analyst(object):
 
     def analyse(self, presenter, result_id, silent=True):
         """Analyse a single result."""
-        analyst = self._analysts.get(presenter)
+        analyst = self._analysts.get(presenter)()
         if not analyst:
             msg = 'Invalid task presenter: {}'.format(presenter)
             raise AnalysisException(msg)
@@ -25,16 +25,16 @@ class Analyst(object):
 
     def analyse_all(self, presenter, project_id):
         """Analyse all results."""
-        analyst = self._analysts.get(presenter)
+        analyst = self._analysts.get(presenter)()
         if not analyst:
             msg = 'Invalid task presenter: {}'.format(presenter)
             raise AnalysisException(msg)
-        analyst.analyse_all(project_id, presenter)
+        analyst.analyse_all(project_id)
 
     def analyse_empty(self, presenter, project_id):
         """Analyse empty results."""
-        analyst = self._analysts.get(presenter)
+        analyst = self._analysts.get(presenter)()
         if not analyst:
             msg = 'Invalid task presenter: {}'.format(presenter)
             raise AnalysisException(msg)
-        analyst.analyse_empty(project_id, presenter)
+        analyst.analyse_empty(project_id)
