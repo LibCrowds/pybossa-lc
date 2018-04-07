@@ -24,7 +24,7 @@ class Z3950Analyst(BaseAnalyst):
         updated_df = self.replace_df_keys(task_run_df, **replaced_keys)
         required_keys = ['control_number', 'reference']
 
-        if not all(key in updated_df for key in keys):
+        if not all(key in updated_df for key in required_keys):
             msg = 'Invalid task run data: required keys are missing'
             raise AnalysisException(msg)
 
