@@ -13,7 +13,7 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
     def get_comments(self, task_run_df):
         """Return a list of comments."""
         if not isinstance(task_run_df.get('info'), list):
-            _type = type(list)
+            ty = type(list)
             msg = "Invalid task runs: info is a '{}' not a 'list'".format(ty)
             raise AnalysisException(msg)
 
@@ -30,7 +30,7 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
     def get_tags(self, task_run_df):
         """Return a dict of tags against fragment selectors."""
         if not isinstance(task_run_df.get('info'), list):
-            _type = type(list)
+            ty = type(list)
             msg = "Invalid task runs: info is a '{}' not a 'list'".format(ty)
             raise AnalysisException(msg)
 
@@ -53,7 +53,7 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
     def get_transcriptions_df(self, task_run_df):
         """Return a dataframe of transcriptions."""
         if not isinstance(task_run_df.get('info'), list):
-            _type = type(list)
+            ty = type(list)
             msg = "Invalid task runs: info is a '{}' not a 'list'".format(ty)
             raise AnalysisException(msg)
 
