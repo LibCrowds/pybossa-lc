@@ -12,10 +12,11 @@ def get_unanalysed_by_category():
     """Return a summary of unanalysed results for each category."""
     sql = text('''SELECT category.id, category.name,
                   count(result.id) AS n_unanalysed
-                  FROM result, project, category
-                  WHERE result.project_id = project.id
-                  AND result.info IS NULL
-                  AND category.id = project.category_id
+                  FROM result
+                  RIGHT JOIN project ON project.id = result.project_id
+                  INNER JOIN category ON category.id = project.category_id
+                  WHERE result.info IS NULL
+                  AND result.project_id = project.id
                   GROUP BY category.id;''')
     db_results = session.execute(sql)
     data = []
