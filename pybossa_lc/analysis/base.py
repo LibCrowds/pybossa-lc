@@ -104,7 +104,8 @@ class BaseAnalyst():
             self.update_n_answers_required(task, tmpl.max_answers)
 
         # Apply rule to strip fragment selectors
-        if tmpl.rules.get('remove_fragment_selector'):
+        rule = 'remove_fragment_selector'
+        if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
             map(self.strip_fragment_selector, annotations)
 
         result.last_version = True
