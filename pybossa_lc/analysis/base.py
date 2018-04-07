@@ -23,6 +23,8 @@ from abc import ABCMeta, abstractmethod
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail
 
+from . import AnalysisException
+
 
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
 
@@ -153,6 +155,10 @@ class BaseAnalyst():
         """Load task run info into a dataframe."""
         from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task_id)
+        if not task_runs:
+            msg = 'Invalid task run data: there are no task runs!'
+            raise AnalysisException(msg)
+
         data = [self.explode_info(tr) for tr in task_runs]
         index = [tr.__dict__['id'] for tr in task_runs]
         return pandas.DataFrame(data, index)

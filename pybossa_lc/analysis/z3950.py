@@ -2,6 +2,7 @@
 """Z39.50 analysis module."""
 
 from .base import BaseAnalyst
+from . import AnalysisException
 
 
 class Z3950Analyst(BaseAnalyst):
@@ -21,4 +22,10 @@ class Z3950Analyst(BaseAnalyst):
         """Return a dataframe of transcriptions."""
         replaced_keys = dict(shelfmark='reference', oclc='control_number')
         updated_df = self.replace_df_keys(task_run_df, **replaced_keys)
-        return updated_df[['control_number', 'reference']]
+        required_keys = ['control_number', 'reference']
+
+        if not all(key in updated_df for key in keys):
+            msg = 'Invalid task run data: required keys are missing'
+            raise AnalysisException(msg)
+
+        return updated_df[required_keys]

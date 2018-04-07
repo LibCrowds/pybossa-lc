@@ -5,12 +5,17 @@ import pandas
 import itertools
 
 from .base import BaseAnalyst
+from . import AnalysisException
 
 
 class IIIFAnnotationAnalyst(BaseAnalyst):
 
     def get_comments(self, task_run_df):
         """Return a list of comments."""
+        if not isinstance(task_run_df.get('info'), list):
+            msg = 'Invalid task run data: info is not a list'
+            raise AnalysisException(msg)
+
         comments = []
         for _index, row in task_run_df.iterrows():
             user_id = row['user_id']
@@ -23,6 +28,10 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
 
     def get_tags(self, task_run_df):
         """Return a dict of tags against fragment selectors."""
+        if not isinstance(task_run_df.get('info'), list):
+            msg = 'Invalid task run data: info is not a list'
+            raise AnalysisException(msg)
+
         annotations = list(itertools.chain(*task_run_df['info']))
         tags = {}
         for anno in annotations:
@@ -41,6 +50,10 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
 
     def get_transcriptions_df(self, task_run_df):
         """Return a dataframe of transcriptions."""
+        if not isinstance(task_run_df.get('info'), list):
+            msg = 'Invalid task run data: info is not a list'
+            raise AnalysisException(msg)
+
         annotations = list(itertools.chain(*task_run_df['info']))
         transcriptions = {}
         for anno in annotations:
