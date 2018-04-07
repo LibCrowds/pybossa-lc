@@ -241,8 +241,8 @@ class BaseAnalyst():
         normalised = value
         normalised = self.normalise_case(normalised, rules)
         normalised = self.normalise_whitespace(normalised, rules)
-        normalised = self.normalise_dates(normalised, rules)
         normalised = self.normalise_punctuation(normalised, rules)
+        normalised = self.normalise_dates(normalised, rules)
         return normalised
 
     def update_n_answers_required(self, task, max_answers=10):
