@@ -156,7 +156,7 @@ class BaseAnalyst():
         from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task_id)
         if not task_runs:
-            msg = 'Invalid task run data: there are no task runs!'
+            msg = 'Task {} has no task runs!'.format(task_id)
             raise AnalysisException(msg)
 
         data = [self.explode_info(tr) for tr in task_runs]
