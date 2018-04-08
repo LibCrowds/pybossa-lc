@@ -216,16 +216,35 @@ class BaseAnalyst():
 
     def normalise_dates(self, value, rules):
         """Normalise a date string."""
-        if rules.get('date_format'):
-            dayfirst = rules.get('dayfirst', False)
-            yearfirst = rules.get('yearfirst', False)
-            try:
-                ts = dateutil.parser.parse(value, dayfirst=dayfirst,
-                                           yearfirst=yearfirst)
-            except (ValueError, TypeError):
-                return ''
-            return ts.isoformat()[:10]
-        return value
+        if not rules.get('date_format'):
+            return value
+
+        # Trim trailing whitespace
+        value = " ".join(value.split())
+
+        # Strip punctuation
+        value = value.strip(string.punctuation)
+
+        # Ensure we have at least four digits
+        if len(value) < 4:
+            return ''
+
+        dayfirst = rules.get('dayfirst', False)
+        yearfirst = rules.get('yearfirst', False)
+        try:
+            ts = dateutil.parser.parse(value, dayfirst=dayfirst,
+                                       yearfirst=yearfirst)
+        except (ValueError, TypeError):
+            return ''
+        iso = ts.isoformat()[:10]
+
+        # Strip the year if it was not given
+        no_start_year = yearfirst and not value.startswith(str(ts.year))
+        no_end_year = not yearfirst and not value.endswith(str(ts.year))
+        if no_start_year or no_end_year:
+            iso = iso[4:]
+
+        return iso
 
     def normalise_punctuation(self, value, rules):
         """Normalise string punctuation."""

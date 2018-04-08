@@ -225,17 +225,70 @@ class TestAnalyst(Test):
         norm = self.base_analyst.normalise_transcription(':Oh, a word.', rules)
         assert_equal(norm, 'Oh, a word')
 
-    def test_date_conversion(self):
-        """Test date conversion."""
+    def test_date_not_normalised_if_rule_inactive(self):
+        """Test date conversion not applied of rule not activate."""
+        norm = self.base_analyst.normalise_transcription('foo', {})
+        assert_equal(norm, 'foo')
+
+    def test_date_conversion_with_slash(self):
+        """Test date conversion with slash seperators."""
         rules = dict(date_format=True, dayfirst=True)
         norm = self.base_analyst.normalise_transcription('19/11/1984', rules)
         assert_equal(norm, '1984-11-19')
 
-    def test_date_conversion_with_invalid_date(self):
-        """Test date conversion with invalid date."""
+    def test_date_conversion_with_hyphen(self):
+        """Test date conversion with hyphen seperator."""
         rules = dict(date_format=True, dayfirst=True)
-        norm = self.base_analyst.normalise_transcription('Not a date', rules)
+        norm = self.base_analyst.normalise_transcription('19-11-1984', rules)
+        assert_equal(norm, '1984-11-19')
+
+    def test_date_conversion_with_no_seperator(self):
+        """Test date conversion with no seperator."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('19111984', rules)
         assert_equal(norm, '')
+
+    def test_date_conversion_with_no_year_and_year_last(self):
+        """Test date conversion with no year and year last."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('19/11', rules)
+        assert_equal(norm, '-11-19')
+
+    def test_date_conversion_with_no_year_and_year_first(self):
+        """Test date conversion with no year and year first."""
+        rules = dict(date_format=True, yearfirst=True)
+        norm = self.base_analyst.normalise_transcription('11/19', rules)
+        assert_equal(norm, '-11-19')
+
+    def test_date_conversion_with_invalid_string(self):
+        """Test date conversion with invalid string."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('No date', rules)
+        assert_equal(norm, '')
+
+    def test_date_conversion_with_zero(self):
+        """Test date conversion with zero."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('0', rules)
+        assert_equal(norm, '')
+
+    def test_date_conversion_with_non_zero_integer(self):
+        """Test date conversion with non-zero integer."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('1', rules)
+        assert_equal(norm, '')
+
+    def test_date_conversion_with_trailing_punctuation(self):
+        """Test date conversion with trailing punctuation."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('19/11/', rules)
+        assert_equal(norm, '-11-19')
+
+    def test_date_conversion_with_trailing_whitespace(self):
+        """Test date conversion with trailing whitespace."""
+        rules = dict(date_format=True, dayfirst=True)
+        norm = self.base_analyst.normalise_transcription('19/11/1984 ', rules)
+        assert_equal(norm, '1984-11-19')
 
     @with_context
     def test_n_answers_increased_when_task_complete(self):
