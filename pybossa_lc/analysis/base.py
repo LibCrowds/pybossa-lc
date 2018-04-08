@@ -56,6 +56,7 @@ class BaseAnalyst():
         tmpl = self.get_project_template(result.project_id)
         target = self.get_task_target(result.task_id)
         annotations = []
+        is_complete = True
 
         # Handle comments
         comments = self.get_comments(task_run_df)
@@ -101,7 +102,9 @@ class BaseAnalyst():
                     anno = self.create_describing_anno(target, value, column)
                     annotations.append(anno)
         elif not df.empty:
-            self.update_n_answers_required(task, tmpl.max_answers)
+            is_complete = False
+
+        self.update_n_answers_required(task, is_complete, tmpl.max_answers)
 
         # Apply rule to strip fragment selectors
         rule = 'remove_fragment_selector'
@@ -264,16 +267,17 @@ class BaseAnalyst():
         normalised = self.normalise_dates(normalised, rules)
         return normalised
 
-    def update_n_answers_required(self, task, max_answers=10):
+    def update_n_answers_required(self, task, is_complete, max_answers=10):
         """Update number of answers required for a task."""
         from pybossa.core import task_repo
         task_runs = task_repo.filter_task_runs_by(task_id=task.id)
         n_task_runs = len(task_runs)
-        if task.n_answers < max_answers:
+        if not is_complete and task.n_answers < max_answers:
             task.state = "ongoing"
             if n_task_runs >= task.n_answers:
                 task.n_answers = task.n_answers + 1
         else:
+            task.n_answers = len(task_runs)
             task.state = "completed"
         task_repo.update(task)
 

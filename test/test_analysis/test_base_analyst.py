@@ -296,7 +296,7 @@ class TestAnalyst(Test):
         n_original_answers = 1
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
-        self.base_analyst.update_n_answers_required(task)
+        self.base_analyst.update_n_answers_required(task, False)
         assert_equal(task.n_answers, n_original_answers + 1)
         assert_equal(task.state, 'ongoing')
 
@@ -306,7 +306,7 @@ class TestAnalyst(Test):
         n_original_answers = 2
         task = TaskFactory.create(n_answers=n_original_answers)
         TaskRunFactory.create(task=task)
-        self.base_analyst.update_n_answers_required(task)
+        self.base_analyst.update_n_answers_required(task, False)
         assert_equal(task.n_answers, n_original_answers)
         assert_equal(task.state, 'ongoing')
 
@@ -316,9 +316,20 @@ class TestAnalyst(Test):
         n_answers = 3
         task = TaskFactory.create(n_answers=n_answers)
         TaskRunFactory.create_batch(n_answers, task=task)
-        self.base_analyst.update_n_answers_required(task,
+        self.base_analyst.update_n_answers_required(task, False,
                                                     max_answers=n_answers)
         assert_equal(task.n_answers, n_answers)
+        assert_equal(task.state, 'completed')
+
+    @with_context
+    def test_n_answers_reduced_when_task_complete(self):
+        """Test n answers reduced to number of task runs when task complete."""
+        n_answers = 3
+        task = TaskFactory.create(n_answers=n_answers)
+        TaskRunFactory.create_batch(n_answers - 1, task=task)
+        self.base_analyst.update_n_answers_required(task, True,
+                                                    max_answers=n_answers)
+        assert_equal(task.n_answers, n_answers - 1)
         assert_equal(task.state, 'completed')
 
     def test_overlap_ratio_is_1_with_equal_rects(self):
