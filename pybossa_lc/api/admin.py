@@ -7,7 +7,7 @@ from flask.ext.login import login_required
 from flask_wtf.csrf import generate_csrf
 from pybossa.util import handle_content_type, admin_required
 from pybossa.auth import ensure_authorized_to
-from pybossa.core import project_repo, user_repo
+from pybossa.core import project_repo, user_repo, task_repo
 from pybossa.core import sentinel
 from pybossa.jobs import send_mail, enqueue_job
 
@@ -60,12 +60,20 @@ def approve_template(template_id):
         template.pending = False
         project_tmpl_repo.approve(template)
 
-        # Reanalyse all results
+        # Update task redundancy
+
+        # Reanalyse all results that use this template
         presenter = category.info.get('presenter')
         cat_projects = project_repo.filter_by(category_id=category.id)
         tmpl_projects = [project for project in cat_projects
                          if project.info.get('template_id') == template.id]
+        presenter = category.info.get('presenter')
         for project in tmpl_projects:
+            # Update task redundancy
+            n_answers = template.min_answers
+            task_repo.update_tasks_redundancy(project, n_answers)
+
+            # Reanalyse all results
             analyse_all(project.id, presenter)
 
         # Send email

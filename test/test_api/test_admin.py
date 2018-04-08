@@ -7,7 +7,9 @@ from nose.tools import *
 from helper import web
 from default import with_context, db
 from factories import CategoryFactory, UserFactory, ProjectFactory
+from factories import TaskFactory
 from pybossa.repositories import ProjectRepository, UserRepository
+from pybossa.repositories import TaskRepository
 
 from ..fixtures import TemplateFixtures
 
@@ -18,6 +20,7 @@ class TestAdminApi(web.Helper):
         super(TestAdminApi, self).setUp()
         self.project_repo = ProjectRepository(db)
         self.user_repo = UserRepository(db)
+        self.task_repo = TaskRepository(db)
 
     @with_context
     def test_get_pending_templates(self):
@@ -151,3 +154,33 @@ class TestAdminApi(web.Helper):
         self.app_post_json(endpoint, data=get_data)
         expected_calls = [call(project.id, presenter) for project in projects]
         assert_equal(expected_calls, mock_analyse_all.call_args_list)
+
+    @with_context
+    @patch('pybossa_lc.api.admin.render_template', return_value=True)
+    def test_task_redundancy_updated_when_template_approved(self, mock_render):
+        """Test task redundancy updated when template approved."""
+        self.register()
+        self.signin()
+        category = CategoryFactory()
+        user = self.user_repo.get(1)
+        tmpl_fixtures = TemplateFixtures(category)
+        tmpl = tmpl_fixtures.create_template()
+        tmpl.min_answers = 10
+        tmpl.pending = True
+        tmpl.owner_id = user.id
+        user.info = dict(templates=[tmpl.to_dict()])
+        self.user_repo.update(user)
+        projects = ProjectFactory.create_batch(3, owner=user,
+                                               category=category,
+                                               info=dict(template_id=tmpl.id))
+        for project in projects:
+            TaskFactory.create_batch(3, project=project, n_answers=3)
+
+        endpoint = '/lc/admin/templates/{}/approve'.format(tmpl.id)
+        get_res = self.app_get_json(endpoint)
+        get_data = json.loads(get_res.data)
+        self.app_post_json(endpoint, data=get_data)
+        for project in projects:
+            tasks = self.task_repo.filter_tasks_by(project_id=project.id)
+            for task in tasks:
+                assert_equal(task.n_answers, tmpl.min_answers)
