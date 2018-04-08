@@ -94,6 +94,34 @@ class TestProjectsApi(web.Helper):
         })
 
     @with_context
+    @patch('pybossa_lc.api.projects.task_repo.update_tasks_redundancy')
+    @patch('pybossa_lc.api.projects.importer')
+    def test_new_project_task_redundancy_updated(self, mock_importer,
+                                                 mock_update_redundancy):
+        """Test task redundancy updated for new projects."""
+        self.register(name=Fixtures.name)
+        self.signin()
+        min_answers = 10
+        vol = dict(id='123abc', name='My Volume')
+        category = CategoryFactory()
+        tmpl_fixtures = TemplateFixtures(category)
+        select_task = tmpl_fixtures.iiif_select_tmpl
+        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl.min_answers = min_answers
+        category.info = dict(presenter='iiif-annotation', volumes=[vol],
+                             templates=[tmpl.to_dict()])
+        project_repo.update_category(category)
+
+        endpoint = '/lc/projects/{}/new'.format(category.short_name)
+        form_data = dict(name='foo',
+                         short_name='bar',
+                         template_id=tmpl.id,
+                         volume_id=vol['id'])
+        self.app_post_json(endpoint, data=form_data)
+        project = project_repo.get(1)
+        mock_update_redundancy.assert_called_once_with(project, min_answers)
+
+    @with_context
     def test_project_creation_fails_with_invalid_presenter(self):
         """Test that project creation fails with an invalid task presenter."""
         self.register()
