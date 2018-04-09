@@ -18,13 +18,18 @@ def enqueue_periodic_jobs():
     """Queue periodic tasks."""
     redis_conn = sentinel.master
     scheduler = Scheduler(queue_name='scheduled_jobs', connection=redis_conn)
-    schedule_job({
-        'name': check_for_invalid_templates,
-        'args': [],
-        'interval': 1 * HOUR,
-        'kwargs': {},
-        'timeout': 30 * MINUTE
-    }, scheduler)
+    jobs_names = [
+        check_for_invalid_templates,
+        check_for_invalid_volumes
+    ]
+    for name in jobs_names:
+        schedule_job({
+            'name': name,
+            'args': [],
+            'interval': 1 * HOUR,
+            'kwargs': {},
+            'timeout': 30 * MINUTE
+        }, scheduler)
 
 
 def check_for_invalid_templates():
@@ -38,12 +43,26 @@ def check_for_invalid_templates():
         templates = project_tmpl_repo.get_by_category_id(category.id)
         valid_tmpl_ids = [tmpl.id for tmpl in templates]
         projects = project_repo.filter_by(category_id=category.id)
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        url_base = '{}/api/project'.format(spa_server_name)
         for project in projects:
             project_tmpl_id = project.info.get('template_id')
             if not project_tmpl_id or project_tmpl_id not in valid_tmpl_ids:
                 send_project_warning(project, 'Invalid Template')
+
+
+def check_for_invalid_volumes():
+    """Warn administrators if any projects have missing volumes."""
+    from pybossa.core import project_repo
+    categories = project_repo.get_all_categories()
+    for category in categories:
+        if not category.info.get('published'):
+            continue
+
+        valid_vol_ids = [vol['id'] for vol in category.info.get('volumes', [])]
+        projects = project_repo.filter_by(category_id=category.id)
+        for project in projects:
+            project_vol_id = project.info.get('volume_id')
+            if not project_vol_id or project_vol_id not in valid_vol_ids:
+                send_project_warning(project, 'Invalid Volume')
 
 
 def send_project_warning(project, subject):
