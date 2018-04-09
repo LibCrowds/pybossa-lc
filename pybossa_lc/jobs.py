@@ -3,30 +3,32 @@
 
 from flask import current_app
 from pybossa.core import project_repo, announcement_repo
+from pybossa.core import sentinel
 from pybossa.model.announcement import Announcement
-from pybossa.jobs import enqueue_job
+from pybossa.jobs import schedule_job, enqueue_job, send_mail
+from rq_scheduler import Scheduler
 
 from . import project_tmpl_repo, analyst
 
+MINUTE = 60
+HOUR = 60 * MINUTE
 
-HOUR = 60 * 60
 
-
-def queue_startup_jobs():
-    """Queue startup jobs."""
-    extra_startup_tasks = current_app.config.get('EXTRA_STARTUP_TASKS')
-    if extra_startup_tasks.get('check_for_invalid_templates'):
-        enqueue_job({
-            'name': check_for_invalid_templates,
-            'args': [],
-            'kwargs': {},
-            'timeout': current_app.config.get('TIMEOUT'),
-            'queue': 'high'
-        })
+def enqueue_periodic_jobs():
+    """Queue periodic tasks."""
+    redis_conn = sentinel.master
+    scheduler = Scheduler(queue_name='scheduled_jobs', connection=redis_conn)
+    schedule_job({
+        'name': check_for_invalid_templates,
+        'args': [],
+        'interval': 1 * HOUR,
+        'kwargs': {},
+        'timeout': 30 * MINUTE
+    }, scheduler)
 
 
 def check_for_invalid_templates():
-    """Make an announcement if any projects have invalid templates."""
+    """Warn administrators if any projects have missing templates."""
     from pybossa.core import project_repo
     categories = project_repo.get_all_categories()
     for category in categories:
@@ -36,41 +38,20 @@ def check_for_invalid_templates():
         templates = project_tmpl_repo.get_by_category_id(category.id)
         valid_tmpl_ids = [tmpl.id for tmpl in templates]
         projects = project_repo.filter_by(category_id=category.id)
+        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+        url_base = '{}/api/project'.format(spa_server_name)
         for project in projects:
             project_tmpl_id = project.info.get('template_id')
             if not project_tmpl_id or project_tmpl_id not in valid_tmpl_ids:
-                tmpl_endpoint = current_app.config.get('PROJECT_TMPL_ENDPOINT')
-                endpoint = tmpl_endpoint.format(project.short_name)
-                url = get_launch_url(endpoint)
-                make_announcement('Invalid Template', project.name, url,
-                                  admin=True)
-
-
-def make_announcement(title, body, url, media_url=None, admin=False):
-    """Make an annoucement."""
-    from pybossa.core import announcement_repo
-    announcement_user_id = current_app.config.get('ANNOUNCEMENT_USER_ID')
-    if not announcement_user_id:
-        return
-
-    announcement = Announcement(user_id=announcement_user_id,
-                                title=title,
-                                body=body,
-                                published=True,
-                                media_url=media_url,
-                                info={
-                                    'admin': admin,
-                                    'url': url
-                                })
-    announcement_repo.save(announcement)
-
-
-def get_launch_url(endpoint):
-    """Get a frontend launch URL for announcements and push notifications."""
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    if not spa_server_name:
-        return None
-    return spa_server_name + endpoint
+                subject = "PROJECT %s has an invalid template" % project.id
+                body = "Please review the template for the following project:"
+                body += "\n\n"
+                body += project.name
+                body += "\n\n"
+                body += "{0}/{1}".format(url_base, project.id)
+                mail_dict = dict(recipients=current_app.config.get('ADMINS'),
+                                 subject=subject, body=body)
+                send_mail(mail_dict)
 
 
 def analyse_all(project_id, presenter):

@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 """Test background jobs."""
 
-from mock import patch, MagicMock
+from mock import patch, MagicMock, call
 from nose.tools import *
 from default import Test, db, with_context, flask_app
 from factories import ProjectFactory, TaskFactory, TaskRunFactory
@@ -22,7 +22,8 @@ class TestJobs(Test):
         self.announcement_repo = AnnouncementRepository(db)
 
     @with_context
-    def test_invalid_templates_identified(self):
+    @patch('pybossa_lc.jobs.send_mail')
+    def test_invalid_templates_identified(self, mock_send_mail):
         """Check that invalid templates are identified."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
@@ -37,16 +38,29 @@ class TestJobs(Test):
         empty_proj = ProjectFactory.create(category=category)
         jobs.check_for_invalid_templates()
 
-        spa_server_name = self.flask_app.config.get('SPA_SERVER_NAME')
-        endpoint = self.flask_app.config.get('PROJECT_TMPL_ENDPOINT')
-        announcements = self.announcement_repo.get_all_announcements()
-        assert_equal(len(announcements), 2)
-        assert_equal([a.title for a in announcements],
-                     ['Invalid Template'] * 2)
-        assert_equal([a.published for a in announcements], [True] * 2)
-        for project in [invalid_proj, empty_proj]:
-            assert_in(project.name, [a.body for a in announcements])
-            assert_in({
-                'admin': True,
-                'url': spa_server_name + endpoint.format(project.short_name)
-            }, [a.info for a in announcements])
+        url_base = flask_app.config.get('SPA_SERVER_NAME') + '/api/project'
+
+        # Check email sent about invalid template
+        subject = "PROJECT %s has an invalid template" % invalid_proj.id
+        body = "Please review the template for the following project:"
+        body += "\n\n"
+        body += invalid_proj.name
+        body += "\n\n"
+        body += "{0}/{1}".format(url_base, invalid_proj.id)
+        mail_dict1 = dict(recipients=flask_app.config.get('ADMINS'),
+                          subject=subject, body=body)
+
+        # Check email sent about missing template
+        subject = "PROJECT %s has an invalid template" % empty_proj.id
+        body = "Please review the template for the following project:"
+        body += "\n\n"
+        body += empty_proj.name
+        body += "\n\n"
+        body += "{0}/{1}".format(url_base, empty_proj.id)
+        mail_dict2 = dict(recipients=flask_app.config.get('ADMINS'),
+                          subject=subject, body=body)
+
+        assert_equal(mock_send_mail.call_args_list, [
+            call(mail_dict1),
+            call(mail_dict2)
+        ])

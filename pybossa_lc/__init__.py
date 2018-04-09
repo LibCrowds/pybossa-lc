@@ -12,7 +12,7 @@ from pybossa.core import project_repo, db
 
 from . import default_settings
 from .extensions import *
-from .jobs import queue_startup_jobs
+from .jobs import enqueue_periodic_jobs
 
 
 __plugin__ = "PyBossaLC"
@@ -28,7 +28,7 @@ class PyBossaLC(Plugin):
         self.configure()
         self.setup_blueprints()
         self.replace_email_templates()
-        queue_startup_jobs()
+        enqueue_periodic_jobs()
 
     def configure(self):
         """Load configuration settings."""
