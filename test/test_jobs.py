@@ -41,8 +41,8 @@ class TestJobs(Test):
         url_base = flask_app.config.get('SPA_SERVER_NAME') + '/api/project'
 
         # Check email sent about invalid template
-        subject = "PROJECT %s has an invalid template" % invalid_proj.id
-        body = "Please review the template for the following project:"
+        subject = "PROJECT {0}: Invalid Template".format(invalid_proj.id)
+        body = "Please review the following project:"
         body += "\n\n"
         body += invalid_proj.name
         body += "\n\n"
@@ -51,8 +51,8 @@ class TestJobs(Test):
                           subject=subject, body=body)
 
         # Check email sent about missing template
-        subject = "PROJECT %s has an invalid template" % empty_proj.id
-        body = "Please review the template for the following project:"
+        subject = "PROJECT {0}: Invalid Template".format(empty_proj.id)
+        body = "Please review the following project:"
         body += "\n\n"
         body += empty_proj.name
         body += "\n\n"

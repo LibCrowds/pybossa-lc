@@ -43,15 +43,22 @@ def check_for_invalid_templates():
         for project in projects:
             project_tmpl_id = project.info.get('template_id')
             if not project_tmpl_id or project_tmpl_id not in valid_tmpl_ids:
-                subject = "PROJECT %s has an invalid template" % project.id
-                body = "Please review the template for the following project:"
-                body += "\n\n"
-                body += project.name
-                body += "\n\n"
-                body += "{0}/{1}".format(url_base, project.id)
-                mail_dict = dict(recipients=current_app.config.get('ADMINS'),
-                                 subject=subject, body=body)
-                send_mail(mail_dict)
+                send_project_warning(project, 'Invalid Template')
+
+
+def send_project_warning(project, subject):
+    """Send a warning about a project to administrators."""
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{}/api/project'.format(spa_server_name)
+    subject = "PROJECT {0}: {1}".format(project.id, subject)
+    body = "Please review the following project:"
+    body += "\n\n"
+    body += project.name
+    body += "\n\n"
+    body += "{0}/{1}".format(url_base, project.id)
+    mail_dict = dict(recipients=current_app.config.get('ADMINS'),
+                     subject=subject, body=body)
+    send_mail(mail_dict)
 
 
 def analyse_all(project_id, presenter):
