@@ -146,14 +146,12 @@ class VolumeForm(Form):
 
 class ExportFieldForm(Form):
     """A form for adding a field to the volume level exports."""
-    header = TextField('Header')
-    value = TextField('Value')
-    template_id = TextField('Template ID')
+    template_id = TextField('Template')
 
 
 class ExportForm(Form):
     """A form for creating a volume level CSV export."""
     id = TextField(label=None, widget=HiddenInput())
-    name = TextField('Name', [validators.Required()])
-    reference_header = TextField('Reference Header', [validators.Required()])
-    fields = FieldList(FormField(ExportFieldForm))
+    title = TextField('Title', [validators.Required()])
+    base_template_id = TextField('Base Template', [validators.Required()])
+    include = FieldList(FormField(ExportFieldForm))
