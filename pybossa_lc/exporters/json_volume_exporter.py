@@ -8,10 +8,10 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from pybossa.core import uploader
 
-from . import VolumeExporter
+from .volume_exporter_base import VolumeExporterBase
 
 
-class JsonVolumeExporter(VolumeExporter):
+class JsonVolumeExporter(VolumeExporterBase):
 
     def _respond_json(self, motivation, volume_id):
         return self._get_data(motivation, volume_id)

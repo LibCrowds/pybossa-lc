@@ -11,7 +11,7 @@ from factories import TaskRunFactory, UserFactory
 from pybossa.repositories import ResultRepository, ProjectRepository
 
 from ..fixtures import TemplateFixtures, AnnotationFixtures
-from pybossa_lc.exporters import VolumeExporter
+from pybossa_lc.exporters.volume_exporter_base import VolumeExporterBase
 
 
 class TestVolumeExporter(Test):
@@ -20,7 +20,7 @@ class TestVolumeExporter(Test):
         super(TestVolumeExporter, self).setUp()
         self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
-        self.volume_exporter = VolumeExporter()
+        self.volume_exporter_base = VolumeExporterBase()
         self.category = CategoryFactory()
         self.tmpl_fixtures = TemplateFixtures(self.category)
         self.anno_fixtures = AnnotationFixtures()
@@ -60,7 +60,7 @@ class TestVolumeExporter(Test):
             self.result_repo.update(result)
             expected_data.append(annotation)
 
-        data = self.volume_exporter._get_data('describing', volume_id)
+        data = self.volume_exporter_base._get_data('describing', volume_id)
         assert_equal(data, expected_data)
 
     @with_context
@@ -88,7 +88,7 @@ class TestVolumeExporter(Test):
             self.result_repo.update(result)
             expected_data.append(anno)
 
-        data = self.volume_exporter._get_data('describing', volume_id)
+        data = self.volume_exporter_base._get_data('describing', volume_id)
         assert_equal(data, expected_data)
 
     @with_context
@@ -125,8 +125,8 @@ class TestVolumeExporter(Test):
             expected_data.append(expected_row)
 
         expected_data = sorted(expected_data, key=lambda x: x['target'])
-        data = self.volume_exporter._get_data('describing', volume_id,
-                                              flat=True)
+        data = self.volume_exporter_base._get_data('describing', volume_id,
+                                                   flat=True)
         assert_equal(data, expected_data)
 
     @with_context
@@ -166,8 +166,8 @@ class TestVolumeExporter(Test):
         }))
         expected_data = [expected_row]
         expected_data = sorted(expected_data, key=lambda x: x['target'])
-        data = self.volume_exporter._get_data('describing', volume_id,
-                                              flat=True)
+        data = self.volume_exporter_base._get_data('describing', volume_id,
+                                                   flat=True)
         assert_equal(data, expected_data)
 
     # @with_context

@@ -8,10 +8,10 @@ from werkzeug.utils import secure_filename
 from pybossa.core import uploader
 import pandas
 
-from . import VolumeExporter
+from .volume_exporter_base import VolumeExporterBase
 
 
-class CsvVolumeExporter(VolumeExporter):
+class CsvVolumeExporter(VolumeExporterBase):
 
     def _respond_csv(self, volume_id, motivation):
         export_data = self._get_data(motivation, volume_id, flat=True)
