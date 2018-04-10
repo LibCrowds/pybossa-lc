@@ -251,7 +251,7 @@ def exports(short_name):
         # Replace "None" selections
         include = form.include.data if form.include.data != ['None'] else []
         root_tmpl_id = form.root_template_id.data
-        root_tmpl_id = root_tmpl_id if root_tmpl_id == 'None' else None
+        root_tmpl_id = root_tmpl_id if root_tmpl_id != 'None' else None
 
         export_fmt_id = str(uuid.uuid4())
         new_export_fmt = dict(id=export_fmt_id,
@@ -301,13 +301,14 @@ def update_export(short_name, export_id):
         form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
         form.include.choices += [(t['id'], t['name']) for t in tmpls]
 
-        # Replace "None" selections
-        include = form.include.data if form.include.data != ['None'] else []
-        root_tmpl_id = form.root_template_id.data
-        root_tmpl_id = root_tmpl_id if root_tmpl_id == 'None' else None
-
         if form.validate():
             export_fmt.update(form.data)
+
+            # Replace "None" selections
+            if export_fmt['root_template_id'] == 'None':
+                export_fmt['root_template_id'] = None
+            if export_fmt['include'] == ['None']:
+                export_fmt['include'] = []
 
             try:
                 idx = [i for i, fmt in enumerate(export_fmts)
