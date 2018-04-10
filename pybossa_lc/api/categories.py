@@ -16,8 +16,8 @@ from pybossa.importers import BulkImportException
 
 from ..utils import *
 from ..forms import VolumeForm, CustomExportForm
-from ..exporters.csv_volume_exporter import CsvVolumeExporter
-from ..exporters.json_volume_exporter import JsonVolumeExporter
+from ..exporters.csv_custom_exporter import CsvCustomExporter
+from ..exporters.json_custom_exporter import JsonCustomExporter
 
 
 BLUEPRINT = Blueprint('lc_categories', __name__)
@@ -211,21 +211,20 @@ def export_volume_data(short_name):
     if fmt not in ['csv', 'json']:
         abort(415)
 
-    export_fmts = category.info.get('export_formats', [])
     try:
-        export_fmt = [fmt for fmt in export_fmts
-                      if fmt['id'] == export_fmt_id][0]
+        [f for f in category.info.get('export_formats', [])
+         if f['id'] == export_fmt_id][0]
     except IndexError:
         abort(404)
 
-    def respond_json(motivation):
-        json_volume_exporter = JsonVolumeExporter()
-        res = json_volume_exporter.response_zip(export_fmt_id, motivation)
+    def respond_json(export_fmt_id):
+        json_volume_exporter = JsonCustomExporter()
+        res = json_custom_exporter.response_zip(category, export_fmt_id)
         return res
 
-    def respond_csv(motivation):
-        csv_volume_exporter = CsvVolumeExporter()
-        res = csv_volume_exporter.response_zip(export_fmt_id, motivation)
+    def respond_csv(export_fmt_id):
+        csv_volume_exporter = CsvCustomExporter()
+        res = csv_custom_exporter.response_zip(category, export_fmt_id)
         return res
 
     return {"json": respond_json, "csv": respond_csv}[fmt](export_fmt_id)
