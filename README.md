@@ -14,7 +14,7 @@ Key features:
 - Defines a templating system for configuring and generating projects
 - Enables the creation of projects with parent-child relationships
 - Replaces default PYBOSSA emails with custom templates
-- Generates custom data downloads and volume or collection level
+- Enables generating of custom data downloads
 
 For details of how project creation and results analysis works in LibCrowds,
 see the [**LibCrowds Documentation**](https://docs.libcrowds.com).
