@@ -234,7 +234,7 @@ def export_volume_data(short_name):
 @login_required
 @BLUEPRINT.route('/<short_name>/exports', methods=['GET', 'POST'])
 def exports(short_name):
-    """Setup custom data exports."""
+    """Add a custom data export."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
@@ -248,13 +248,19 @@ def exports(short_name):
     form.include.choices += [(t['id'], t['name']) for t in tmpls]
 
     if request.method == 'POST' and form.validate():
+        # Replace "None" selections
+        include = form.include.data if form.include.data != ['None'] else []
+        root_tmpl_id = form.root_template_id.data
+        root_tmpl_id = root_tmpl_id if root_tmpl_id == 'None' else None
+
         export_fmt_id = str(uuid.uuid4())
         new_export_fmt = dict(id=export_fmt_id,
                               name=form.name.data,
                               short_name=form.short_name.data,
-                              root_template_id=form.root_template_id.data,
                               motivation=form.motivation.data,
-                              include=form.include.data)
+                              root_template_id=root_tmpl_id,
+                              include=include)
+
         export_fmts = category.info.get('export_formats', [])
         export_fmts.append(new_export_fmt)
         category.info['export_formats'] = export_fmts
@@ -294,6 +300,11 @@ def update_export(short_name, export_id):
         form = CustomExportForm(**form_data)
         form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
         form.include.choices += [(t['id'], t['name']) for t in tmpls]
+
+        # Replace "None" selections
+        include = form.include.data if form.include.data != ['None'] else []
+        root_tmpl_id = form.root_template_id.data
+        root_tmpl_id = root_tmpl_id if root_tmpl_id == 'None' else None
 
         if form.validate():
             export_fmt.update(form.data)
