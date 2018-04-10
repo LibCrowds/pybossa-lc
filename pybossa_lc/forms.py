@@ -5,6 +5,7 @@ from flask import current_app
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, validators
 from wtforms import IntegerField, FieldList, FormField, BooleanField
+from wtforms import SelectMultipleField
 from wtforms.validators import ValidationError
 from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
@@ -144,14 +145,20 @@ class VolumeForm(Form):
     importer = SelectField('Importer')
 
 
-class ExportFieldForm(Form):
-    """A form for adding a field to the volume level exports."""
-    template_id = TextField('Template')
-
-
-class ExportForm(Form):
-    """A form for creating a volume level CSV export."""
+class CustomExportForm(Form):
+    """A form for creating a custom export."""
     id = TextField(label=None, widget=HiddenInput())
-    title = TextField('Title', [validators.Required()])
-    base_template_id = TextField('Base Template', [validators.Required()])
-    include = FieldList(FormField(ExportFieldForm))
+    short_name = TextField('Short Name', [validators.Required(),
+                                          pb_validator.NotAllowedChars()])
+    name = TextField('Name', [validators.Required()])
+    root_template_id = SelectField('Root Template', choices=[
+        ('None', '')
+    ])
+    motivation = SelectField('Motivation', choices=[
+        ('tagging', 'Tagging'),
+        ('describing', 'Describing'),
+        ('commenting', 'Commenting')
+    ])
+    include = SelectMultipleField('Include', choices=[
+        ('None', '')
+    ])

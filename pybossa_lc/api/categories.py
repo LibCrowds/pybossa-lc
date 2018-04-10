@@ -15,24 +15,12 @@ from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
 
 from ..utils import *
-from ..forms import VolumeForm, ExportForm
+from ..forms import VolumeForm, CustomExportForm
 from ..exporters.csv_volume_exporter import CsvVolumeExporter
 from ..exporters.json_volume_exporter import JsonVolumeExporter
 
 
 BLUEPRINT = Blueprint('lc_categories', __name__)
-
-
-def _get_export_form(method, form_data=None):
-    """Return the custom export format form."""
-    if not form_data:
-        form_data = {}
-    form = ExportForm(**form_data)
-
-    if method == 'POST':
-        for field in form_data.get('fields', []):
-            form.fields.append_entry(field)
-    return form
 
 
 @login_required
@@ -208,61 +196,66 @@ def update_volume(short_name, volume_id):
     return handle_content_type(response)
 
 
-@BLUEPRINT.route('/<short_name>/volumes/<volume_id>/export')
-def export_volume_data(short_name, volume_id):
-    """Export custom volume level data."""
+@BLUEPRINT.route('/<short_name>/exports/download')
+def export_volume_data(short_name):
+    """Export custom data."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
-    volumes = category.info.get('volumes', [])
-    try:
-        volume_dict = [v for v in volumes if v['id'] == volume_id][0]
-    except IndexError:
-        abort(404)
-    volume_dict['category_id'] = category.id
-    volume = get_volume_object(volume_dict)
-
-    motivation = request.args.get('type')
+    export_fmt_id = request.args.get('type')
     fmt = request.args.get('format')
-    if not (fmt and motivation):
+    if not (export_fmt_id and fmt):
         abort(404)
 
     if fmt not in ['csv', 'json']:
         abort(415)
 
+    export_fmts = category.info.get('export_formats', [])
+    try:
+        export_fmt = [fmt for fmt in export_fmts
+                      if fmt['id'] == export_fmt_id][0]
+    except IndexError:
+        abort(404)
+
     def respond_json(motivation):
         json_volume_exporter = JsonVolumeExporter()
-        res = json_volume_exporter.response_zip(volume, motivation)
+        res = json_volume_exporter.response_zip(export_fmt_id, motivation)
         return res
 
     def respond_csv(motivation):
         csv_volume_exporter = CsvVolumeExporter()
-        res = csv_volume_exporter.response_zip(volume, motivation)
+        res = csv_volume_exporter.response_zip(export_fmt_id, motivation)
         return res
 
-    return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
+    return {"json": respond_json, "csv": respond_csv}[fmt](export_fmt_id)
 
 
 @login_required
 @BLUEPRINT.route('/<short_name>/exports', methods=['GET', 'POST'])
 def exports(short_name):
-    """Setup volume level data exports."""
+    """Setup custom data exports."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('update', category)
-    export_fmts = category.info.get('export_formats', [])
     form_data = json.loads(request.data) if request.data else {}
-    form = _get_export_form(request.method, form_data)
+    form = CustomExportForm(**form_data)
+
+    tmpls = category.info.get('templates', [])
+    form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
+    form.include.choices += [(t['id'], t['name']) for t in tmpls]
 
     if request.method == 'POST' and form.validate():
         export_fmt_id = str(uuid.uuid4())
         new_export_fmt = dict(id=export_fmt_id,
                               name=form.name.data,
-                              reference_header=form.reference_header.data,
-                              fields=form.fields.data)
+                              short_name=form.short_name.data,
+                              root_template_id=form.root_template_id.data,
+                              motivation=form.motivation.data,
+                              include=form.include.data)
+        export_fmts = category.info.get('export_formats', [])
         export_fmts.append(new_export_fmt)
         category.info['export_formats'] = export_fmts
         project_repo.update_category(category)
@@ -270,40 +263,47 @@ def exports(short_name):
     elif request.method == 'POST':  # pragma: no cover
         flash('Please correct the errors', 'error')
 
-    response = dict(export_formats=export_fmts, form=form)
+    response = dict(form=form)
     return handle_content_type(response)
 
 
 @login_required
 @BLUEPRINT.route('/<short_name>/exports/<export_id>', methods=['GET', 'POST'])
 def update_export(short_name, export_id):
-    """Update a volume level data export."""
+    """Update a custom data export."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
     ensure_authorized_to('update', category)
     export_fmts = category.info.get('export_formats', [])
+
     try:
         export_fmt = [fmt for fmt in export_fmts if fmt['id'] == export_id][0]
     except IndexError:
         abort(404)
 
-    form = _get_export_form(request.method, export_fmt)
+    form = CustomExportForm(**export_fmt)
+
+    tmpls = category.info.get('templates', [])
+    form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
+    form.include.choices += [(t['id'], t['name']) for t in tmpls]
 
     if request.method == 'POST':
         form_data = json.loads(request.data) if request.data else {}
-        form = _get_export_form(request.method, form_data)
+        form = CustomExportForm(**form_data)
+        form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
+        form.include.choices += [(t['id'], t['name']) for t in tmpls]
+
         if form.validate():
-            export_fmt['name'] = form.name.data
-            export_fmt['reference_header'] = form.reference_header.data
-            export_fmt['fields'] = form.fields.data
+            export_fmt.update(form.data)
 
             try:
                 idx = [i for i, fmt in enumerate(export_fmts)
                        if fmt['id'] == export_id][0]
             except IndexError:  # pragma: no cover
                 abort(404)
+
             export_fmts[idx] = export_fmt
             category.info['export_formats'] = export_fmts
             project_repo.update_category(category)
@@ -311,7 +311,7 @@ def update_export(short_name, export_id):
         else:
             flash('Please correct the errors', 'error')
 
-    response = dict(export_formats=export_fmts, form=form)
+    response = dict(form=form)
     return handle_content_type(response)
 
 
