@@ -9,9 +9,9 @@ from pybossa.core import db
 session = db.slave_session
 
 
-def get(id):
+def get(anno_id):
     """Return an annotation by ID."""
-    anno_query = json.dumps([{"id": id}])
+    anno_query = json.dumps([{"id": anno_id}])
     sql = text('''SELECT info->>'annotations' AS annotations
                FROM result
                WHERE info->'annotations' @> :anno_query
@@ -19,4 +19,4 @@ def get(id):
     db_results = session.execute(sql, dict(anno_query=anno_query))
     for row in db_results:
         annotations = json.loads(row.annotations)
-        return [anno for anno in annotations if anno['id'] == id][0]
+        return [anno for anno in annotations if anno['id'] == anno_id][0]

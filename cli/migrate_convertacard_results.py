@@ -8,6 +8,7 @@ python cli/migrate_z3950_results.py
 
 import sys
 import json
+import uuid
 import click
 from datetime import datetime
 from sqlalchemy.sql import text
@@ -25,9 +26,12 @@ def get_anno_base(motivation):
     """Return the base for a new Web Annotation."""
     ts_now = get_xsd_datetime()
     spa_server_name = app.config.get('SPA_SERVER_NAME')
+    anno_uuid = str(uuid.uuid4())
+    _id = '{0}/lc/annotations/{1}'.format(spa_server_name, anno_uuid)
     github_repo = app.config.get('GITHUB_REPO')
     return {
         "@context": "http://www.w3.org/ns/anno.jsonld",
+        "id": _id,
         "type": "Annotation",
         "motivation": motivation,
         "created": ts_now,

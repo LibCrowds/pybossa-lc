@@ -266,9 +266,9 @@ def iiif_parent_manifest(category_short_name, project_id):
     # Modify the manifest with a canvas for each annotation
     new_canvases = []
     for canvas in manifest['sequences'][0]['canvases']:
-        for anno in annotations_by_canvas.get(canvas['@id'], []):
+        for anno in annotations_by_canvas.get(canvas['id'], []):
             canvas_copy = copy.deepcopy(canvas)
-            canvas_copy['@id'] = anno['target']
+            canvas_copy['id'] = anno['target']
             new_canvases.append(canvas_copy)
 
     manifest['sequences'][0]['canvases'] = new_canvases

@@ -10,6 +10,7 @@ One subclass should be provided for each type of task presenter.
 import six
 import math
 import json
+import uuid
 import numpy
 import string
 import pandas
@@ -351,9 +352,13 @@ class BaseAnalyst():
 
     def get_anno_base(self, motivation):
         """Return the base fo ra new Web Annotation."""
+        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+        anno_uuid = str(uuid.uuid4())
+        _id = '{0}/lc/annotations/{1}'.format(spa_server_name, anno_uuid)
         ts_now = self.get_xsd_datetime()
         return {
             "@context": "http://www.w3.org/ns/anno.jsonld",
+            "id": _id,
             "type": "Annotation",
             "motivation": motivation,
             "created": ts_now,

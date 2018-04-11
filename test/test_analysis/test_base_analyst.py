@@ -479,8 +479,11 @@ class TestAnalyst(Test):
 
     @with_context
     @freeze_time("19-11-1984")
-    def test_create_commenting_anno(self):
+    @patch('pybossa_lc.analysis.base.uuid')
+    def test_create_commenting_anno(self, mock_uuid):
         """Test that a commenting annotation is created correctly."""
+        fake_uuid = '123-456-789'
+        mock_uuid.uuid4.return_value = fake_uuid
         name = 'foo'
         fullname = 'bar'
         target = 'baz'
@@ -488,10 +491,14 @@ class TestAnalyst(Test):
         github_repo = flask_app.config.get('GITHUB_REPO')
         spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
         user = UserFactory.create(name=name, fullname=fullname)
-        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
+        creator_url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'),
+                                              user.id)
+        _id = '{}/lc/annotations/{}'.format(spa_server_name.rstrip('/'),
+                                            fake_uuid)
         anno = self.base_analyst.create_commenting_anno(target, value, user.id)
         assert_dict_equal(anno, {
             '@context': 'http://www.w3.org/ns/anno.jsonld',
+            'id': _id,
             'motivation': 'commenting',
             'type': 'Annotation',
             'generated': '1984-11-19T00:00:00Z',
@@ -503,7 +510,7 @@ class TestAnalyst(Test):
                 "homepage": spa_server_name
             },
             'creator': {
-                'id': url,
+                'id': creator_url,
                 'type': 'Person',
                 'name': fullname,
                 'nickname': name
