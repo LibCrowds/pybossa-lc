@@ -21,7 +21,8 @@ def json_response(data):
 @BLUEPRINT.route('/<annotation_id>')
 def get(annotation_id):
     """Return an annotation."""
-    anno = annotations_cache.get(request.path)
+    anno = annotations_cache.get(request.url)
+    print request.path
     if not anno:
         abort(404)
 
