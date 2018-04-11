@@ -218,12 +218,12 @@ def export_volume_data(short_name):
         abort(404)
 
     def respond_json(export_fmt_id):
-        json_volume_exporter = JsonCustomExporter()
+        json_custom_exporter = JsonCustomExporter()
         res = json_custom_exporter.response_zip(category, export_fmt_id)
         return res
 
     def respond_csv(export_fmt_id):
-        csv_volume_exporter = CsvCustomExporter()
+        csv_custom_exporter = CsvCustomExporter()
         res = csv_custom_exporter.response_zip(category, export_fmt_id)
         return res
 

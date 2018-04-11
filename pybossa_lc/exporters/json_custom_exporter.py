@@ -13,8 +13,8 @@ from .base import CustomExporterBase
 
 class JsonCustomExporter(CustomExporterBase):
 
-    def _respond_json(self, category_id, root_template_id, include):
-        return self._get_data(category_id, root_template_id, include)
+    def _respond_json(self, motivation, volume_id):
+        return self._get_data(motivation, volume_id)
 
     def _make_zip(self, volume, ty):
         name = self._project_name_latin_encoded(volume)

@@ -27,7 +27,7 @@ class CustomExporterBase(Exporter):
     def _container(self, volume):
         return "category_{}".format(volume.category_id)
 
-    def download_name(self, title, motivation, _format):
+    def download_name(self, category, export_fmt, _format):
         """Overwrite the download name method."""
         enc_name = self._project_name_latin_encoded(title)
         filename = '%s_%s_%s.zip' % (enc_name, motivation, _format)
@@ -89,42 +89,64 @@ class CustomExporterBase(Exporter):
             target = temp_target
         return target
 
-    def _get_data(self, category, root_template_id, include, motivation,
-                  flat=True):
-        """Get annotation data for custom export."""
-        if not flat:
-            return volumes_cache.get_annotations(volume_id, motivation)
+    def _get_export_format(self, category, export_fmt_id):
+        """Get the export format."""
+        export_formats = category.info.get('export_formats', [])
+        return [fmt for fmt in export_formats if fmt['id'] == export_fmt_id][0]
 
-        tmpls = project_tmpl_repo.get_all()
-        tmpl_names = {tmpl.id: tmpl.name for tmpl in tmpls}
+    def _get_template(self, category, template_id):
+        """Get the export format."""
+        templates = category.info.get('templates', [])
+        return [tmpl for tmpl in templates if tmpl['id'] == template_id][0]
+
+    def _get_results_data(self, results, split_by_task_id=False):
+        """Return a dictionary of results data mapped to target or task ID."""
+        data = {}
+        for result in results:
+            target = self._get_target(result)
+            if target:
+                anno_data = self._get_anno_data(result, motivation)
+                target_data = data.get(target, {})
+                tmpl_data = target_data.get(tmpl_name, {})
+                for key in anno_data:
+                    values = tmpl_data.get(key, [])
+                    values.append(anno_data[key])
+                    tmpl_data[key] = values
+                target_data[tmpl_name] = tmpl_data
+
+                # Add share links
+                links = target_data.get('link', [])
+                links.append(result['link'])
+                target_data['link'] = list(set(links))
+
+                # Add task state
+                current_state = result.get('task_state')
+                if current_state != 'ongoing':
+                    target_data['task_state'] = result['task_state']
+
+                data[target] = target_data
+
+    def _get_data(self, category, export_fmt_id, flat=True):
+        """Get annotation data for custom export."""
+        export_format = self._get_export_format(category, export_fmt_id)
+        if not flat:
+            # TODO: return unflattened annotations
+            return []
+
+        # Get root template
+        root_tmpl_id = export_format.get('root_template_id')
+        root_template = None
+        if root_tmpl_id:
+            root_template = self._get_template(category, root_tmpl_id)
+
+        # Get included templates
+        include_ids = export_format.get('include')
+        include = None
+        if include_ids:
+            include = [self._get_template(category, tmpl_id)
+                       for tmpl_id in include_ids]
 
         data = {}
-        tmpl_results = volumes_cache.get_tmpl_results(volume_id)
-        for tmpl_id, results in tmpl_results.items():
-            tmpl_name = tmpl_names[tmpl_id]
-            for result in results:
-                target = self._get_target(result)
-                if target:
-                    anno_data = self._get_anno_data(result, motivation)
-                    target_data = data.get(target, {})
-                    tmpl_data = target_data.get(tmpl_name, {})
-                    for key in anno_data:
-                        values = tmpl_data.get(key, [])
-                        values.append(anno_data[key])
-                        tmpl_data[key] = values
-                    target_data[tmpl_name] = tmpl_data
-
-                    # Add share links
-                    links = target_data.get('link', [])
-                    links.append(result['link'])
-                    target_data['link'] = list(set(links))
-
-                    # Add task state
-                    current_state = result.get('task_state')
-                    if current_state != 'ongoing':
-                        target_data['task_state'] = result['task_state']
-
-                    data[target] = target_data
 
         flat_data = []
         for target in data:
