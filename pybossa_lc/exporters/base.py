@@ -7,7 +7,7 @@ from flatten_json import flatten
 from pybossa.core import db
 from sqlalchemy import text
 from pybossa.exporter import Exporter
-from pybossa.core import project_repo
+from pybossa.core import project_repo, result_repo
 from werkzeug.utils import secure_filename
 from sqlalchemy.orm.base import _entity_descriptor
 from pybossa.model.result import Result
@@ -71,8 +71,9 @@ class CustomExporterBase(Exporter):
 
     def _get_target(self, result):
         """Parse a result to get the Web Annotation target."""
-        if 'annotations' not in result['info']:
-            return None
+        if (not isinstance(result['info'], dict) or
+            not result['info'].get('annotations')):
+                return None
 
         target = None
         for annotation in result['info']['annotations']:
@@ -100,39 +101,42 @@ class CustomExporterBase(Exporter):
         templates = category.info.get('templates', [])
         return [tmpl for tmpl in templates if tmpl['id'] == template_id][0]
 
-    def _get_results_data(self, results, split_by_task_id=False):
+    def _get_results_data(self, results, motivation, split_by_task_id=False):
         """Return a dictionary of results data mapped to target or task ID."""
         data = {}
         for result in results:
-            target = self._get_target(result)
-            if target:
+            if split_by_task_id:
+                key = result.task_id
+            else:
+                key = self._get_target(result)
+
+            if key:
                 anno_data = self._get_anno_data(result, motivation)
-                target_data = data.get(target, {})
-                tmpl_data = target_data.get(tmpl_name, {})
+                values_dict = data.get(key, {})
+                annotations = values_dict.get('annotations', {})
                 for key in anno_data:
-                    values = tmpl_data.get(key, [])
-                    values.append(anno_data[key])
-                    tmpl_data[key] = values
-                target_data[tmpl_name] = tmpl_data
+                    values_dict = annotations.get(key, [])
+                    values_dict.append(anno_data[key])
+                    annotations[key] = values_dict
+                values_dict['annotations'] = annotations
 
                 # Add share links
-                links = target_data.get('link', [])
+                links = values_dict.get('link', [])
                 links.append(result['link'])
-                target_data['link'] = list(set(links))
+                values_dict['link'] = list(set(links))
 
                 # Add task state
-                current_state = result.get('task_state')
+                current_state = values_dict.get('task_state')
                 if current_state != 'ongoing':
-                    target_data['task_state'] = result['task_state']
+                    values_dict['task_state'] = result['task_state']
 
-                data[target] = target_data
+                data[key] = values_dict
 
     def _get_data(self, category, export_fmt_id, flat=True):
         """Get annotation data for custom export."""
+        print 'getting data'
         export_format = self._get_export_format(category, export_fmt_id)
-        if not flat:
-            # TODO: return unflattened annotations
-            return []
+        motivation = export_format['motivation']
 
         # Get root template
         root_tmpl_id = export_format.get('root_template_id')
@@ -149,10 +153,20 @@ class CustomExporterBase(Exporter):
 
         data = {}
 
+        # Return everything if no root or includes
+        print 'is it?', not root_template and not include
+        if not root_template and not include:
+            projects = project_repo.filter_by(category_id=category.id)
+            project_ids = [project.id for project in projects]
+            results = result_repo.filter_by(project_id=project_ids)
+            data = self._get_results_data(results, motivation)
+
+        if not flat:
+            return data.values()
+
         flat_data = []
-        for target in data:
-            row = dict(target=target)
-            row.update(flatten(data[target]))
+        for key in data:
+            row = flatten(data[key])
             flat_data.append(row)
 
         # Return sorted by target
