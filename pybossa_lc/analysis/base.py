@@ -112,7 +112,6 @@ class BaseAnalyst():
         if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
             map(self.strip_fragment_selector, annotations)
 
-        result.last_version = True
         result.info = dict(annotations=annotations)
         result_repo.update(result)
 

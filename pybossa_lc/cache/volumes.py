@@ -32,7 +32,6 @@ def get_tmpl_results(volume_id):
                       task_run_ids=row.task_run_ids,
                       project_id=row.project_id,
                       created=row.created,
-                      last_version=row.last_version,
                       task_state=row.task_state,
                       link=row.link,
                       info=row.info or {})
