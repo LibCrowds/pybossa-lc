@@ -18,13 +18,17 @@ def json_response(data):
     return response
 
 
-@BLUEPRINT.route('/<annotation_id>')
+@BLUEPRINT.route('/wa/<annotation_id>')
 def get(annotation_id):
     """Return an annotation."""
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    full_id = '{0}/lc/annotations/{1}'.format(spa_server_name, annotation_id)
+    full_id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name,
+                                                 annotation_id)
+    print 'full id', full_id
     anno = annotations_cache.get(full_id)
     if not anno:
         abort(404)
 
     return json_response(anno)
+
+

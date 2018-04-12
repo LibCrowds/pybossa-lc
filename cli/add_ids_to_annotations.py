@@ -20,7 +20,7 @@ def get_anno_id():
     """Return the anno ID."""
     spa_server_name = app.config.get('SPA_SERVER_NAME')
     anno_uuid = str(uuid.uuid4())
-    return '{0}/lc/annotations/{1}'.format(spa_server_name, anno_uuid)
+    return '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
 
 
 @click.command()
@@ -36,7 +36,7 @@ def run():
         for result in results:
             annotations = result.info['annotations']
             for anno in annotations:
-                if not anno.get('id'):
+                if 'id' not in anno:
                     anno['id'] = get_anno_id()
 
             result.info['annotations'] = annotations

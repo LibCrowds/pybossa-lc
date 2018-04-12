@@ -354,7 +354,7 @@ class BaseAnalyst():
         """Return the base fo ra new Web Annotation."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         anno_uuid = str(uuid.uuid4())
-        _id = '{0}/lc/annotations/{1}'.format(spa_server_name, anno_uuid)
+        _id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
         ts_now = self.get_xsd_datetime()
         return {
             "@context": "http://www.w3.org/ns/anno.jsonld",

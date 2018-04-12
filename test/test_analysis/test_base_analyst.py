@@ -493,8 +493,8 @@ class TestAnalyst(Test):
         user = UserFactory.create(name=name, fullname=fullname)
         creator_url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'),
                                               user.id)
-        _id = '{}/lc/annotations/{}'.format(spa_server_name.rstrip('/'),
-                                            fake_uuid)
+        _id = '{}/lc/annotations/wa/{}'.format(spa_server_name.rstrip('/'),
+                                               fake_uuid)
         anno = self.base_analyst.create_commenting_anno(target, value, user.id)
         assert_dict_equal(anno, {
             '@context': 'http://www.w3.org/ns/anno.jsonld',

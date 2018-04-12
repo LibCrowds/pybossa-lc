@@ -27,7 +27,7 @@ def get_anno_base(motivation):
     ts_now = get_xsd_datetime()
     spa_server_name = app.config.get('SPA_SERVER_NAME')
     anno_uuid = str(uuid.uuid4())
-    _id = '{0}/lc/annotations/{1}'.format(spa_server_name, anno_uuid)
+    _id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
     github_repo = app.config.get('GITHUB_REPO')
     return {
         "@context": "http://www.w3.org/ns/anno.jsonld",
