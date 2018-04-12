@@ -24,13 +24,14 @@ class CustomExporterBase(Exporter):
     def __init__(self):
         super(CustomExporterBase, self)
 
-    def _container(self, volume):
-        return "category_{}".format(volume.category_id)
+    def _container(self, category):
+        """Overwrite the container method."""
+        return "category_{}".format(category.id)
 
-    def download_name(self, category, export_fmt, _format):
+    def download_name(self, category, export_fmt_id, _format):
         """Overwrite the download name method."""
-        enc_name = self._project_name_latin_encoded(title)
-        filename = '%s_%s_%s.zip' % (enc_name, motivation, _format)
+        cat_enc_name = self._project_name_latin_encoded(category)
+        filename = '%s_%s_%s.zip' % (cat_enc_name, export_fmt_id, _format)
         filename = secure_filename(filename)
         return filename
 

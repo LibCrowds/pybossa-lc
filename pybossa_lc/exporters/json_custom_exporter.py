@@ -13,12 +13,12 @@ from .base import CustomExporterBase
 
 class JsonCustomExporter(CustomExporterBase):
 
-    def _respond_json(self, motivation, volume_id):
-        return self._get_data(motivation, volume_id)
+    def _respond_json(self, category, export_fmt_id):
+        return self._get_data(category, export_fmt_id)
 
-    def _make_zip(self, volume, ty):
-        name = self._project_name_latin_encoded(volume)
-        json_data_generator = self._respond_json(volume.id, ty)
+    def _make_zip(self, category, export_fmt_id):
+        name = self._project_name_latin_encoded(category)
+        json_data_generator = self._respond_json(category.id, export_fmt_id)
         if json_data_generator is not None:
             datafile = tempfile.NamedTemporaryFile()
             try:
@@ -27,11 +27,11 @@ class JsonCustomExporter(CustomExporterBase):
                 zipped_datafile = tempfile.NamedTemporaryFile()
                 try:
                     _zip = self._zip_factory(zipped_datafile.name)
-                    fn = '%s_%s.json' % (name, ty)
+                    fn = '%s_%s.json' % (name, export_fmt_id)
                     _zip.write(datafile.name, secure_filename(fn))
                     _zip.close()
-                    container = self._container(volume)
-                    dl_fn = self.download_name(volume, ty)
+                    container = self._container(category)
+                    dl_fn = self.download_name(category, export_fmt_id)
                     _file = FileStorage(filename=dl_fn, stream=zipped_datafile)
                     uploader.upload_file(_file, container=container)
                 finally:
@@ -39,13 +39,12 @@ class JsonCustomExporter(CustomExporterBase):
             finally:
                 datafile.close()
 
-    def download_name(self, volume, ty):
-        return super(JsonCustomExporter, self).download_name(volume, ty,
+    def download_name(self, category, export_fmt_id):
+        return super(JsonCustomExporter, self).download_name(category,
+                                                             export_fmt_id,
                                                              'json')
 
     def pregenerate_zip_files(self, category):
         print "%d (json)" % category.id
-        for volume in category.info.get('volumes', []):
-            self._make_zip(volume, 'tagging')
-            self._make_zip(volume, 'describing')
-            self._make_zip(volume, 'commenting')
+        for export_fmt in category.info.get('export_formats', []):
+            self._make_zip(category, export_fmt['id'])
