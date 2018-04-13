@@ -100,6 +100,8 @@ def get_volume_page(volume_id, page):
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
     last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+    if page > last:
+        return jsonld_abort(404)
 
     data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
