@@ -118,8 +118,8 @@ class TestAnnotationsApi(web.Helper):
             "type": "AnnotationCollection",
             "label": "{0} Annotations".format(volume['name']),
             "total": len(annotations),
-            "first": "{0}{1}/page1".format(spa_server_name, endpoint),
-            "last": "{0}{1}/page2".format(spa_server_name, endpoint)
+            "first": "{0}{1}/1".format(spa_server_name, endpoint),
+            "last": "{0}{1}/2".format(spa_server_name, endpoint)
         })
 
     @with_context
@@ -155,8 +155,8 @@ class TestAnnotationsApi(web.Helper):
             "type": "AnnotationCollection",
             "label": "{0} Annotations".format(volume['name']),
             "total": 1,
-            "first": "{0}{1}/page1".format(spa_server_name, endpoint),
-            "last": "{0}{1}/page1".format(spa_server_name, endpoint)
+            "first": "{0}{1}/1".format(spa_server_name, endpoint),
+            "last": "{0}{1}/1".format(spa_server_name, endpoint)
         })
 
     @with_context

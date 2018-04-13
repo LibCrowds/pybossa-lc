@@ -77,8 +77,8 @@ def get_volume_collection(volume_id):
         "type": "AnnotationCollection",
         "label": "{0} Annotations".format(volume.name),
         "total": len(annotations),
-        "first": "{0}/page1".format(full_id),
-        "last": "{0}/page{1}".format(full_id, last)
+        "first": "{0}/1".format(full_id),
+        "last": "{0}/{1}".format(full_id, last)
     }
 
     return jsonld_response(data)
