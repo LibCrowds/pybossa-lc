@@ -38,8 +38,7 @@ def jsonld_abort(status_code):
     else:
         body['message'] = 'Server Error'
 
-    res = jsonld_response(body, status_code=status_code)
-    abort(res, status_code)
+    return jsonld_response(body, status_code=status_code)
 
 
 @BLUEPRINT.route('/wa/<annotation_id>')
@@ -50,7 +49,7 @@ def get_wa(annotation_id):
                                                  annotation_id)
     anno = annotations_cache.get(full_id)
     if not anno:
-        jsonld_abort(404)
+        return jsonld_abort(404)
 
     return jsonld_response(anno)
 
@@ -60,7 +59,7 @@ def get_volume_collection(volume_id):
     """Return an Annotation Collection for a volume."""
     volume = volume_repo.get(volume_id)
     if not volume:
-        jsonld_abort(404)
+        return jsonld_abort(404)
 
     motivation = request.args.get('motivation')
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
@@ -90,7 +89,7 @@ def get_volume_page(volume_id):
     """Return an Annotation Collection for a volume."""
     volume = volume_repo.get(volume_id)
     if not volume:
-        jsonld_abort(404)
+        return jsonld_abort(404)
 
     motivation = request.args.get('motivation')
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
