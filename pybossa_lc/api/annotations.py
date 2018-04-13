@@ -85,8 +85,8 @@ def get_volume_collection(volume_id):
 
 
 @BLUEPRINT.route('/wa/collection/volume/<volume_id>/<int:page>')
-def get_volume_page(volume_id):
-    """Return an Annotation Collection for a volume."""
+def get_volume_page(volume_id, page):
+    """Return an Annotation Page for a volume."""
     volume = volume_repo.get(volume_id)
     if not volume:
         return jsonld_abort(404)
@@ -94,4 +94,27 @@ def get_volume_page(volume_id):
     motivation = request.args.get('motivation')
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
 
-    return jsonld_response(annotations)
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{0}/lc/annotations/wa/collection/volume/{1}'
+    collection_id = url_base.format(spa_server_name, volume_id)
+
+    per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
+    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+
+    data = {
+        "@context": "http://www.w3.org/ns/anno.jsonld",
+        "id": "{0}/{1}".format(collection_id, page),
+        "type": "AnnotationPage",
+        "partOf": {
+            "id": collection_id,
+            "label": "{0} Annotations".format(volume.name),
+            "total": len(annotations)
+        },
+        "startIndex": 0,
+        "items": annotations[per_page * (page - 1):per_page * page]
+    }
+
+    if last > page:
+        data['next'] = "{0}/{1}".format(collection_id, page + 1)
+
+    return jsonld_response(data)
