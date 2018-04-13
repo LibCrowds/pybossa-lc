@@ -18,13 +18,13 @@ def jsonld_response(body, status_code=200):
     See https://www.w3.org/TR/annotation-protocol/#annotation-retrieval
     """
     response = make_response(json.dumps(body), status_code)
-
     profile = '"http://www.w3.org/ns/anno.jsonld"'
     response.mimetype = 'application/ld+json; profile={0}'.format(profile)
-
-    print 'making response'
-    print response.mimetype
-
+    link = '<http://www.w3.org/ns/ldp#Resource>; rel="type"'
+    response.headers['Link'] = link
+    response.headers['Allow'] = 'GET,OPTIONS,HEAD'
+    response.headers['Vary'] = 'Accept'
+    response.add_etag()
     response.status_code = status_code
     return response
 
@@ -49,7 +49,6 @@ def get_wa(annotation_id):
     full_id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name,
                                                  annotation_id)
     anno = annotations_cache.get(full_id)
-    print full_id
     if not anno:
         jsonld_abort(404)
 
