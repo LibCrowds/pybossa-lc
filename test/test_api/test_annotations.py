@@ -46,9 +46,29 @@ class TestAnnotationsApi(web.Helper):
             "generated": "2018-04-07T21:38:53Z"
         }
 
+    def check_response(self, res):
+        """Check for a valid JSON-LD annotation response."""
+        # Check for valid Content-Type header
+        profile = '"http://www.w3.org/ns/anno.jsonld"'
+        content_type = 'application/ld+json; profile={0}'.format(profile)
+        assert_equal(res.headers.get('Content-Type'), content_type)
+
+        # Check for valid Link header
+        link = '<http://www.w3.org/ns/ldp#Resource>; rel="type"'
+        assert_equal(res.headers.get('Link'), link)
+
+        # Check for ETag header
+        assert_not_equal(res.headers.get('ETag'), None)
+
+        # Check for valid Allow header
+        assert_equal(res.headers.get('Allow'), 'GET,OPTIONS,HEAD')
+
+        # Check for valid Vary header
+        assert_equal(res.headers.get('Vary'), 'Accept')
+
     @with_context
     def test_valid_annotation_response(self):
-        """Test response complies with WA protocol."""
+        """Test single WA returned."""
         self.register()
         owner = self.user_repo.get(1)
         category = CategoryFactory()
@@ -64,7 +84,6 @@ class TestAnnotationsApi(web.Helper):
         endpoint = anno['id'][len(spa_server_name):]
         res = self.app_get_json(endpoint)
 
-        # Check for valid Content-Type
-        profile = '"http://www.w3.org/ns/anno.jsonld"'
-        content_type = 'application/ld+json; profile={0}'.format(profile)
-        assert_equal(res.headers['Content-Type'], content_type)
+        self.check_response(res)
+
+        assert_equal(json.loads(res.data), anno)
