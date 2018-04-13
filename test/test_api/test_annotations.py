@@ -67,8 +67,8 @@ class TestAnnotationsApi(web.Helper):
         assert_equal(res.headers.get('Vary'), 'Accept')
 
     @with_context
-    def test_valid_annotation_response(self):
-        """Test single WA returned."""
+    def test_single_annotation_returned(self):
+        """Test single Annotation returned."""
         self.register()
         owner = self.user_repo.get(1)
         category = CategoryFactory()
@@ -87,3 +87,36 @@ class TestAnnotationsApi(web.Helper):
         self.check_response(res)
 
         assert_equal(json.loads(res.data), anno)
+
+    @with_context
+    def test_annotation_collection_returned(self):
+        """Test Annotation Collection returned."""
+        self.register()
+        owner = self.user_repo.get(1)
+        volume = dict(id='foo', name='bar', short_name='bar', importer='baz')
+        category = CategoryFactory(info=dict(volumes=[volume]))
+        project = ProjectFactory(category=category, owner=owner,
+                                 info=dict(volume_id=volume['id']))
+        task = TaskFactory(n_answers=1, project=project)
+        TaskRunFactory.create(task=task, project=project, user=owner)
+        result = self.result_repo.get_by(task_id=task.id)
+        annotations = [self.create_annotation('foo', 'bar')] * 101
+        result.info = dict(annotations=annotations)
+        self.result_repo.update(result)
+
+        url_base = '/lc/annotations/wa/collection/volume/{}'
+        endpoint = url_base.format(volume['id'])
+        res = self.app_get_json(endpoint)
+
+        self.check_response(res)
+
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        assert_equal(json.loads(res.data), {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "id": "{0}{1}".format(spa_server_name, endpoint),
+            "type": "AnnotationCollection",
+            "label": "{0} Annotations".format(volume['name']),
+            "total": len(annotations),
+            "first": "{0}{1}/page1".format(spa_server_name, endpoint),
+            "last": "{0}{1}/page2".format(spa_server_name, endpoint)
+        })

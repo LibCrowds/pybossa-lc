@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-"""API annotations module for pybossa-lc."""
+"""Annotations API module for pybossa-lc."""
 
 import json
 from flask import Blueprint, abort, make_response, request, current_app
@@ -7,7 +7,7 @@ from werkzeug.exceptions import default_exceptions
 from pybossa.core import project_repo
 
 from ..cache import annotations as annotations_cache
-
+from .. import volume_repo
 
 BLUEPRINT = Blueprint('lc_annotations', __name__)
 
@@ -44,7 +44,7 @@ def jsonld_abort(status_code):
 
 @BLUEPRINT.route('/wa/<annotation_id>')
 def get_wa(annotation_id):
-    """Return a Web Annotation."""
+    """Return an Annotation."""
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     full_id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name,
                                                  annotation_id)
@@ -53,3 +53,46 @@ def get_wa(annotation_id):
         jsonld_abort(404)
 
     return jsonld_response(anno)
+
+
+@BLUEPRINT.route('/wa/collection/volume/<volume_id>')
+def get_volume_collection(volume_id):
+    """Return an Annotation Collection for a volume."""
+    volume = volume_repo.get(volume_id)
+    if not volume:
+        jsonld_abort(404)
+
+    motivation = request.args.get('motivation')
+    annotations = annotations_cache.get_by_volume(volume_id, motivation)
+
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{0}/lc/annotations/wa/collection/volume/{1}'
+    full_id = url_base.format(spa_server_name, volume_id)
+
+    per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
+    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+
+    data = {
+        "@context": "http://www.w3.org/ns/anno.jsonld",
+        "id": full_id,
+        "type": "AnnotationCollection",
+        "label": "{0} Annotations".format(volume.name),
+        "total": len(annotations),
+        "first": "{0}/page1".format(full_id),
+        "last": "{0}/page{1}".format(full_id, last)
+    }
+
+    return jsonld_response(data)
+
+
+@BLUEPRINT.route('/wa/collection/volume/<volume_id>/<int:page>')
+def get_volume_page(volume_id):
+    """Return an Annotation Collection for a volume."""
+    volume = volume_repo.get(volume_id)
+    if not volume:
+        jsonld_abort(404)
+
+    motivation = request.args.get('motivation')
+    annotations = annotations_cache.get_by_volume(volume_id, motivation)
+
+    return jsonld_response(annotations)

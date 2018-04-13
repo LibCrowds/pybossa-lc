@@ -13,6 +13,8 @@ class Volume(object):
         self.short_name = kwargs['short_name']
         self.importer = kwargs['importer']
         self.data = kwargs.get('data', {})
+        self.thumbnail_url = kwargs.get('thumbnail_url')
+        self.container = kwargs.get('container')
 
     def to_dict(self):
         """Return a dict representation of the object."""
