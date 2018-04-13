@@ -18,7 +18,7 @@ class TestAnnotationsApi(web.Helper):
         self.result_repo = ResultRepository(db)
         self.user_repo = UserRepository(db)
 
-    def create_annotation(self, tag, value):
+    def create_annotation(self, motivation='describing'):
         """Create a fake annotation."""
         spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
         anno_uuid = str(uuid.uuid4())
@@ -31,16 +31,16 @@ class TestAnnotationsApi(web.Helper):
                 {
                     "type": "TextualBody",
                     "purpose": "describing",
-                    "value": value,
+                    "value": "foo",
                     "format": "text/plain"
                 },
                 {
                     "type": "TextualBody",
                     "purpose": "tagging",
-                    "value": tag
+                    "value": "bar"
                 }
             ],
-            "motivation": "describing",
+            "motivation": motivation,
             "target": "http://example.org",
             "created": "2018-04-07T21:38:53Z",
             "generated": "2018-04-07T21:38:53Z"
@@ -76,7 +76,7 @@ class TestAnnotationsApi(web.Helper):
         task = TaskFactory(n_answers=1, project=project)
         TaskRunFactory.create(task=task, project=project, user=owner)
         result = self.result_repo.get_by(task_id=task.id)
-        anno = self.create_annotation('foo', 'bar')
+        anno = self.create_annotation()
         result.info = dict(annotations=[anno])
         self.result_repo.update(result)
 
@@ -89,8 +89,8 @@ class TestAnnotationsApi(web.Helper):
         assert_equal(json.loads(res.data), anno)
 
     @with_context
-    def test_annotation_collection_returned(self):
-        """Test Annotation Collection returned."""
+    def test_annotation_volume_collection_returned(self):
+        """Test Annotation Collection returned for a volume."""
         self.register()
         owner = self.user_repo.get(1)
         volume = dict(id='foo', name='bar', short_name='bar', importer='baz')
@@ -100,7 +100,7 @@ class TestAnnotationsApi(web.Helper):
         task = TaskFactory(n_answers=1, project=project)
         TaskRunFactory.create(task=task, project=project, user=owner)
         result = self.result_repo.get_by(task_id=task.id)
-        annotations = [self.create_annotation('foo', 'bar')] * 101
+        annotations = [self.create_annotation()] * 101
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -119,4 +119,41 @@ class TestAnnotationsApi(web.Helper):
             "total": len(annotations),
             "first": "{0}{1}/page1".format(spa_server_name, endpoint),
             "last": "{0}{1}/page2".format(spa_server_name, endpoint)
+        })
+
+    @with_context
+    def test_annotation_volume_collection_returned_with_motivation(self):
+        """Test Annotation Collection returned for a volume and motivation."""
+        self.register()
+        owner = self.user_repo.get(1)
+        volume = dict(id='foo', name='bar', short_name='bar', importer='baz')
+        category = CategoryFactory(info=dict(volumes=[volume]))
+        project = ProjectFactory(category=category, owner=owner,
+                                 info=dict(volume_id=volume['id']))
+        task = TaskFactory(n_answers=1, project=project)
+        TaskRunFactory.create(task=task, project=project, user=owner)
+        result = self.result_repo.get_by(task_id=task.id)
+        motivation = 'describing'
+        annotations = [
+            self.create_annotation('commenting'),
+            self.create_annotation(motivation)
+        ]
+        result.info = dict(annotations=annotations)
+        self.result_repo.update(result)
+
+        url_base = '/lc/annotations/wa/collection/volume/{}'
+        endpoint = url_base.format(volume['id'])
+        res = self.app_get_json(endpoint + '?motivation={}'.format(motivation))
+
+        self.check_response(res)
+
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        assert_equal(json.loads(res.data), {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "id": "{0}{1}".format(spa_server_name, endpoint),
+            "type": "AnnotationCollection",
+            "label": "{0} Annotations".format(volume['name']),
+            "total": 1,
+            "first": "{0}{1}/page1".format(spa_server_name, endpoint),
+            "last": "{0}{1}/page1".format(spa_server_name, endpoint)
         })
