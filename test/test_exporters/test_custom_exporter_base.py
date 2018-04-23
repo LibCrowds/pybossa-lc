@@ -25,41 +25,6 @@ class TestCustomExporterBase(Test):
         self.tmpl_fixtures = TemplateFixtures(self.category)
         self.anno_fixtures = AnnotationFixtures()
 
-    def test_get_export_format(self):
-        """Test correct export format returned."""
-        tmpl = self.tmpl_fixtures.create_template()
-        export_formats = [
-            {
-                'id': 123,
-                'name': 'All',
-                'short_name': 'all',
-                'root_template_id': None
-            },
-            {
-                'id': 456,
-                'name': 'All',
-                'short_name': 'all',
-                'root_template_id': tmpl.id
-            }
-        ]
-        self.category.info['export_formats'] = export_formats
-        self.project_repo.update_category(self.category)
-
-        _id = export_formats[1]['id']
-        export_fmt = self.exporter_base._get_export_format(self.category, _id)
-        assert_equal(export_fmt, export_formats[1])
-
-    def test_get_template(self):
-        """Test correct template returned."""
-        tmpl1 = self.tmpl_fixtures.create_template()
-        tmpl2 = self.tmpl_fixtures.create_template()
-        templates = [tmpl1.to_dict(), tmpl2.to_dict()]
-        self.category.info['templates'] = templates
-        self.project_repo.update_category(self.category)
-
-        ret_tmpl = self.exporter_base._get_template(self.category, tmpl2.id)
-        assert_equal(ret_tmpl, tmpl2.to_dict())
-
     # @with_context
     # def test_get_json_data_with_one_project(self):
     #     """Test JSON data with one project and one type of transcription."""
