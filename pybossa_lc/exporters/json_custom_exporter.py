@@ -18,7 +18,7 @@ class JsonCustomExporter(CustomExporterBase):
 
     def _make_zip(self, category, motivation):
         name = self._project_name_latin_encoded(category)
-        json_data_generator = self._respond_json(category.id, motivation)
+        json_data_generator = self._respond_json(category, motivation)
         if json_data_generator is not None:
             datafile = tempfile.NamedTemporaryFile()
             try:

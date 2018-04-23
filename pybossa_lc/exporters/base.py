@@ -37,11 +37,11 @@ class CustomExporterBase(Exporter):
 
     def _get_anno_data(self, result, motivation):
         """Parse a result to get simple annotation values for a motivation."""
-        if 'annotations' not in result['info']:
+        if 'annotations' not in result.info:
             return None
 
         data = {}
-        annotations = [anno for anno in result['info']['annotations']
+        annotations = [anno for anno in result.info['annotations']
                        if anno['motivation'] == motivation]
         for annotation in annotations:
 
@@ -71,12 +71,14 @@ class CustomExporterBase(Exporter):
 
     def _get_target(self, result):
         """Parse a result to get the Web Annotation target."""
-        if (not isinstance(result['info'], dict) or
-            not result['info'].get('annotations')):
-                return None
+        if not isinstance(result.info, dict):
+            return None
+
+        if not result.info.get('annotations'):
+            return None
 
         target = None
-        for annotation in result['info']['annotations']:
+        for annotation in result.info['annotations']:
             temp_target = None
             if isinstance(annotation['target'], basestring):
                 temp_target = annotation['target']
@@ -91,36 +93,24 @@ class CustomExporterBase(Exporter):
             target = temp_target
         return target
 
-    def _get_results_data(self, results, motivation, split_by_task_id=False):
+    def _get_results_data(self, results, motivation):
         """Return a dictionary of results data mapped to target or task ID."""
         data = {}
         for result in results:
-            if split_by_task_id:
-                key = result.task_id
-            else:
-                key = self._get_target(result)
+            target = self._get_target(result)
 
-            if key:
+            if target:
                 anno_data = self._get_anno_data(result, motivation)
-                values_dict = data.get(key, {})
-                annotations = values_dict.get('annotations', {})
+                annotations = data.get(target, {})
+
                 for key in anno_data:
-                    values_dict = annotations.get(key, [])
-                    values_dict.append(anno_data[key])
-                    annotations[key] = values_dict
-                values_dict['annotations'] = annotations
+                    values = annotations.get(key, [])
+                    values.append(anno_data[key])
+                    annotations[key] = values
 
-                # Add share links
-                links = values_dict.get('link', [])
-                links.append(result['link'])
-                values_dict['link'] = list(set(links))
+                data[target] = annotations
 
-                # Add task state
-                current_state = values_dict.get('task_state')
-                if current_state != 'ongoing':
-                    values_dict['task_state'] = result['task_state']
-
-                data[key] = values_dict
+        return data
 
     def _get_data(self, category, motivation, flat=True):
         """Get annotation data for custom export."""
@@ -134,8 +124,9 @@ class CustomExporterBase(Exporter):
             return data.values()
 
         flat_data = []
-        for key in data:
-            row = flatten(data[key])
+        for target in data:
+            row = flatten(data[target])
+            row['target'] = target
             flat_data.append(row)
 
         # Return sorted by target
