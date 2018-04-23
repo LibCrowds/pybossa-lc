@@ -60,7 +60,6 @@ class TestCustomExporterBase(Test):
         ret_tmpl = self.exporter_base._get_template(self.category, tmpl2.id)
         assert_equal(ret_tmpl, tmpl2.to_dict())
 
-
     # @with_context
     # def test_get_json_data_with_one_project(self):
     #     """Test JSON data with one project and one type of transcription."""

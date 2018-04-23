@@ -11,6 +11,7 @@ from factories import ProjectFactory, TaskFactory, TaskRunFactory
 from factories import CategoryFactory
 from pybossa.repositories import ResultRepository, UserRepository
 
+
 class TestAnnotationsApi(web.Helper):
 
     def setUp(self):

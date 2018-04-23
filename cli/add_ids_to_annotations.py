@@ -48,5 +48,6 @@ def run():
             db.engine.execute(query, id=result.id,
                               info=json.dumps(new_info))
 
+
 if __name__ == '__main__':
     run()

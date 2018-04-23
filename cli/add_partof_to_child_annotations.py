@@ -40,7 +40,6 @@ def run():
         print('Updating {} projects'.format(len(projects)))
         print('------------------------------------------')
 
-
         for project in projects:
             # Get all child tasks
             query = text('''SELECT task.id, task.info
@@ -120,6 +119,7 @@ def run():
                                 SET info=:info
                                 WHERE id=:id''')
                 db.engine.execute(query, id=child_result.id, info=new_info)
+
 
 if __name__ == '__main__':
     run()
