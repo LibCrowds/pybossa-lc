@@ -28,10 +28,10 @@ class CustomExporterBase(Exporter):
         """Overwrite the container method."""
         return "category_{}".format(category.id)
 
-    def download_name(self, category, export_fmt_id, _format):
+    def download_name(self, category, motivation, _format):
         """Overwrite the download name method."""
         cat_enc_name = self._project_name_latin_encoded(category)
-        filename = '%s_%s_%s.zip' % (cat_enc_name, export_fmt_id, _format)
+        filename = '%s_%s_%s.zip' % (cat_enc_name, motivation, _format)
         filename = secure_filename(filename)
         return filename
 
@@ -91,16 +91,6 @@ class CustomExporterBase(Exporter):
             target = temp_target
         return target
 
-    def _get_export_format(self, category, export_fmt_id):
-        """Get the export format."""
-        export_formats = category.info.get('export_formats', [])
-        return [fmt for fmt in export_formats if fmt['id'] == export_fmt_id][0]
-
-    def _get_template(self, category, template_id):
-        """Get the export format."""
-        templates = category.info.get('templates', [])
-        return [tmpl for tmpl in templates if tmpl['id'] == template_id][0]
-
     def _get_results_data(self, results, motivation, split_by_task_id=False):
         """Return a dictionary of results data mapped to target or task ID."""
         data = {}
@@ -132,34 +122,13 @@ class CustomExporterBase(Exporter):
 
                 data[key] = values_dict
 
-    def _get_data(self, category, export_fmt_id, flat=True):
+    def _get_data(self, category, motivation, flat=True):
         """Get annotation data for custom export."""
-        print 'getting data'
-        export_format = self._get_export_format(category, export_fmt_id)
-        motivation = export_format['motivation']
-
-        # Get root template
-        root_tmpl_id = export_format.get('root_template_id')
-        root_template = None
-        if root_tmpl_id:
-            root_template = self._get_template(category, root_tmpl_id)
-
-        # Get included templates
-        include_ids = export_format.get('include')
-        include = None
-        if include_ids:
-            include = [self._get_template(category, tmpl_id)
-                       for tmpl_id in include_ids]
-
         data = {}
-
-        # Return everything if no root or includes
-        print 'is it?', not root_template and not include
-        if not root_template and not include:
-            projects = project_repo.filter_by(category_id=category.id)
-            project_ids = [project.id for project in projects]
-            results = result_repo.filter_by(project_id=project_ids)
-            data = self._get_results_data(results, motivation)
+        projects = project_repo.filter_by(category_id=category.id)
+        project_ids = [project.id for project in projects]
+        results = result_repo.filter_by(project_id=project_ids)
+        data = self._get_results_data(results, motivation)
 
         if not flat:
             return data.values()

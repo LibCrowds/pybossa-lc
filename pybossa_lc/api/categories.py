@@ -196,26 +196,23 @@ def update_volume(short_name, volume_id):
     return handle_content_type(response)
 
 
-@BLUEPRINT.route('/<short_name>/exports/download')
-def export_volume_data(short_name):
-    """Export custom data."""
+@BLUEPRINT.route('/<short_name>/export')
+def export_collection_data(short_name):
+    """Export collection data."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
-    export_fmt_id = request.args.get('type')
+    motivation = request.args.get('type')
     fmt = request.args.get('format')
-    if not (export_fmt_id and fmt):
+    if not (motivation and fmt):
         abort(404)
 
     if fmt not in ['csv', 'json']:
         abort(415)
 
-    try:
-        [f for f in category.info.get('export_formats', [])
-         if f['id'] == export_fmt_id][0]
-    except IndexError:
-        abort(404)
+    if motivation not in ['describing', 'tagging', 'commenting']:
+        abort(415)
 
     def respond_json(export_fmt_id):
         json_custom_exporter = JsonCustomExporter()
@@ -227,103 +224,7 @@ def export_volume_data(short_name):
         res = csv_custom_exporter.response_zip(category, export_fmt_id)
         return res
 
-    return {"json": respond_json, "csv": respond_csv}[fmt](export_fmt_id)
-
-
-@login_required
-@BLUEPRINT.route('/<short_name>/exports', methods=['GET', 'POST'])
-def exports(short_name):
-    """Add a custom data export."""
-    category = project_repo.get_category_by(short_name=short_name)
-    if not category:  # pragma: no cover
-        abort(404)
-
-    ensure_authorized_to('update', category)
-    form_data = json.loads(request.data) if request.data else {}
-    form = CustomExportForm(**form_data)
-
-    tmpls = category.info.get('templates', [])
-    form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
-    form.include.choices += [(t['id'], t['name']) for t in tmpls]
-
-    if request.method == 'POST' and form.validate():
-        # Replace "None" selections
-        include = form.include.data if form.include.data != ['None'] else []
-        root_tmpl_id = form.root_template_id.data
-        root_tmpl_id = root_tmpl_id if root_tmpl_id != 'None' else None
-
-        export_fmt_id = str(uuid.uuid4())
-        new_export_fmt = dict(id=export_fmt_id,
-                              name=form.name.data,
-                              short_name=form.short_name.data,
-                              motivation=form.motivation.data,
-                              root_template_id=root_tmpl_id,
-                              include=include)
-
-        export_fmts = category.info.get('export_formats', [])
-        export_fmts.append(new_export_fmt)
-        category.info['export_formats'] = export_fmts
-        project_repo.update_category(category)
-        flash("Export Format added", 'success')
-    elif request.method == 'POST':  # pragma: no cover
-        flash('Please correct the errors', 'error')
-
-    response = dict(form=form)
-    return handle_content_type(response)
-
-
-@login_required
-@BLUEPRINT.route('/<short_name>/exports/<export_id>', methods=['GET', 'POST'])
-def update_export(short_name, export_id):
-    """Update a custom data export."""
-    category = project_repo.get_category_by(short_name=short_name)
-    if not category:  # pragma: no cover
-        abort(404)
-
-    ensure_authorized_to('update', category)
-    export_fmts = category.info.get('export_formats', [])
-
-    try:
-        export_fmt = [fmt for fmt in export_fmts if fmt['id'] == export_id][0]
-    except IndexError:
-        abort(404)
-
-    form = CustomExportForm(**export_fmt)
-
-    tmpls = category.info.get('templates', [])
-    form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
-    form.include.choices += [(t['id'], t['name']) for t in tmpls]
-
-    if request.method == 'POST':
-        form_data = json.loads(request.data) if request.data else {}
-        form = CustomExportForm(**form_data)
-        form.root_template_id.choices += [(t['id'], t['name']) for t in tmpls]
-        form.include.choices += [(t['id'], t['name']) for t in tmpls]
-
-        if form.validate():
-            export_fmt.update(form.data)
-
-            # Replace "None" selections
-            if export_fmt['root_template_id'] == 'None':
-                export_fmt['root_template_id'] = None
-            if export_fmt['include'] == ['None']:
-                export_fmt['include'] = []
-
-            try:
-                idx = [i for i, fmt in enumerate(export_fmts)
-                       if fmt['id'] == export_id][0]
-            except IndexError:  # pragma: no cover
-                abort(404)
-
-            export_fmts[idx] = export_fmt
-            category.info['export_formats'] = export_fmts
-            project_repo.update_category(category)
-            flash('Export format updated', 'success')
-        else:
-            flash('Please correct the errors', 'error')
-
-    response = dict(form=form)
-    return handle_content_type(response)
+    return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
 
 
 @BLUEPRINT.route('/<short_name>/tags')

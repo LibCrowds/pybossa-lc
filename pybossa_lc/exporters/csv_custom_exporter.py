@@ -13,13 +13,13 @@ from .base import CustomExporterBase
 
 class CsvCustomExporter(CustomExporterBase):
 
-    def _respond_csv(self, category, export_fmt_id):
-        export_data = self._get_data(category, export_fmt_id, flat=True)
+    def _respond_csv(self, category, motivation):
+        export_data = self._get_data(category, motivation, flat=True)
         return pandas.DataFrame(export_data)
 
-    def _make_zip(self, category, export_fmt_id):
+    def _make_zip(self, category, motivation):
         name = self._project_name_latin_encoded(category)
-        dataframe = self._respond_csv(category, export_fmt_id)
+        dataframe = self._respond_csv(category, motivation)
         if dataframe is not None:
             datafile = tempfile.NamedTemporaryFile()
             try:
@@ -28,11 +28,11 @@ class CsvCustomExporter(CustomExporterBase):
                 zipped_datafile = tempfile.NamedTemporaryFile()
                 try:
                     _zip = self._zip_factory(zipped_datafile.name)
-                    fn = '%s_%s.csv' % (name, export_fmt_id)
+                    fn = '%s_%s.csv' % (name, motivation)
                     _zip.write(datafile.name, secure_filename(fn))
                     _zip.close()
                     container = self._container(category)
-                    dl_fn = self.download_name(category, export_fmt_id)
+                    dl_fn = self.download_name(category, motivation)
                     _file = FileStorage(filename=dl_fn, stream=zipped_datafile)
                     uploader.upload_file(_file, container=container)
                 finally:
@@ -40,12 +40,12 @@ class CsvCustomExporter(CustomExporterBase):
             finally:
                 datafile.close()
 
-    def download_name(self, category, export_fmt_id):
+    def download_name(self, category, motivation):
         return super(CsvCustomExporter, self).download_name(category,
-                                                            export_fmt_id,
+                                                            motivation,
                                                             'csv')
 
     def pregenerate_zip_files(self, category):
         print "%d (csv)" % category.id
-        for export_fmt in category.info.get('export_formats', []):
-            self._make_zip(category, export_fmt['id'])
+        for motivation in ['describing', 'tagging', 'commenting']:
+            self._make_zip(category, motivation)
