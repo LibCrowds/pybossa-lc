@@ -60,7 +60,7 @@ def get_wa(annotation_id):
     return jsonld_response(anno)
 
 
-@BLUEPRINT.route('/wa/collection/volume/<volume_id>')
+@BLUEPRINT.route('/wa/volume/<volume_id>')
 def get_volume_collection(volume_id):
     """Return an Annotation Collection for a volume."""
     volume = volume_repo.get(volume_id)
@@ -71,7 +71,7 @@ def get_volume_collection(volume_id):
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    url_base = '{0}/lc/annotations/wa/collection/volume/{1}'
+    url_base = '{0}/lc/annotations/wa/volume/{1}'
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
     last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
@@ -99,7 +99,7 @@ def get_volume_collection(volume_id):
     return jsonld_response(data)
 
 
-@BLUEPRINT.route('/wa/collection/volume/<volume_id>/<int:page>')
+@BLUEPRINT.route('/wa/volume/<volume_id>/<int:page>')
 def get_volume_page(volume_id, page):
     """Return an Annotation Page for a volume."""
     volume = volume_repo.get(volume_id)
@@ -110,7 +110,7 @@ def get_volume_page(volume_id, page):
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    url_base = '{0}/lc/annotations/wa/collection/volume/{1}'
+    url_base = '{0}/lc/annotations/wa/volume/{1}'
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
     last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1

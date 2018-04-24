@@ -106,7 +106,7 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        url_base = '/lc/annotations/wa/collection/volume/{}'
+        url_base = '/lc/annotations/wa/volume/{}'
         endpoint = url_base.format(volume['id'])
         res = self.app_get_json(endpoint)
 
@@ -143,7 +143,7 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        url_base = '/lc/annotations/wa/collection/volume/{}'
+        url_base = '/lc/annotations/wa/volume/{}'
         endpoint = url_base.format(volume['id'])
         res = self.app_get_json(endpoint + '?motivation={}'.format(motivation))
 
@@ -180,7 +180,7 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        url_base = '/lc/annotations/wa/collection/volume/{}'
+        url_base = '/lc/annotations/wa/volume/{}'
         endpoint = url_base.format(volume['id'])
         res = self.app_get_json(endpoint + '?iris=1')
 
@@ -214,7 +214,7 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        url_base = '/lc/annotations/wa/collection/volume/{}'.format(vol['id'])
+        url_base = '/lc/annotations/wa/volume/{}'.format(vol['id'])
         page = 1
         endpoint = '{0}/{1}'.format(url_base, page)
         res = self.app_get_json(endpoint)
@@ -260,7 +260,7 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        url_base = '/lc/annotations/wa/collection/volume/{}'.format(vol['id'])
+        url_base = '/lc/annotations/wa/volume/{}'.format(vol['id'])
         page = 1
         endpoint = '{0}/{1}'.format(url_base, page)
         res = self.app_get_json(endpoint + '?motivation={}'.format(motivation))
@@ -302,7 +302,7 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        url_base = '/lc/annotations/wa/collection/volume/{}'.format(vol['id'])
+        url_base = '/lc/annotations/wa/volume/{}'.format(vol['id'])
         page = 1
         endpoint = '{0}/{1}'.format(url_base, page)
         res = self.app_get_json(endpoint + '?iris=1')
