@@ -66,19 +66,28 @@ def get_volume_collection(volume_id):
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/collection/volume/{1}'
-    full_id = url_base.format(spa_server_name, volume_id)
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
     last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
 
+    id_uri = url_base.format(spa_server_name, volume_id)
+    first_uri = "{0}/1".format(id_uri)
+    last_uri = "{0}/{1}".format(id_uri, last)
+
+    # Append motivation param to URIs if passed in original request
+    if motivation:
+        id_uri += "?motivation={}".format(motivation)
+        first_uri += "?motivation={}".format(motivation)
+        last_uri += "?motivation={}".format(motivation)
+
     data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
-        "id": full_id,
+        "id": id_uri,
         "type": "AnnotationCollection",
         "label": "{0} Annotations".format(volume.name),
         "total": len(annotations),
-        "first": "{0}/1".format(full_id),
-        "last": "{0}/{1}".format(full_id, last)
+        "first": first_uri,
+        "last": last_uri
     }
 
     return jsonld_response(data)
@@ -96,19 +105,28 @@ def get_volume_page(volume_id, page):
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/collection/volume/{1}'
-    collection_id = url_base.format(spa_server_name, volume_id)
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
     last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
     if page > last:
         return jsonld_abort(404)
 
+    anno_collection_uri = url_base.format(spa_server_name, volume_id)
+    id_uri = "{0}/{1}".format(anno_collection_uri, page)
+    next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
+
+    # Append motivation param to URIs if passed in original request
+    if motivation:
+        id_uri += "?motivation={}".format(motivation)
+        anno_collection_uri += "?motivation={}".format(motivation)
+        next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
+
     data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
-        "id": "{0}/{1}".format(collection_id, page),
+        "id": id_uri,
         "type": "AnnotationPage",
         "partOf": {
-            "id": collection_id,
+            "id": anno_collection_uri,
             "label": "{0} Annotations".format(volume.name),
             "total": len(annotations)
         },
@@ -117,6 +135,6 @@ def get_volume_page(volume_id, page):
     }
 
     if last > page:
-        data['next'] = "{0}/{1}".format(collection_id, page + 1)
+        data['next'] = next_uri
 
     return jsonld_response(data)

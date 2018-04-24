@@ -149,15 +149,18 @@ class TestAnnotationsApi(web.Helper):
 
         self.check_response(res)
 
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        spa_srv_name = flask_app.config.get('SPA_SERVER_NAME')
         assert_equal(json.loads(res.data), {
             "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": "{0}{1}".format(spa_server_name, endpoint),
+            "id": "{0}{1}?motivation={2}".format(spa_srv_name, endpoint,
+                                                 motivation),
             "type": "AnnotationCollection",
             "label": "{0} Annotations".format(volume['name']),
             "total": 1,
-            "first": "{0}{1}/1".format(spa_server_name, endpoint),
-            "last": "{0}{1}/1".format(spa_server_name, endpoint)
+            "first": "{0}{1}/1?motivation={2}".format(spa_srv_name, endpoint,
+                                                      motivation),
+            "last": "{0}{1}/1?motivation={2}".format(spa_srv_name, endpoint,
+                                                     motivation)
         })
 
     @with_context
@@ -235,10 +238,12 @@ class TestAnnotationsApi(web.Helper):
         assert_equal(len(annos_page), min(len([valid_anno]), per_page))
         assert_equal(json.loads(res.data), {
             "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": "{0}{1}".format(spa_server_name, endpoint),
+            "id": "{0}{1}?motivation={2}".format(spa_server_name, endpoint,
+                                                 motivation),
             "type": "AnnotationPage",
             "partOf": {
-                "id": "{0}{1}".format(spa_server_name, url_base),
+                "id": "{0}{1}?motivation={2}".format(spa_server_name, url_base,
+                                                     motivation),
                 "label": "{0} Annotations".format(vol['name']),
                 "total": len([valid_anno])
             },
