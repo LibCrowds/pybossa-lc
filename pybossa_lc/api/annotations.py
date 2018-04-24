@@ -9,6 +9,12 @@ from pybossa.core import project_repo
 from ..cache import annotations as annotations_cache
 from .. import volume_repo
 
+try:
+    from urllib import urlencode
+except ImportError:  # py3
+    from urllib.parse import urlencode
+
+
 BLUEPRINT = Blueprint('lc_annotations', __name__)
 
 
@@ -74,11 +80,11 @@ def get_volume_collection(volume_id):
     first_uri = "{0}/1".format(id_uri)
     last_uri = "{0}/{1}".format(id_uri, last)
 
-    # Append motivation param to URIs if passed in original request
-    if motivation:
-        id_uri += "?motivation={}".format(motivation)
-        first_uri += "?motivation={}".format(motivation)
-        last_uri += "?motivation={}".format(motivation)
+    if request.args:
+        query_str = urlencode(request.args)
+        id_uri += "?{}".format(query_str)
+        first_uri += "?{}".format(query_str)
+        last_uri += "?{}".format(query_str)
 
     data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -115,11 +121,15 @@ def get_volume_page(volume_id, page):
     id_uri = "{0}/{1}".format(anno_collection_uri, page)
     next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
 
-    # Append motivation param to URIs if passed in original request
-    if motivation:
-        id_uri += "?motivation={}".format(motivation)
-        anno_collection_uri += "?motivation={}".format(motivation)
-        next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
+    if request.args:
+        query_str = urlencode(request.args)
+        id_uri += "?{}".format(query_str)
+        anno_collection_uri += "?{}".format(query_str)
+        next_uri += "?{}".format(query_str)
+
+    items = annotations[per_page * (page - 1):per_page * page]
+    if request.args.get('iris'):
+        items = [item['id'] for item in items]
 
     data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -131,7 +141,7 @@ def get_volume_page(volume_id, page):
             "total": len(annotations)
         },
         "startIndex": 0,
-        "items": annotations[per_page * (page - 1):per_page * page]
+        "items": items
     }
 
     if last > page:
