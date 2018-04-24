@@ -47,6 +47,76 @@ def jsonld_abort(status_code):
     return jsonld_response(body, status_code=status_code)
 
 
+def get_wa_anno_collection(annotations, entity, url_base):
+    """Return an Annotation Collection."""
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    id_uri = url_base.format(spa_server_name, entity.id)
+    label = "{0} Annotations".format(entity.name)
+
+    per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
+    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+    first_uri = "{0}/1".format(id_uri)
+    last_uri = "{0}/{1}".format(id_uri, last)
+
+    if request.args:
+        query_str = urlencode(request.args)
+        id_uri += "?{}".format(query_str)
+        first_uri += "?{}".format(query_str)
+        last_uri += "?{}".format(query_str)
+
+    return {
+        "@context": "http://www.w3.org/ns/anno.jsonld",
+        "id": id_uri,
+        "type": "AnnotationCollection",
+        "label": label,
+        "total": len(annotations),
+        "first": first_uri,
+        "last": last_uri
+    }
+
+
+def get_wa_anno_page(annotations, entity, url_base, page):
+    """Return an Annotation Page."""
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    anno_collection_uri = url_base.format(spa_server_name, entity.id)
+    label = "{0} Annotations".format(entity.name)
+    id_uri = "{0}/{1}".format(anno_collection_uri, page)
+    next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
+
+    if request.args:
+        query_str = urlencode(request.args)
+        id_uri += "?{}".format(query_str)
+        anno_collection_uri += "?{}".format(query_str)
+        next_uri += "?{}".format(query_str)
+
+    per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
+    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+    if page > last:
+        return jsonld_abort(404)
+
+    items = annotations[per_page * (page - 1):per_page * page]
+    if request.args.get('iris'):
+        items = [item['id'] for item in items]
+
+    data = {
+        "@context": "http://www.w3.org/ns/anno.jsonld",
+        "id": id_uri,
+        "type": "AnnotationPage",
+        "partOf": {
+            "id": anno_collection_uri,
+            "label": label,
+            "total": len(annotations)
+        },
+        "startIndex": 0,
+        "items": items
+    }
+
+    if last > page:
+        data['next'] = next_uri
+
+    return data
+
+
 @BLUEPRINT.route('/wa/<annotation_id>')
 def get_wa(annotation_id):
     """Return an Annotation."""
@@ -61,7 +131,7 @@ def get_wa(annotation_id):
 
 
 @BLUEPRINT.route('/wa/volume/<volume_id>')
-def get_volume_collection(volume_id):
+def get_wa_volume_collection(volume_id):
     """Return an Annotation Collection for a volume."""
     volume = volume_repo.get(volume_id)
     if not volume:
@@ -69,38 +139,15 @@ def get_volume_collection(volume_id):
 
     motivation = request.args.get('motivation')
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
-
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/volume/{1}'
 
-    per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
-    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+    anno_collection = get_wa_anno_collection(annotations, volume, url_base)
 
-    id_uri = url_base.format(spa_server_name, volume_id)
-    first_uri = "{0}/1".format(id_uri)
-    last_uri = "{0}/{1}".format(id_uri, last)
-
-    if request.args:
-        query_str = urlencode(request.args)
-        id_uri += "?{}".format(query_str)
-        first_uri += "?{}".format(query_str)
-        last_uri += "?{}".format(query_str)
-
-    data = {
-        "@context": "http://www.w3.org/ns/anno.jsonld",
-        "id": id_uri,
-        "type": "AnnotationCollection",
-        "label": "{0} Annotations".format(volume.name),
-        "total": len(annotations),
-        "first": first_uri,
-        "last": last_uri
-    }
-
-    return jsonld_response(data)
+    return jsonld_response(anno_collection)
 
 
 @BLUEPRINT.route('/wa/volume/<volume_id>/<int:page>')
-def get_volume_page(volume_id, page):
+def get_wa_volume_page(volume_id, page):
     """Return an Annotation Page for a volume."""
     volume = volume_repo.get(volume_id)
     if not volume:
@@ -108,43 +155,8 @@ def get_volume_page(volume_id, page):
 
     motivation = request.args.get('motivation')
     annotations = annotations_cache.get_by_volume(volume_id, motivation)
-
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/volume/{1}'
 
-    per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
-    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
-    if page > last:
-        return jsonld_abort(404)
+    anno_page = get_wa_anno_page(annotations, volume, url_base, page)
 
-    anno_collection_uri = url_base.format(spa_server_name, volume_id)
-    id_uri = "{0}/{1}".format(anno_collection_uri, page)
-    next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
-
-    if request.args:
-        query_str = urlencode(request.args)
-        id_uri += "?{}".format(query_str)
-        anno_collection_uri += "?{}".format(query_str)
-        next_uri += "?{}".format(query_str)
-
-    items = annotations[per_page * (page - 1):per_page * page]
-    if request.args.get('iris'):
-        items = [item['id'] for item in items]
-
-    data = {
-        "@context": "http://www.w3.org/ns/anno.jsonld",
-        "id": id_uri,
-        "type": "AnnotationPage",
-        "partOf": {
-            "id": anno_collection_uri,
-            "label": "{0} Annotations".format(volume.name),
-            "total": len(annotations)
-        },
-        "startIndex": 0,
-        "items": items
-    }
-
-    if last > page:
-        data['next'] = next_uri
-
-    return jsonld_response(data)
+    return jsonld_response(anno_page)
