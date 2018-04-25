@@ -3,8 +3,8 @@
 
 import json
 from sqlalchemy import text
+from deepdiff import DeepSearch
 from pybossa.core import db
-
 
 session = db.slave_session
 
@@ -38,31 +38,34 @@ def get_by_volume(volume_id, query=None):
                                         anno_query=json.dumps(anno_query)))
     annotations = []
     for row in results:
-        valid_annos = [anno for anno in row.annotations
-                       if not query or
-                       all(item in anno.items() for item in query.items())]
-        annotations += valid_annos
+        annotations += row.anno
     return annotations
 
 def get_by_category(category_id, query=None):
     """Return annotations for a category."""
-    anno_query = {"annotations": []}
+    result_query = {"annotations": []}
     if query:
-        anno_query['annotations'] = [query]
+        result_query['annotations'] = [query]
 
-    sql = text('''SELECT result.info->'annotations' AS annotations
-               FROM result, project, category
-               WHERE result.project_id = project.id
-               AND category.id = :category_id
-               AND project.category_id = category.id
-               AND result.info @> :anno_query
-               ''')
+    sql = text(
+        '''
+        WITH annotations AS (
+            SELECT jsonb_array_elements(result.info->'annotations') AS anno
+            FROM result, project, category
+            WHERE result.project_id = project.id
+            AND category.id = :category_id
+            AND project.category_id = category.id
+            AND result.info @> :result_query
+        )
+        SELECT annotations.anno
+        FROM annotations
+        WHERE annotations.anno @> :query
+        '''
+    )
     results = session.execute(sql, dict(category_id=json.dumps(category_id),
-                                        anno_query=json.dumps(anno_query)))
+                                        result_query=json.dumps(result_query),
+                                        query=json.dumps(query)))
     annotations = []
     for row in results:
-        valid_annos = [anno for anno in row.annotations
-                       if not query or
-                       all(item in anno.items() for item in query.items())]
-        annotations += valid_annos
+        annotations.append(row.anno)
     return annotations

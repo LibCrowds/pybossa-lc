@@ -9,11 +9,6 @@ from pybossa.core import project_repo
 from ..cache import annotations as annotations_cache
 from .. import volume_repo
 
-try:
-    from urllib import urlencode
-except ImportError:  # py3
-    from urllib.parse import urlencode
-
 
 BLUEPRINT = Blueprint('lc_annotations', __name__)
 
@@ -49,7 +44,7 @@ def jsonld_abort(status_code, message=None):
     return jsonld_response(body, status_code=status_code)
 
 
-def get_wa_anno_collection(annotations, entity, url_base, **kwargs):
+def get_wa_anno_collection(annotations, entity, url_base, query_str=None):
     """Return an Annotation Collection."""
     id_uri = "{0}/{1}".format(url_base, entity.id)
     label = u"{0} Annotations".format(entity.name)
@@ -59,8 +54,7 @@ def get_wa_anno_collection(annotations, entity, url_base, **kwargs):
     first_uri = "{0}/1".format(id_uri)
     last_uri = "{0}/{1}".format(id_uri, last)
 
-    if kwargs:
-        query_str = urlencode(kwargs)
+    if query_str:
         id_uri += "?{}".format(query_str)
         first_uri += "?{}".format(query_str)
         last_uri += "?{}".format(query_str)
@@ -76,15 +70,15 @@ def get_wa_anno_collection(annotations, entity, url_base, **kwargs):
     }
 
 
-def get_wa_anno_page(annotations, entity, url_base, page, **kwargs):
+def get_wa_anno_page(annotations, entity, url_base, page, query_str=None,
+                     iris=False):
     """Return an Annotation Page."""
     anno_collection_uri = "{0}/{1}".format(url_base, entity.id)
     label = u"{0} Annotations".format(entity.name)
     id_uri = "{0}/{1}".format(anno_collection_uri, page)
     next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
 
-    if kwargs:
-        query_str = urlencode(kwargs)
+    if query_str:
         id_uri += "?{}".format(query_str)
         anno_collection_uri += "?{}".format(query_str)
         next_uri += "?{}".format(query_str)
@@ -95,7 +89,7 @@ def get_wa_anno_page(annotations, entity, url_base, page, **kwargs):
         return jsonld_abort(404)
 
     items = annotations[per_page * (page - 1):per_page * page]
-    if kwargs.get('iris'):
+    if iris:
         items = [item['id'] for item in items]
 
     data = {
@@ -149,7 +143,7 @@ def get_wa_volume_collection(volume_id):
     url_base = '{0}/lc/annotations/wa/volume'.format(spa_server_name)
 
     anno_collection = get_wa_anno_collection(annotations, volume, url_base,
-                                             **request.args)
+                                             query_str=request.query_string)
 
     return jsonld_response(anno_collection)
 
@@ -173,7 +167,7 @@ def get_wa_volume_page(volume_id, page):
     url_base = '{0}/lc/annotations/wa/volume'.format(spa_server_name)
 
     anno_page = get_wa_anno_page(annotations, volume, url_base, page,
-                                 **request.args)
+                                 query_str=request.query_string)
 
     return jsonld_response(anno_page)
 
@@ -197,7 +191,7 @@ def get_wa_category_collection(category_id):
     url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)
 
     anno_collection = get_wa_anno_collection(annotations, category, url_base,
-                                             **request.args)
+                                             query_str=request.query_string)
 
     return jsonld_response(anno_collection)
 
@@ -221,6 +215,6 @@ def get_wa_category_page(category_id, page):
     url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)
 
     anno_page = get_wa_anno_page(annotations, category, url_base, page,
-                                 **request.args)
+                                 query_str=request.query_string)
 
     return jsonld_response(anno_page)
