@@ -3,7 +3,6 @@
 
 import json
 from sqlalchemy import text
-from deepdiff import DeepSearch
 from pybossa.core import db
 
 session = db.slave_session
