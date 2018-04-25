@@ -82,7 +82,7 @@ def new(category_short_name):
             volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
             handle_valid_project_form(form, tmpl, volume, category)
 
-        else:
+        else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
     response = dict(form=form, templates=enhanced_tmpls, volumes=volumes)
@@ -143,7 +143,7 @@ def handle_valid_project_form(form, template, volume, category):
     try:
         msg = _import_tasks(project, **import_data)
         flash(msg, 'success')
-    except BulkImportException as err:
+    except BulkImportException as err:   # pragma: no cover
         success = False
         project_repo.delete(project)
         flash(err.message, 'error')
