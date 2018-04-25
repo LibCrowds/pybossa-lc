@@ -35,11 +35,13 @@ def jsonld_response(body, status_code=200):
     return response
 
 
-def jsonld_abort(status_code):
+def jsonld_abort(status_code, message=None):
     """Abort wtih valid JSON-LD response."""
     body = {'code': status_code}
 
-    if status_code in default_exceptions:
+    if message:
+        body['message'] = message
+    elif status_code in default_exceptions:
         body['message'] = default_exceptions[status_code].description
     else:
         body['message'] = 'Server Error'
@@ -47,19 +49,18 @@ def jsonld_abort(status_code):
     return jsonld_response(body, status_code=status_code)
 
 
-def get_wa_anno_collection(annotations, entity, url_base):
+def get_wa_anno_collection(annotations, entity, url_base, **kwargs):
     """Return an Annotation Collection."""
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    id_uri = url_base.format(spa_server_name, entity.id)
-    label = "{0} Annotations".format(entity.name)
+    id_uri = "{0}/{1}".format(url_base, entity.id)
+    label = u"{0} Annotations".format(entity.name)
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
     last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
     first_uri = "{0}/1".format(id_uri)
     last_uri = "{0}/{1}".format(id_uri, last)
 
-    if request.args:
-        query_str = urlencode(request.args)
+    if kwargs:
+        query_str = urlencode(kwargs)
         id_uri += "?{}".format(query_str)
         first_uri += "?{}".format(query_str)
         last_uri += "?{}".format(query_str)
@@ -75,16 +76,15 @@ def get_wa_anno_collection(annotations, entity, url_base):
     }
 
 
-def get_wa_anno_page(annotations, entity, url_base, page):
+def get_wa_anno_page(annotations, entity, url_base, page, **kwargs):
     """Return an Annotation Page."""
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    anno_collection_uri = url_base.format(spa_server_name, entity.id)
-    label = "{0} Annotations".format(entity.name)
+    anno_collection_uri = "{0}/{1}".format(url_base, entity.id)
+    label = u"{0} Annotations".format(entity.name)
     id_uri = "{0}/{1}".format(anno_collection_uri, page)
     next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
 
-    if request.args:
-        query_str = urlencode(request.args)
+    if kwargs:
+        query_str = urlencode(kwargs)
         id_uri += "?{}".format(query_str)
         anno_collection_uri += "?{}".format(query_str)
         next_uri += "?{}".format(query_str)
@@ -95,7 +95,7 @@ def get_wa_anno_page(annotations, entity, url_base, page):
         return jsonld_abort(404)
 
     items = annotations[per_page * (page - 1):per_page * page]
-    if request.args.get('iris'):
+    if kwargs.get('iris'):
         items = [item['id'] for item in items]
 
     data = {
@@ -137,11 +137,19 @@ def get_wa_volume_collection(volume_id):
     if not volume:
         return jsonld_abort(404)
 
-    motivation = request.args.get('motivation')
-    annotations = annotations_cache.get_by_volume(volume_id, motivation)
-    url_base = '{0}/lc/annotations/wa/volume/{1}'
+    query = request.args.get('query')
+    if query:
+        try:
+            query = json.loads(query)
+        except ValueError as err:
+            return jsonld_abort(400, "Invalid query - {}".format(err.message))
 
-    anno_collection = get_wa_anno_collection(annotations, volume, url_base)
+    annotations = annotations_cache.get_by_volume(volume_id, query)
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{0}/lc/annotations/wa/volume'.format(spa_server_name)
+
+    anno_collection = get_wa_anno_collection(annotations, volume, url_base,
+                                             **request.args)
 
     return jsonld_response(anno_collection)
 
@@ -153,10 +161,66 @@ def get_wa_volume_page(volume_id, page):
     if not volume:
         return jsonld_abort(404)
 
-    motivation = request.args.get('motivation')
-    annotations = annotations_cache.get_by_volume(volume_id, motivation)
-    url_base = '{0}/lc/annotations/wa/volume/{1}'
+    query = request.args.get('query')
+    if query:
+        try:
+            query = json.loads(query)
+        except ValueError as err:
+            return jsonld_abort(400, "Invalid query - {}".format(err.message))
 
-    anno_page = get_wa_anno_page(annotations, volume, url_base, page)
+    annotations = annotations_cache.get_by_volume(volume_id, query)
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{0}/lc/annotations/wa/volume'.format(spa_server_name)
+
+    anno_page = get_wa_anno_page(annotations, volume, url_base, page,
+                                 **request.args)
+
+    return jsonld_response(anno_page)
+
+
+@BLUEPRINT.route('/wa/collection/<category_id>')
+def get_wa_category_collection(category_id):
+    """Return an Annotation Collection for a category."""
+    category = project_repo.get_category(category_id)
+    if not category:
+        return jsonld_abort(404)
+
+    query = request.args.get('query')
+    if query:
+        try:
+            query = json.loads(query)
+        except ValueError as err:
+            return jsonld_abort(400, "Invalid query - {}".format(err.message))
+
+    annotations = annotations_cache.get_by_category(category.id, query)
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)
+
+    anno_collection = get_wa_anno_collection(annotations, category, url_base,
+                                             **request.args)
+
+    return jsonld_response(anno_collection)
+
+
+@BLUEPRINT.route('/wa/collection/<category_id>/<int:page>')
+def get_wa_category_page(category_id, page):
+    """Return an Annotation Page for a category."""
+    category = project_repo.get_category(category_id)
+    if not category:
+        return jsonld_abort(404)
+
+    query = request.args.get('query')
+    if query:
+        try:
+            query = json.loads(query)
+        except ValueError as err:
+            return jsonld_abort(400, "Invalid query - {}".format(err.message))
+
+    annotations = annotations_cache.get_by_category(category.id, query)
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+    url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)
+
+    anno_page = get_wa_anno_page(annotations, category, url_base, page,
+                                 **request.args)
 
     return jsonld_response(anno_page)
