@@ -44,15 +44,15 @@ def jsonld_abort(status_code, message=None):
     return jsonld_response(body, status_code=status_code)
 
 
-def get_wa_anno_collection(annotations, entity, url_base, query_str=None):
+def get_anno_collection(count, entity, url_base, query_str=None):
     """Return an Annotation Collection."""
     id_uri = "{0}/{1}".format(url_base, entity.id)
     label = u"{0} Annotations".format(entity.name)
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
-    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
+    last_page = 0 if count <= 0 else ((count - 1) // per_page) + 1
     first_uri = "{0}/1".format(id_uri)
-    last_uri = "{0}/{1}".format(id_uri, last)
+    last_uri = "{0}/{1}".format(id_uri, last_page)
 
     if query_str:
         id_uri += "?{}".format(query_str)
@@ -64,31 +64,30 @@ def get_wa_anno_collection(annotations, entity, url_base, query_str=None):
         "id": id_uri,
         "type": "AnnotationCollection",
         "label": label,
-        "total": len(annotations),
+        "total": count,
         "first": first_uri,
         "last": last_uri
     }
 
 
-def get_wa_anno_page(annotations, entity, url_base, page, query_str=None,
-                     iris=False):
+def get_anno_page(annotations, count, entity, url_base, page,
+                  query_str=None, iris=False):
     """Return an Annotation Page."""
     anno_collection_uri = "{0}/{1}".format(url_base, entity.id)
-    label = u"{0} Annotations".format(entity.name)
     id_uri = "{0}/{1}".format(anno_collection_uri, page)
     next_uri = "{0}/{1}".format(anno_collection_uri, page + 1)
 
     if query_str:
-        id_uri += "?{}".format(query_str)
         anno_collection_uri += "?{}".format(query_str)
+        id_uri += "?{}".format(query_str)
         next_uri += "?{}".format(query_str)
 
     per_page = current_app.config.get('ANNOTATIONS_PER_PAGE')
-    last = 1 if not annotations else ((len(annotations) - 1) // per_page) + 1
-    if page > last:
-        return jsonld_abort(404)
+    last_page = 0 if count <= 0 else ((count - 1) // per_page) + 1
+    if page > last_page:
+        return None
 
-    items = annotations[per_page * (page - 1):per_page * page]
+    items = annotations
     if iris:
         items = [item['id'] for item in items]
 
@@ -98,14 +97,14 @@ def get_wa_anno_page(annotations, entity, url_base, page, query_str=None,
         "type": "AnnotationPage",
         "partOf": {
             "id": anno_collection_uri,
-            "label": label,
-            "total": len(annotations)
+            "label": u"{0} Annotations".format(entity.name),
+            "total": count
         },
         "startIndex": 0,
         "items": items
     }
 
-    if last > page:
+    if last_page > page:
         data['next'] = next_uri
 
     return data
@@ -124,54 +123,6 @@ def get_wa(annotation_id):
     return jsonld_response(anno)
 
 
-@BLUEPRINT.route('/wa/volume/<volume_id>')
-def get_wa_volume_collection(volume_id):
-    """Return an Annotation Collection for a volume."""
-    volume = volume_repo.get(volume_id)
-    if not volume:
-        return jsonld_abort(404)
-
-    query = request.args.get('query')
-    if query:
-        try:
-            query = json.loads(query)
-        except ValueError as err:
-            return jsonld_abort(400, "Invalid query - {}".format(err.message))
-
-    annotations = annotations_cache.get_by_volume(volume_id, query)
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    url_base = '{0}/lc/annotations/wa/volume'.format(spa_server_name)
-
-    anno_collection = get_wa_anno_collection(annotations, volume, url_base,
-                                             query_str=request.query_string)
-
-    return jsonld_response(anno_collection)
-
-
-@BLUEPRINT.route('/wa/volume/<volume_id>/<int:page>')
-def get_wa_volume_page(volume_id, page):
-    """Return an Annotation Page for a volume."""
-    volume = volume_repo.get(volume_id)
-    if not volume:
-        return jsonld_abort(404)
-
-    query = request.args.get('query')
-    if query:
-        try:
-            query = json.loads(query)
-        except ValueError as err:
-            return jsonld_abort(400, "Invalid query - {}".format(err.message))
-
-    annotations = annotations_cache.get_by_volume(volume_id, query)
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    url_base = '{0}/lc/annotations/wa/volume'.format(spa_server_name)
-
-    anno_page = get_wa_anno_page(annotations, volume, url_base, page,
-                                 query_str=request.query_string)
-
-    return jsonld_response(anno_page)
-
-
 @BLUEPRINT.route('/wa/collection/<category_id>')
 def get_wa_category_collection(category_id):
     """Return an Annotation Collection for a category."""
@@ -186,12 +137,15 @@ def get_wa_category_collection(category_id):
         except ValueError as err:
             return jsonld_abort(400, "Invalid query - {}".format(err.message))
 
-    annotations = annotations_cache.get_by_category(category.id, query)
+    limit = 0  # We don't need any actual annotations here
+    data = annotations_cache.search_by_category(category.id, query=query,
+                                                limit=limit)
+
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)
 
-    anno_collection = get_wa_anno_collection(annotations, category, url_base,
-                                             query_str=request.query_string)
+    anno_collection = get_anno_collection(data['count'], category, url_base,
+                                          query_str=request.query_string)
 
     return jsonld_response(anno_collection)
 
@@ -210,11 +164,21 @@ def get_wa_category_page(category_id, page):
         except ValueError as err:
             return jsonld_abort(400, "Invalid query - {}".format(err.message))
 
-    annotations = annotations_cache.get_by_category(category.id, query)
+    default_limit = current_app.config.get('ANNOTATIONS_PER_PAGE')
+    limit = request.args.get('limit', default_limit)
+    order_by = request.args.get('orderby')
+    iris = request.args.get('iris')
+    data = annotations_cache.search_by_category(category.id, query=query,
+                                                limit=limit, order_by=order_by)
+
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)
 
-    anno_page = get_wa_anno_page(annotations, category, url_base, page,
-                                 query_str=request.query_string)
+    anno_page = get_anno_page(data['annotations'], data['count'], category,
+                              url_base, page, query_str=request.query_string,
+                              iris=iris)
+
+    if not anno_page:
+        return jsonld_abort(404)
 
     return jsonld_response(anno_page)

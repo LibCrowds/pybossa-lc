@@ -25,6 +25,7 @@ class TestAnnotationsApi(web.Helper):
         super(TestAnnotationsApi, self).setUp()
         self.result_repo = ResultRepository(db)
         self.user_repo = UserRepository(db)
+        assert_dict_equal.__self__.maxDiff = None
 
     def create_annotation(self, motivation='describing'):
         """Create a fake annotation."""
@@ -101,24 +102,23 @@ class TestAnnotationsApi(web.Helper):
         """Test Annotation Collection returned."""
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
         annotations = [self.create_annotation()] * (per_page + 1)
+        count = len(annotations)
         entity = ProjectFactory()
         url_base = 'http://example.com'
-        query = {'foo': 'bar'}
+        query_str = 'foo=bar'
 
-        anno_collection = annotations_api.get_wa_anno_collection(annotations,
-                                                                 entity,
-                                                                 url_base,
-                                                                 **query)
+        anno_coll = annotations_api.get_anno_collection(count, entity,
+                                                        url_base,
+                                                        query_str=query_str)
         id_uri = '{0}/{1}'.format(url_base, entity.id)
-        q_str = urlencode(query)
-        assert_equal(anno_collection, {
+        assert_dict_equal(anno_coll, {
             "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": "{0}?{1}".format(id_uri, q_str),
+            "id": "{0}?{1}".format(id_uri, query_str),
             "type": "AnnotationCollection",
             "label": u"{0} Annotations".format(entity.name),
-            "total": len(annotations),
-            "first": "{0}/1?{1}".format(id_uri, q_str),
-            "last": "{0}/2?{1}".format(id_uri, q_str)
+            "total": count,
+            "first": "{0}/1?{1}".format(id_uri, query_str),
+            "last": "{0}/2?{1}".format(id_uri, query_str)
         })
 
     @with_context
@@ -126,56 +126,70 @@ class TestAnnotationsApi(web.Helper):
         """Test Annotation Page returned."""
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
         annotations = [self.create_annotation()] * (per_page + 1)
+        count = len(annotations)
         entity = ProjectFactory()
         url_base = 'http://example.com'
         page = 1
-        query = {'foo': 'bar'}
+        query_str = 'foo=bar'
 
-        anno_page = annotations_api.get_wa_anno_page(annotations, entity,
-                                                     url_base, page, **query)
+        anno_page = annotations_api.get_anno_page(annotations, count, entity,
+                                                  url_base, page,
+                                                  query_str=query_str)
         id_uri = '{0}/{1}'.format(url_base, entity.id)
-        q_str = urlencode(query)
-        items = annotations[per_page * (page - 1):per_page * page]
-        assert_equal(anno_page, {
+
+        assert_dict_equal(anno_page, {
             "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": "{0}/{1}?{2}".format(id_uri, page, q_str),
+            "id": "{0}/{1}?{2}".format(id_uri, page, query_str),
             "type": "AnnotationPage",
             "partOf": {
-                "id": "{0}?{1}".format(id_uri, q_str),
+                "id": "{0}?{1}".format(id_uri, query_str),
                 "label": u"{0} Annotations".format(entity.name),
-                "total": len(annotations)
+                "total": count
             },
-            "next":  "{0}/{1}?{2}".format(id_uri, page + 1, q_str),
+            "next":  "{0}/{1}?{2}".format(id_uri, page + 1, query_str),
             "startIndex": 0,
-            "items": items
+            "items": annotations
         })
+
+    @with_context
+    def test_none_returned_if_annotation_page_empty(self):
+        """Test None returned if Annotation Page is empty."""
+        per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
+        annotations = []
+        count = per_page - 1
+        entity = ProjectFactory()
+        url_base = 'http://example.com'
+        page = 2
+
+        anno_page = annotations_api.get_anno_page(annotations, count, entity,
+                                                  url_base, page)
+        assert_equal(anno_page, None)
 
     @with_context
     def test_annotation_page_returned_with_iris_only(self):
         """Test Annotation Page returned with IRIs only."""
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
         annotations = [self.create_annotation()] * (per_page + 1)
+        count = len(annotations)
         entity = ProjectFactory()
         url_base = 'http://example.com'
         page = 1
-        query = {'iris': '1'}
 
-        anno_page = annotations_api.get_wa_anno_page(annotations, entity,
-                                                     url_base, page, **query)
+        anno_page = annotations_api.get_anno_page(annotations, count, entity,
+                                                  url_base, page, iris=True)
         id_uri = '{0}/{1}'.format(url_base, entity.id)
-        q_str = urlencode(query)
-        annos_page = annotations[per_page * (page - 1):per_page * page]
-        items = [anno['id'] for anno in annos_page]
-        assert_equal(anno_page, {
+        items = [anno['id'] for anno in annotations]
+
+        assert_dict_equal(anno_page, {
             "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": "{0}/{1}?{2}".format(id_uri, page, q_str),
+            "id": "{0}/{1}".format(id_uri, page),
             "type": "AnnotationPage",
             "partOf": {
-                "id": "{0}?{1}".format(id_uri, q_str),
+                "id": id_uri,
                 "label": u"{0} Annotations".format(entity.name),
-                "total": len(annotations)
+                "total": count
             },
-            "next":  "{0}/{1}?{2}".format(id_uri, page + 1, q_str),
+            "next":  "{0}/{1}".format(id_uri, page + 1),
             "startIndex": 0,
             "items": items
         })
