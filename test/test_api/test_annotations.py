@@ -157,7 +157,6 @@ class TestAnnotationsApi(web.Helper):
             "first": "{0}/1?{1}".format(id_uri, query_str)
         })
 
-
     @with_context
     def test_annotation_collection_returned_with_last(self):
         """Test last URI in Annotation Collection if more than one page."""
