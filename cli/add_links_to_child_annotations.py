@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """
-Add partOf attribute to all child annotations.
+Add links to all child annotations.
 
 Note that this relies on all annotations having an id attribute.
 
 Usage:
-python cli/add_partof_to_child_annotations.py
+python cli/add_links_to_child_annotations.py
 """
 
 import re
@@ -112,7 +112,19 @@ def run():
                 child_annos = child_result.info['annotations']
 
                 for child_anno in child_annos:
-                    child_anno['partOf'] = parent_anno['id']
+                    linking = {
+                        'source': parent_anno['id'],
+                        'type': "SpecificResource",
+                        'purpose': "linking"
+                    }
+                    if child_anno['motivation'] != 'commenting':
+                        if isinstance(child_anno['body'], dict):
+                            child_anno['body'] = [
+                                child_anno['body'],
+                                linking
+                            ]
+                        else:
+                            child_anno['body'].append(linking)
 
                 new_info = json.dumps(child_result.info)
                 query = text('''UPDATE result
