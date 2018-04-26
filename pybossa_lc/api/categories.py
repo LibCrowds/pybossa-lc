@@ -16,8 +16,8 @@ from pybossa.importers import BulkImportException
 
 from ..utils import *
 from ..forms import VolumeForm, CustomExportForm
-from ..exporters.csv_custom_exporter import CsvCustomExporter
-from ..exporters.json_custom_exporter import JsonCustomExporter
+from ..exporters.csv_annotation_exporter import CsvAnnotationExporter
+from ..exporters.json_annotation_exporter import JsonAnnotationExporter
 
 
 BLUEPRINT = Blueprint('lc_categories', __name__)
@@ -215,12 +215,12 @@ def export_collection_data(short_name):
         abort(415)
 
     def respond_json(export_fmt_id):
-        json_custom_exporter = JsonCustomExporter()
+        json_custom_exporter = JsonAnnotationExporter()
         res = json_custom_exporter.response_zip(category, export_fmt_id)
         return res
 
     def respond_csv(export_fmt_id):
-        csv_custom_exporter = CsvCustomExporter()
+        csv_custom_exporter = CsvAnnotationExporter()
         res = csv_custom_exporter.response_zip(category, export_fmt_id)
         return res
 

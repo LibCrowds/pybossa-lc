@@ -11,16 +11,16 @@ from factories import TaskRunFactory, UserFactory
 from pybossa.repositories import ResultRepository, ProjectRepository
 
 from ..fixtures import TemplateFixtures, AnnotationFixtures
-from pybossa_lc.exporters.base import CustomExporterBase
+from pybossa_lc.exporters.base import AnnotationExporterBase
 
 
-class TestCustomExporterBase(Test):
+class TesAnnotationExporterBase(Test):
 
     def setUp(self):
-        super(TestCustomExporterBase, self).setUp()
+        super(TesAnnotationExporterBase, self).setUp()
         self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
-        self.exporter_base = CustomExporterBase()
+        self.exporter_base = AnnotationExporterBase()
         self.category = CategoryFactory()
         self.tmpl_fixtures = TemplateFixtures(self.category)
         self.anno_fixtures = AnnotationFixtures()
