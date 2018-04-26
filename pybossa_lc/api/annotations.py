@@ -138,7 +138,7 @@ def get_wa_category_collection(category_id):
             msg = err.message
             return jsonld_abort(400, "Invalid contains query - {}".format(msg))
 
-    limit = 0  # We don't need any actual annotations here
+    limit = 1  # We don't need any actual annotations here
     data = annotations_cache.search_by_category(category.id, contains=contains,
                                                 limit=limit)
 
