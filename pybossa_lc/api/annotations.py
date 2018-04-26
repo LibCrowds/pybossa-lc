@@ -59,15 +59,21 @@ def get_anno_collection(count, entity, url_base, query_str=None):
         first_uri += "?{}".format(query_str)
         last_uri += "?{}".format(query_str)
 
-    return {
+    data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
         "id": id_uri,
         "type": "AnnotationCollection",
         "label": label,
-        "total": count,
-        "first": first_uri,
-        "last": last_uri
+        "total": count
     }
+
+    if count > 0:
+        data['first'] = first_uri
+
+    if last_page > 1:
+        data['last'] = last_uri
+
+    return data
 
 
 def get_anno_page(annotations, count, entity, url_base, page,

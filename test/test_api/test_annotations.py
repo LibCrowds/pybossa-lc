@@ -103,6 +103,73 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
+        annotations = []
+        result.info = dict(annotations=annotations)
+        self.result_repo.update(result)
+
+        query_str = 'foo=bar'
+        endpoint = '/lc/annotations/wa/collection/{}'.format(category.id)
+        res = self.app_get_json(endpoint + '?' + query_str)
+
+        self.check_response(res)
+
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        id_uri = spa_server_name + endpoint
+
+        assert_dict_equal(json.loads(res.data), {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "id": "{0}?{1}".format(id_uri, query_str),
+            "type": "AnnotationCollection",
+            "label": u"{0} Annotations".format(category.name),
+            "total": len(annotations)
+        })
+
+    @with_context
+    def test_annotation_collection_returned_with_first(self):
+        """Test first URI in Annotation Collection if more than zero pages."""
+        self.register()
+        owner = self.user_repo.get(1)
+        category = CategoryFactory()
+        project = ProjectFactory(category=category, owner=owner)
+        task = TaskFactory(n_answers=1, project=project)
+        TaskRunFactory.create(task=task, project=project, user=owner)
+        result = self.result_repo.get_by(task_id=task.id)
+
+        annotations = [self.create_annotation()]
+        result.info = dict(annotations=annotations)
+        self.result_repo.update(result)
+
+        query_str = 'foo=bar'
+        endpoint = '/lc/annotations/wa/collection/{}'.format(category.id)
+        res = self.app_get_json(endpoint + '?' + query_str)
+
+        self.check_response(res)
+
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        id_uri = spa_server_name + endpoint
+
+        assert_dict_equal(json.loads(res.data), {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "id": "{0}?{1}".format(id_uri, query_str),
+            "type": "AnnotationCollection",
+            "label": u"{0} Annotations".format(category.name),
+            "total": len(annotations),
+            "first": "{0}/1?{1}".format(id_uri, query_str)
+        })
+
+
+    @with_context
+    def test_annotation_collection_returned_with_last(self):
+        """Test last URI in Annotation Collection if more than one page."""
+        self.register()
+        owner = self.user_repo.get(1)
+        category = CategoryFactory()
+        project = ProjectFactory(category=category, owner=owner)
+        task = TaskFactory(n_answers=1, project=project)
+        TaskRunFactory.create(task=task, project=project, user=owner)
+        result = self.result_repo.get_by(task_id=task.id)
+
+        per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
         annotations = [self.create_annotation()] * (per_page + 1)
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
