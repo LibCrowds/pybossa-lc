@@ -20,6 +20,7 @@ def get(anno_id):
         annotations = json.loads(row.annotations)
         return [anno for anno in annotations if anno['id'] == anno_id][0]
 
+
 def search_by_category(category_id, contains=None, limit=None, order_by=None):
     """Search annotations by category."""
     if not contains:
