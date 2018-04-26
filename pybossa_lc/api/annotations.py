@@ -130,15 +130,16 @@ def get_wa_category_collection(category_id):
     if not category:
         return jsonld_abort(404)
 
-    query = request.args.get('query')
-    if query:
+    contains = request.args.get('contains')
+    if contains:
         try:
-            query = json.loads(query)
+            contains = json.loads(contains)
         except ValueError as err:
-            return jsonld_abort(400, "Invalid query - {}".format(err.message))
+            msg = err.message
+            return jsonld_abort(400, "Invalid contains query - {}".format(msg))
 
     limit = 0  # We don't need any actual annotations here
-    data = annotations_cache.search_by_category(category.id, query=query,
+    data = annotations_cache.search_by_category(category.id, contains=contains,
                                                 limit=limit)
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
@@ -157,18 +158,19 @@ def get_wa_category_page(category_id, page):
     if not category:
         return jsonld_abort(404)
 
-    query = request.args.get('query')
-    if query:
+    contains = request.args.get('contains')
+    if contains:
         try:
-            query = json.loads(query)
+            contains = json.loads(contains)
         except ValueError as err:
-            return jsonld_abort(400, "Invalid query - {}".format(err.message))
+            msg = err.message
+            return jsonld_abort(400, "Invalid contains query - {}".format(msg))
 
     default_limit = current_app.config.get('ANNOTATIONS_PER_PAGE')
     limit = request.args.get('limit', default_limit)
     order_by = request.args.get('orderby')
     iris = request.args.get('iris')
-    data = annotations_cache.search_by_category(category.id, query=query,
+    data = annotations_cache.search_by_category(category.id, contains=contains,
                                                 limit=limit, order_by=order_by)
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')

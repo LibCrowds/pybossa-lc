@@ -20,15 +20,15 @@ def get(anno_id):
         annotations = json.loads(row.annotations)
         return [anno for anno in annotations if anno['id'] == anno_id][0]
 
-def search_by_category(category_id, query=None, limit=None, order_by=None):
+def search_by_category(category_id, contains=None, limit=None, order_by=None):
     """Search annotations by category."""
-    if not query:
-        query = {}
+    if not contains:
+        contains = {}
 
     if not order_by:
         order_by = 'created'
 
-    result_query = {"annotations": [query]}
+    r_contains = {"annotations": [contains]}
 
     sql = text(
         '''
@@ -38,21 +38,21 @@ def search_by_category(category_id, query=None, limit=None, order_by=None):
             WHERE result.project_id = project.id
             AND category.id = :category_id
             AND project.category_id = category.id
-            AND result.info @> :result_query
+            AND result.info @> :r_contains
         ), total AS (
           SELECT count(*) AS count FROM annotations
         )
         SELECT annotations.anno, total.count
         FROM annotations, total
-        WHERE annotations.anno @> :query
+        WHERE annotations.anno @> :contains
         ORDER BY annotations.anno->>:order_by
         LIMIT :limit
         '''
     )
     results = session.execute(sql, dict(category_id=json.dumps(category_id),
-                                        result_query=json.dumps(result_query),
-                                        query=json.dumps(query), limit=limit,
-                                        order_by=order_by))
+                                        r_contains=json.dumps(r_contains),
+                                        contains=json.dumps(contains),
+                                        limit=limit, order_by=order_by))
     annotations = []
     count = 0
     for row in results:
