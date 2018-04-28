@@ -39,6 +39,7 @@ def search_by_category(category_id, contains=None, limit=None, order_by=None):
             WHERE result.project_id = project.id
             AND category.id = :category_id
             AND project.category_id = category.id
+            AND result.last_version = True
             AND result.info @> :r_contains
         ), total AS (
           SELECT count(*) AS count FROM annotations
