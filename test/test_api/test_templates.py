@@ -9,7 +9,7 @@ from default import with_context, db, Fixtures
 from factories import CategoryFactory
 from pybossa.repositories import UserRepository, ProjectRepository
 
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 
 
 class TestTemplatesApi(web.Helper):
@@ -27,7 +27,7 @@ class TestTemplatesApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
-        template = self.tmpl_fixtures.create_template()
+        template = self.tmpl_fixtures.create()
         template.pending = False
         user.info['templates'] = [template.to_dict()]
         self.user_repo.update(user)

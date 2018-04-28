@@ -27,7 +27,7 @@ class TestJobs(Test):
         """Check that invalid templates are identified."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         category.info = dict(templates=[tmpl.to_dict()], published=True)
         self.project_repo.update_category(category)
 

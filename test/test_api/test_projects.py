@@ -13,7 +13,7 @@ from pybossa.core import task_repo, result_repo, project_repo, user_repo
 from pybossa.repositories import UserRepository
 
 from pybossa_lc.api import projects as projects_api
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 
 
 class TestProjectsApi(web.Helper):
@@ -68,7 +68,7 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
         project_repo.update_category(category)
@@ -106,7 +106,7 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         tmpl.min_answers = min_answers
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
@@ -145,7 +145,7 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
         project_repo.update_category(category)
@@ -178,7 +178,7 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         z3950_task = tmpl_fixtures.z3950_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=z3950_task)
+        tmpl = tmpl_fixtures.create(task_tmpl=z3950_task)
         category.info = dict(presenter='z3950', volumes=[vol],
                              templates=[tmpl.to_dict()])
         project_repo.update_category(category)
@@ -210,7 +210,7 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
                              templates=[tmpl.to_dict()])
         project_repo.update_category(category)
@@ -239,11 +239,11 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl1 = tmpl_fixtures.create_template(task_tmpl=select_task)
-        tmpl2 = tmpl_fixtures.create_template(task_tmpl=select_task)
+        tmpl1 = tmpl_fixtures.create(task_tmpl=select_task)
+        tmpl2 = tmpl_fixtures.create(task_tmpl=select_task)
 
         # Incomplete template to be ignored
-        tmpl3 = tmpl_fixtures.create_template()
+        tmpl3 = tmpl_fixtures.create()
 
         category.info = dict(presenter='iiif-annotation',
                              volumes=[vol1, vol2],
@@ -285,8 +285,8 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        parent_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
-        child_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        parent_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
+        child_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         child_tmpl.parent_template_id = parent_tmpl.id
 
         category.info = dict(presenter='iiif-annotation',
@@ -317,8 +317,8 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        parent_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
-        child_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        parent_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
+        child_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         child_tmpl.parent_template_id = parent_tmpl.id
 
         category.info = dict(presenter='iiif-annotation',
@@ -366,8 +366,8 @@ class TestProjectsApi(web.Helper):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
-        parent_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
-        child_tmpl = tmpl_fixtures.create_template(task_tmpl=select_task)
+        parent_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
+        child_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         child_tmpl.parent_template_id = parent_tmpl.id
 
         category.info = dict(presenter='iiif-annotation',

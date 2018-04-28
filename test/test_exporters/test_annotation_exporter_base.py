@@ -10,20 +10,34 @@ from factories import CategoryFactory, ProjectFactory, TaskFactory
 from factories import TaskRunFactory, UserFactory
 from pybossa.repositories import ResultRepository, ProjectRepository
 
-from ..fixtures import TemplateFixtures, AnnotationFixtures
-from pybossa_lc.exporters.base import AnnotationExporterBase
+from ..fixtures.annotation import AnnotationFixtures
 
 
-class TesAnnotationExporterBase(Test):
+class TestAnnotationExporterBase(Test):
 
     def setUp(self):
-        super(TesAnnotationExporterBase, self).setUp()
+        super(TestAnnotationExporterBase, self).setUp()
         self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
-        self.exporter_base = AnnotationExporterBase()
         self.category = CategoryFactory()
-        self.tmpl_fixtures = TemplateFixtures(self.category)
         self.anno_fixtures = AnnotationFixtures()
+
+    # def test_get_container(self):
+    #     """Test correct container returned."""
+    #     self.register()
+    #     owner = self.user_repo.get(1)
+    #     category = CategoryFactory()
+    #     project = ProjectFactory(category=category, owner=owner)
+    #     task = TaskFactory(n_answers=1, project=project)
+    #     TaskRunFactory.create(task=task, project=project, user=owner)
+    #     result = self.result_repo.get_by(task_id=task.id)
+
+    #     annotations = [self.create_annotation()]
+    #     result.info = dict(annotations=annotations)
+    #     self.result_repo.update(result)
+
+    #     exporter_base = AnnotationExporterBase()
+
 
     # @with_context
     # def test_get_json_data_with_one_project(self):
@@ -34,7 +48,7 @@ class TesAnnotationExporterBase(Test):
     #     self.project_repo.update_category(self.category)
     #     volume_id = self.volumes[0]['id']
     #     task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
-    #     tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+    #     tmpl = self.tmpl_fixtures.create(task_tmpl=task_tmpl)
 
     #     UserFactory.create(info=dict(templates=[tmpl.to_dict()]))
     #     project_info = dict(volume_id=volume_id, template_id=tmpl.id)
@@ -59,7 +73,7 @@ class TesAnnotationExporterBase(Test):
     # def test_get_json_data_with_multiple_annotations(self):
     #     """Test get JSON data with multiple annotations."""
     #     task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
-    #     tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+    #     tmpl = self.tmpl_fixtures.create(task_tmpl=task_tmpl)
     #     self.category.info = dict(volumes=self.volumes,
     #                               templates=[tmpl.to_dict()])
     #     self.project_repo.update_category(self.category)
@@ -87,7 +101,7 @@ class TesAnnotationExporterBase(Test):
     # def test_get_csv_data_with_multiple_annotations(self):
     #     """Test get CSV data with multiple annotations."""
     #     task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
-    #     tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+    #     tmpl = self.tmpl_fixtures.create(task_tmpl=task_tmpl)
     #     self.category.info = dict(volumes=self.volumes,
     #                               templates=[tmpl.to_dict()])
     #     self.project_repo.update_category(self.category)
@@ -125,7 +139,7 @@ class TesAnnotationExporterBase(Test):
     # def test_get_csv_data_with_same_tags_for_the_same_target(self):
     #     """Test get CSV data with multiple tags for the same tags."""
     #     task_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
-    #     tmpl = self.tmpl_fixtures.create_template(task_tmpl=task_tmpl)
+    #     tmpl = self.tmpl_fixtures.create(task_tmpl=task_tmpl)
     #     self.category.info = dict(volumes=self.volumes,
     #                               templates=[tmpl.to_dict()])
     #     self.project_repo.update_category(self.category)
@@ -172,9 +186,9 @@ class TesAnnotationExporterBase(Test):
     #     volume_id = self.volumes[0]['id']
     #     select_tmpl = self.tmpl_fixtures.iiif_select_tmpl
     #     transcribe_tmpl = self.tmpl_fixtures.iiif_transcribe_tmpl
-    #     tmpl1 = self.tmpl_fixtures.create_template(task_tmpl=select_tmpl)
-    #     tmpl2 = self.tmpl_fixtures.create_template(task_tmpl=transcribe_tmpl)
-    #     tmpl3 = self.tmpl_fixtures.create_template(task_tmpl=transcribe_tmpl)
+    #     tmpl1 = self.tmpl_fixtures.create(task_tmpl=select_tmpl)
+    #     tmpl2 = self.tmpl_fixtures.create(task_tmpl=transcribe_tmpl)
+    #     tmpl3 = self.tmpl_fixtures.create(task_tmpl=transcribe_tmpl)
 
     #     UserFactory.create(info=dict(templates=[tmpl1, tmpl2, tmpl3]))
     #     parent_info = dict(volume_id=volume_id, template_id=tmpl1['id'])

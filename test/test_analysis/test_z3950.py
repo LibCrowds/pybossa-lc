@@ -9,7 +9,7 @@ from factories import TaskFactory, TaskRunFactory, CategoryFactory
 from factories import ProjectFactory
 from pybossa.repositories import ProjectRepository, ResultRepository
 
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 from pybossa_lc.analysis.z3950 import Z3950Analyst
 from pybossa_lc.analysis.analyst import Analyst
 
@@ -34,7 +34,7 @@ class TestZ3950Analyst(Test):
         """Create a category, project and tasks."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.min_answers = n_answers
         tmpl.max_answers = max_answers or n_answers
         tmpl.rules = dict(case='title', whitespace='full_stop',

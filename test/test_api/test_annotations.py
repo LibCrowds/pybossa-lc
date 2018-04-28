@@ -11,6 +11,8 @@ from factories import ProjectFactory, TaskFactory, TaskRunFactory
 from factories import CategoryFactory
 from pybossa.repositories import ResultRepository, UserRepository
 
+from ..fixtures.annotation import AnnotationFixtures
+
 
 class TestAnnotationsApi(web.Helper):
 
@@ -18,35 +20,7 @@ class TestAnnotationsApi(web.Helper):
         super(TestAnnotationsApi, self).setUp()
         self.result_repo = ResultRepository(db)
         self.user_repo = UserRepository(db)
-        assert_dict_equal.__self__.maxDiff = None
-
-    def create_annotation(self, motivation='describing'):
-        """Create a fake annotation."""
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        anno_uuid = str(uuid.uuid4())
-        _id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
-        return {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": _id,
-            "type": "Annotation",
-            "body": [
-                {
-                    "type": "TextualBody",
-                    "purpose": "describing",
-                    "value": "foo",
-                    "format": "text/plain"
-                },
-                {
-                    "type": "TextualBody",
-                    "purpose": "tagging",
-                    "value": "bar"
-                }
-            ],
-            "motivation": motivation,
-            "target": "http://example.org",
-            "created": "2018-04-07T21:38:53Z",
-            "generated": "2018-04-07T21:38:53Z"
-        }
+        self.anno_fixtures = AnnotationFixtures()
 
     def check_response(self, res):
         """Check for a valid JSON-LD annotation response."""
@@ -79,7 +53,7 @@ class TestAnnotationsApi(web.Helper):
         TaskRunFactory.create(task=task, project=project, user=owner)
         result = self.result_repo.get_by(task_id=task.id)
 
-        anno = self.create_annotation()
+        anno = self.anno_fixtures.create()
         result.info = dict(annotations=[anno])
         self.result_repo.update(result)
 
@@ -135,7 +109,7 @@ class TestAnnotationsApi(web.Helper):
         TaskRunFactory.create(task=task, project=project, user=owner)
         result = self.result_repo.get_by(task_id=task.id)
 
-        annotations = [self.create_annotation()]
+        annotations = [self.anno_fixtures.create()]
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -169,7 +143,7 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.create_annotation()] * (per_page + 1)
+        annotations = [self.anno_fixtures.create()] * (per_page + 1)
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -204,7 +178,7 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.create_annotation()] * (per_page + 1)
+        annotations = [self.anno_fixtures.create()] * (per_page + 1)
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -243,7 +217,7 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.create_annotation()] * per_page
+        annotations = [self.anno_fixtures.create()] * per_page
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -266,7 +240,7 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.create_annotation()] * (per_page + 1)
+        annotations = [self.anno_fixtures.create()] * (per_page + 1)
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 

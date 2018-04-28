@@ -11,7 +11,7 @@ from factories import TaskFactory
 from pybossa.repositories import ProjectRepository, UserRepository
 from pybossa.repositories import TaskRepository
 
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 
 
 class TestAdminApi(web.Helper):
@@ -27,8 +27,8 @@ class TestAdminApi(web.Helper):
         """Test pending templates returned for all users."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl1 = tmpl_fixtures.create_template()
-        tmpl2 = tmpl_fixtures.create_template()
+        tmpl1 = tmpl_fixtures.create()
+        tmpl2 = tmpl_fixtures.create()
         UserFactory.create(info=dict(templates=[tmpl1.to_dict()]))
         UserFactory.create(info=dict(templates=[tmpl2.to_dict()]))
         endpoint = '/lc/admin/templates/pending'
@@ -43,7 +43,7 @@ class TestAdminApi(web.Helper):
         """Test original added to pending templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
         new_name = 'foo'
@@ -66,7 +66,7 @@ class TestAdminApi(web.Helper):
         category = CategoryFactory()
         user = self.user_repo.get(1)
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.pending = True
         tmpl.owner_id = user.id
         user.info = dict(templates=[tmpl.to_dict()])
@@ -101,7 +101,7 @@ class TestAdminApi(web.Helper):
         category = CategoryFactory()
         user = self.user_repo.get(1)
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.pending = True
         tmpl.owner_id = user.id
         user.info = dict(templates=[tmpl.to_dict()])
@@ -139,7 +139,7 @@ class TestAdminApi(web.Helper):
         category = CategoryFactory(info=dict(presenter=presenter))
         user = self.user_repo.get(1)
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.pending = True
         tmpl.owner_id = user.id
         user.info = dict(templates=[tmpl.to_dict()])
@@ -164,7 +164,7 @@ class TestAdminApi(web.Helper):
         category = CategoryFactory()
         user = self.user_repo.get(1)
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.min_answers = 10
         tmpl.pending = True
         tmpl.owner_id = user.id

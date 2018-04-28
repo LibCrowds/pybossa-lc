@@ -8,7 +8,7 @@ from default import with_context, db, Fixtures
 from factories import CategoryFactory
 from pybossa.repositories import UserRepository, ProjectRepository
 
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 
 
 class TestUserApi(web.Helper):
@@ -27,7 +27,7 @@ class TestUserApi(web.Helper):
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
         user = self.user_repo.get_by_name(Fixtures.name)
-        tmpl = self.tmpl_fixtures.create_template()
+        tmpl = self.tmpl_fixtures.create()
         user.info['templates'] = [tmpl.to_dict()]
         self.user_repo.update(user)
         endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
@@ -41,7 +41,7 @@ class TestUserApi(web.Helper):
         self.register(email=Fixtures.email_addr, name=Fixtures.name,
                       password=Fixtures.password)
         self.signin(email=Fixtures.email_addr, password=Fixtures.password)
-        template = self.tmpl_fixtures.create_template()
+        template = self.tmpl_fixtures.create()
         endpoint = '/lc/users/{}/templates'.format(Fixtures.name)
         res = self.app_post_json(endpoint, data=template.to_dict())
         data = json.loads(res.data)

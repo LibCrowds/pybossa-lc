@@ -7,7 +7,7 @@ from factories import ProjectFactory, CategoryFactory, UserFactory
 from pybossa.repositories import ProjectRepository
 from pybossa.exc import WrongObjectError, DBIntegrityError
 
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 from pybossa_lc.repositories.project_template import ProjectTemplateRepository
 
 
@@ -37,7 +37,7 @@ class TestProjectTemplateRepository(Test):
         """Test get returns a template if it exists."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
         retrieved_tmpl = self.project_tmpl_repo.get(tmpl.id)
@@ -48,7 +48,7 @@ class TestProjectTemplateRepository(Test):
         """Test get pending returns a template if it exists."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
         retrieved_tmpl = self.project_tmpl_repo.get_user_template(tmpl.id)
@@ -59,8 +59,8 @@ class TestProjectTemplateRepository(Test):
         """Test get approved returns approved templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        approved_tmpl = tmpl_fixtures.create_template()
-        pending_tmpl = tmpl_fixtures.create_template()
+        approved_tmpl = tmpl_fixtures.create()
+        pending_tmpl = tmpl_fixtures.create()
         user_info = dict(templates=[pending_tmpl.to_dict()])
         UserFactory(info=user_info)
         category.info['templates'] = [approved_tmpl.to_dict()]
@@ -74,9 +74,9 @@ class TestProjectTemplateRepository(Test):
         """Test get pending returns pending templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        approved_tmpl = tmpl_fixtures.create_template()
-        pending_tmpl = tmpl_fixtures.create_template()
-        non_pending_tmpl = tmpl_fixtures.create_template()
+        approved_tmpl = tmpl_fixtures.create()
+        pending_tmpl = tmpl_fixtures.create()
+        non_pending_tmpl = tmpl_fixtures.create()
         approved_tmpl.pending = False
         non_pending_tmpl.pending = False
         pending_tmpl.pending = True
@@ -95,7 +95,7 @@ class TestProjectTemplateRepository(Test):
         """Test get by owner returns owner's templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         user_info = dict(templates=[tmpl.to_dict()])
         owner = UserFactory(info=user_info)
         templates = self.project_tmpl_repo.get_by_owner_id(owner.id)
@@ -108,7 +108,7 @@ class TestProjectTemplateRepository(Test):
         """Test get by owner prefers User over Category context."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         original_name = tmpl.name
         user_info = dict(templates=[tmpl.to_dict()])
         owner = UserFactory(info=user_info)
@@ -126,7 +126,7 @@ class TestProjectTemplateRepository(Test):
         """Test get by category returns category's templates."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
         templates = self.project_tmpl_repo.get_by_category_id(category.id)
@@ -139,7 +139,7 @@ class TestProjectTemplateRepository(Test):
         """Test template is updated."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         category.info['templates'] = [tmpl.to_dict()]
         self.project_repo.update_category(category)
         name = 'New Name'
@@ -157,7 +157,7 @@ class TestProjectTemplateRepository(Test):
         """Test pending template is updated."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)
@@ -177,7 +177,7 @@ class TestProjectTemplateRepository(Test):
         category = CategoryFactory()
         user = UserFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.owner_id = user.id
         tmpl.pending = True
 
@@ -197,7 +197,7 @@ class TestProjectTemplateRepository(Test):
         category = CategoryFactory()
         user = UserFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.owner_id = user.id
         tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
@@ -218,7 +218,7 @@ class TestProjectTemplateRepository(Test):
         """Test pending template is deleted."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.pending = True
         user_info = dict(templates=[tmpl.to_dict()])
         UserFactory(info=user_info)

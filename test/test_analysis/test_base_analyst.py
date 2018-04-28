@@ -14,7 +14,7 @@ from pybossa.core import result_repo, task_repo
 from pybossa.repositories import ResultRepository, TaskRepository
 from pybossa.repositories import ProjectRepository
 
-from ..fixtures import TemplateFixtures
+from ..fixtures.template import TemplateFixtures
 from pybossa_lc.analysis.base import BaseAnalyst
 
 
@@ -33,7 +33,7 @@ class TestAnalyst(Test):
         """Create a category, project and tasks."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         tmpl.min_answers = n_answers
         tmpl.max_answers = max_answers or n_answers
         if rules:
@@ -400,8 +400,8 @@ class TestAnalyst(Test):
         """Test that the correct template is returned."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl1 = tmpl_fixtures.create_template()
-        tmpl2 = tmpl_fixtures.create_template()
+        tmpl1 = tmpl_fixtures.create()
+        tmpl2 = tmpl_fixtures.create()
         fake_templates = [
             tmpl1.to_dict(),
             tmpl2.to_dict()
@@ -586,7 +586,7 @@ class TestAnalyst(Test):
         """Test that a manually modified result is not updated."""
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create_template()
+        tmpl = tmpl_fixtures.create()
         n_answers = 3
         tmpl.min_answers = n_answers
         mock_get_tmpl.return_value = tmpl
