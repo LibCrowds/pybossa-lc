@@ -28,35 +28,3 @@ def get_unanalysed_by_category():
             'n_unanalysed': row.n_unanalysed
         })
     return data
-
-
-def get_by_template(template_id):
-    """Return a enhanced results data against template IDs for a volume."""
-    sql = text('''SELECT result.id, result.task_id, result.task_run_ids,
-               result.project_id, result.created, result.last_version,
-               result.info,
-               task.info->'link' AS link,
-               task.state AS task_state
-               FROM result, project, category, task
-               WHERE result.project_id = project.id
-               AND task.id = result.task_id
-               AND project.category_id = category.id
-               AND project.info->'template_id' @> :template_id
-               ''')
-    params = dict(template_id=json.dumps(template_id))
-    db_results = session.execute(sql, params)
-    data = {}
-    for row in db_results:
-        tmpl_id = row.template_id
-        result = dict(id=row.id,
-                      task_id=row.task_id,
-                      task_run_ids=row.task_run_ids,
-                      project_id=row.project_id,
-                      created=row.created,
-                      task_state=row.task_state,
-                      link=row.link,
-                      info=row.info or {})
-        tmpl_results = data.get(tmpl_id, [])
-        tmpl_results.append(result)
-        data[tmpl_id] = tmpl_results
-    return data
