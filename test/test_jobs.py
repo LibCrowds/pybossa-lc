@@ -10,7 +10,7 @@ from pybossa.repositories import ResultRepository, ProjectRepository
 from pybossa.repositories import AnnouncementRepository
 
 from pybossa_lc import jobs
-from .fixtures import TemplateFixtures
+from .fixtures.template import TemplateFixtures
 
 
 class TestJobs(Test):

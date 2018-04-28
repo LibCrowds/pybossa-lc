@@ -36,7 +36,7 @@ class AnnotationExporterBase(Exporter):
         filename = secure_filename(filename)
         return filename
 
-    def _get_data(self, category, motivation, flat=True):
+    def _get_data(self, category, motivation, flat=False):
         """Get annotation data for custom export."""
         contains = {'motivation': motivation}
         data = annotations_cache.search_by_category(category.id,

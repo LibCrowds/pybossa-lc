@@ -16,8 +16,8 @@ from pybossa.importers import BulkImportException
 
 from ..utils import *
 from ..forms import VolumeForm, CustomExportForm
-from ..exporters.csv_annotation_exporter import CsvAnnotationExporter
-from ..exporters.json_annotation_exporter import JsonAnnotationExporter
+from ..exporters.csv_anno_exporter import CsvAnnotationExporter
+from ..exporters.json_anno_exporter import JsonAnnotationExporter
 
 
 BLUEPRINT = Blueprint('lc_categories', __name__)
