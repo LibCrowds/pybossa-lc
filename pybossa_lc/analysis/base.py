@@ -34,17 +34,17 @@ MAIL_QUEUE = Queue('email', connection=sentinel.master)
 class BaseAnalyst():
 
     @abstractmethod
-    def get_comments(self, task_run_df):
+    def get_comments(self, task_run_df):  # pragma: no cover
         """Return a list of tuples with the format (user_id, comment)."""
         pass
 
     @abstractmethod
-    def get_tags(self, task_run_df):
+    def get_tags(self, task_run_df):  # pragma: no cover
         """Return a dict of tags against fragment selectors."""
         pass
 
     @abstractmethod
-    def get_transcriptions_df(self, task_run_df):
+    def get_transcriptions_df(self, task_run_df):  # pragma: no cover
         """Return a dataframe of transcriptions."""
         pass
 
@@ -53,21 +53,17 @@ class BaseAnalyst():
         from pybossa.core import result_repo, task_repo
         result = result_repo.get(result_id)
         task = task_repo.get_task(result.task_id)
-        task_run_df = self.get_task_run_df(result.task_id)
+        task_runs = task_repo.filter_task_runs_by(task_id=task.id)
+
+        task_run_df = self.get_task_run_df(task_runs)
         tmpl = self.get_project_template(result.project_id)
-        target = self.get_task_target(result.task_id)
+        target = self.get_task_target(task)
         annotations = []
         is_complete = True
 
         # Handle comments
-        comments = self.get_comments(task_run_df)
-        for comment in comments:
-            user_id = comment[0]
-            value = comment[1]
-            comment_anno = self.create_commenting_anno(target, value, user_id)
-            annotations.append(comment_anno)
-            if not silent:
-                self.email_comment_anno(task, comment_anno)
+        comment_annos = self.get_comment_annos(task_run_df, target, silent)
+        annotations.extend(comment_annos)
 
         # Handle tags
         tags = self.get_tags(task_run_df)
@@ -130,6 +126,19 @@ class BaseAnalyst():
         for result in empty_results:
             self.analyse(result.id)
 
+    def get_comment_annos(self, task_run_df, target, silent):
+        """Return all comment annotations for a task."""
+        annotations = []
+        comments = self.get_comments(task_run_df)
+        for comment in comments:
+            user_id = comment[0]
+            value = comment[1]
+            comment_anno = self.create_commenting_anno(target, value, user_id)
+            annotations.append(comment_anno)
+            if not silent:
+                self.email_comment_anno(task, comment_anno)
+        return annotations
+
     def drop_keys(self, task_run_df, keys):
         """Drop keys from the info fields of a task run dataframe."""
         keyset = set()
@@ -155,10 +164,8 @@ class BaseAnalyst():
                 return False
         return True
 
-    def get_task_run_df(self, task_id):
+    def get_task_run_df(self, task_runs):
         """Load task run info into a dataframe."""
-        from pybossa.core import task_repo
-        task_runs = task_repo.filter_task_runs_by(task_id=task_id)
         if not task_runs:
             msg = 'Task {} has no task runs!'.format(task_id)
             raise AnalysisException(msg)
@@ -293,10 +300,8 @@ class BaseAnalyst():
         return df.groupby(level=0, axis=1).apply(lambda x: x.apply(sjoin,
                                                                    axis=1))
 
-    def get_task_target(self, task_id):
+    def get_task_target(self, task):
         """Get the target for different types of task."""
-        from pybossa.core import task_repo
-        task = task_repo.get_task(task_id)
         if 'target' in task.info:  # IIIF tasks
             return task.info['target']
         elif 'link' in task.info:  # Flickr tasks
@@ -350,7 +355,7 @@ class BaseAnalyst():
         }
 
     def get_anno_base(self, motivation):
-        """Return the base fo ra new Web Annotation."""
+        """Return the base for a new Web Annotation."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         anno_uuid = str(uuid.uuid4())
         _id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
