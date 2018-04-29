@@ -179,12 +179,12 @@ class BaseAnalyst():
         item_data = item.__dict__
         protected = item_data.keys()
         if type(item.info) == dict:
-            keys = item_data['info'].keys()
-            for k in keys:
+            for k, v in item_data['info'].items():
                 if k in protected:
-                    item_data["_" + k] = item_data['info'][k]
+                    # Prefix if info key also exists as core task run key
+                    item_data["_" + k] = v
                 else:
-                    item_data[k] = item_data['info'][k]
+                    item_data[k] = v
         return item_data
 
     def get_project_template(self, project_id):
