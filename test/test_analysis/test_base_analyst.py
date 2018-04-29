@@ -155,33 +155,35 @@ class TestAnalyst(Test):
     def test_get_dataframe_with_dict(self):
         """Test the task run dataframe with a dict as the info."""
         info = {'foo': 'bar'}
-        taskrun = TaskRunFactory.create(info=info)
-        df = self.base_analyst.get_task_run_df(taskrun.task_id)
-        assert_equal(df['foo'].tolist(), [info['foo']])
-        assert_equal(df['info'].tolist(), [info])
+        n_task_runs = 2
+        taskruns = TaskRunFactory.create_batch(n_task_runs, info=info)
+        df = self.base_analyst.get_task_run_df(taskruns)
+        assert_equal(df['foo'].tolist(), [info['foo']] * n_task_runs)
+        assert_equal(df['info'].tolist(), [info] * n_task_runs)
 
     @with_context
     def test_get_dataframe_with_list(self):
         """Test the task run dataframe with a list as the info."""
         info = [{'foo': 'bar'}, {'baz': 'qux'}]
-        taskrun = TaskRunFactory.create(info=info)
-        df = self.base_analyst.get_task_run_df(taskrun.task_id)
-        assert_equal(df['info'].tolist(), [info])
+        n_task_runs = 2
+        taskruns = TaskRunFactory.create_batch(n_task_runs, info=info)
+        df = self.base_analyst.get_task_run_df(taskruns)
+        assert_equal(df['info'].tolist(), [info] * n_task_runs)
 
     @with_context
     def test_protected_keys_prefixed_when_exploded(self):
         """Test that protected info keys are prefixed."""
         info = {'foo': 'bar', 'info': 'baz'}
         taskrun = TaskRunFactory.create(info=info)
-        df = self.base_analyst.get_task_run_df(taskrun.task_id)
+        df = self.base_analyst.get_task_run_df([taskrun])
         assert_equal(df['_info'].tolist(), [info['info']])
 
     @with_context
     def test_user_ids_in_task_run_dataframe(self):
         """Test that user IDs are included in the task run dataframe."""
-        taskrun = TaskRunFactory.create()
-        df = self.base_analyst.get_task_run_df(taskrun.task_id)
-        assert_equal(df['user_id'].tolist(), [taskrun.user_id])
+        taskruns = TaskRunFactory.create_batch(2)
+        df = self.base_analyst.get_task_run_df(taskruns)
+        assert_equal(df['user_id'].tolist(), [tr.user_id for tr in taskruns])
 
     def test_titlecase_normalisation(self):
         """Test titlecase normalisation."""
