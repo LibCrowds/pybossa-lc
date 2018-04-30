@@ -8,7 +8,6 @@ from helper import web
 from default import with_context, db, Fixtures
 from factories import ProjectFactory, CategoryFactory
 from factories import TaskFactory, TaskRunFactory
-from pybossa.jobs import import_tasks
 from pybossa.core import task_repo, result_repo, project_repo, user_repo
 from pybossa.repositories import UserRepository
 
