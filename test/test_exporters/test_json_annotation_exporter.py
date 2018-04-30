@@ -11,6 +11,7 @@ from pybossa.repositories import ResultRepository
 from ..fixtures.annotation import AnnotationFixtures
 from pybossa_lc.exporters.json_anno_exporter import JsonAnnotationExporter
 
+
 class TestJsonAnnotationExporter(Test):
 
     def setUp(self):
@@ -48,7 +49,7 @@ class TestJsonAnnotationExporter(Test):
         data = exporter._respond_json(category, motivation)
         assert_equal(data, annotations)
 
-    @patch('pybossa_lc.exporters.json_anno_exporter.JsonAnnotationExporter.' \
+    @patch('pybossa_lc.exporters.json_anno_exporter.JsonAnnotationExporter.'
            '_make_zip')
     def test_zips_pregenerated_for_all_motivations(self, mock_make_zip):
         """Test a JSON zip file is pregenerated for all motivations."""

@@ -13,6 +13,7 @@ from pybossa.repositories import ResultRepository
 from ..fixtures.annotation import AnnotationFixtures
 from pybossa_lc.exporters.csv_anno_exporter import CsvAnnotationExporter
 
+
 class TestCsvAnnotationExporter(Test):
 
     def setUp(self):
@@ -56,7 +57,7 @@ class TestCsvAnnotationExporter(Test):
         expected = pandas.DataFrame(flat_data)
         assert_dict_equal(data.to_dict(), expected.to_dict())
 
-    @patch('pybossa_lc.exporters.csv_anno_exporter.CsvAnnotationExporter.' \
+    @patch('pybossa_lc.exporters.csv_anno_exporter.CsvAnnotationExporter.'
            '_make_zip')
     def test_zips_pregenerated_for_all_motivations(self, mock_make_zip):
         """Test a CSV zip file is pregenerated for all motivations."""
