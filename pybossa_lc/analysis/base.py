@@ -70,8 +70,14 @@ class BaseAnalyst():
         is_complete = True
 
         # Handle comments
-        comment_annos = self.get_comment_annos(task_run_df, target, silent)
-        annotations.extend(comment_annos)
+        comments = self.get_comments(task_run_df)
+        for comment in comments:
+            user_id = comment[0]
+            value = comment[1]
+            comment_anno = self.create_commenting_anno(target, value, user_id)
+            annotations.append(comment_anno)
+            if not silent:
+                self.email_comment_anno(task, comment_anno)
 
         # Handle tags
         tags = self.get_tags(task_run_df)
@@ -124,19 +130,6 @@ class BaseAnalyst():
         empty_results = [r for r in results if not r.info]
         for result in empty_results:
             self.analyse(result.id)
-
-    def get_comment_annos(self, task_run_df, target, silent):
-        """Return all comment annotations for a task."""
-        annotations = []
-        comments = self.get_comments(task_run_df)
-        for comment in comments:
-            user_id = comment[0]
-            value = comment[1]
-            comment_anno = self.create_commenting_anno(target, value, user_id)
-            annotations.append(comment_anno)
-            if not silent:
-                self.email_comment_anno(task, comment_anno)
-        return annotations
 
     def drop_keys(self, task_run_df, keys):
         """Drop keys from the info fields of a task run dataframe."""
