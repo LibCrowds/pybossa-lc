@@ -38,7 +38,7 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
             if not isinstance(result.info, dict):
                 print 'foo'
                 raise BulkImportException(err_msg)
-            elif not 'annotations' in result.info:
+            elif 'annotations' not in result.info:
                 raise BulkImportException(err_msg)
 
             parent_annotations = [anno for anno in result.info['annotations']

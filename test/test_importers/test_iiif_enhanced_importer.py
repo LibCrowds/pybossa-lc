@@ -12,6 +12,7 @@ from factories import TaskFactory, TaskRunFactory, ProjectFactory
 from pybossa_lc.importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
 from ..fixtures.annotation import AnnotationFixtures
 
+
 @patch('pybossa.importers.iiif.requests')
 class TestBulkTaskIIIFEnhancedImport(Test):
 
@@ -69,7 +70,6 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         link_query = '?manifest={}#?cv=0'.format(self.manifest_uri)
         link = 'http://universalviewer.io/uv.html' + link_query
         assert_equal(tasks[0]['info']['link'], link)
-
 
     @with_context
     def test_non_bl_tasks_created_with_non_bl_link(self, requests):
@@ -160,7 +160,6 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         expected = sorted(expected, key=lambda x: x['target'])
         assert_equal(task_info, expected)
 
-
     @with_context
     def test_has_child_key_added_to_parent_results(self, requests):
         """Test that the has_children key is added to parent results."""
@@ -193,5 +192,3 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         result_info = [result.info for result in results]
         expected = [{'annotations': [], 'has_children': True}] * n_tasks
         assert_equal(result_info, expected)
-
-    # Add linking to child results during analysis
