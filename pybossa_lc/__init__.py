@@ -11,6 +11,7 @@ from pybossa.extensions import importer
 from pybossa.core import project_repo, db
 
 from . import default_settings
+from .importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
 from .extensions import *
 from .jobs import enqueue_periodic_jobs
 
@@ -28,6 +29,7 @@ class PyBossaLC(Plugin):
         self.configure()
         self.setup_blueprints()
         self.replace_email_templates()
+        self.setup_enhanced_iiif_importer()
         enqueue_periodic_jobs()
 
     def configure(self):
@@ -65,3 +67,7 @@ class PyBossaLC(Plugin):
             if not os.path.exists(out_path):
                 os.mkdir(out_path)
             copy_tree(in_path, out_path)
+
+    def setup_enhanced_iiif_importer(self):
+        """Setup the enhanced IIIF manifest importer."""
+        importer._importers['iiif-enhanced'] = BulkTaskIIIFEnhancedImporter
