@@ -6,7 +6,7 @@ import json
 from distutils.dir_util import copy_tree
 from flask import current_app as app
 from flask.ext.plugins import Plugin
-from pybossa.extensions import importerdb
+from pybossa.extensions import importer
 
 from . import default_settings
 from .importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
