@@ -3,12 +3,10 @@
 
 import os
 import json
-import shutil
 from distutils.dir_util import copy_tree
 from flask import current_app as app
 from flask.ext.plugins import Plugin
-from pybossa.extensions import importer
-from pybossa.core import project_repo, db
+from pybossa.extensions import importerdb
 
 from . import default_settings
 from .importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
