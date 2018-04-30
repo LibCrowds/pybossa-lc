@@ -23,8 +23,8 @@ def get_unanalysed_by_category():
     data = []
     for row in db_results:
         data.append({
-            'id': row.id,
-            'name': row.name,
+            'category_id': row.id,
+            'category_name': row.name,
             'n_unanalysed': row.n_unanalysed
         })
     return data

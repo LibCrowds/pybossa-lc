@@ -7,7 +7,7 @@ from nose.tools import *
 from helper import web
 from default import with_context, db
 from factories import CategoryFactory, UserFactory, ProjectFactory
-from factories import TaskFactory
+from factories import TaskFactory, TaskRunFactory
 from pybossa.repositories import ProjectRepository, UserRepository
 from pybossa.repositories import TaskRepository
 
@@ -184,3 +184,26 @@ class TestAdminApi(web.Helper):
             tasks = self.task_repo.filter_tasks_by(project_id=project.id)
             for task in tasks:
                 assert_equal(task.n_answers, tmpl.min_answers)
+
+    @with_context
+    def test_get_unanalysed_results(self):
+        """Test unanalysed results summary returned."""
+        self.register()
+        self.signin()
+        category = CategoryFactory()
+        user = self.user_repo.get(1)
+        project = ProjectFactory(owner=user, category=category)
+        n_tasks = 3
+        tasks = TaskFactory.create_batch(n_tasks, project=project, n_answers=1)
+        for task in tasks:
+            TaskRunFactory.create(task=task, project=project, user=user)
+        get_res = self.app_get_json('/lc/admin/results/unanalysed')
+        assert_equal(json.loads(get_res.data), {
+            'results': [
+                {
+                    'n_unanalysed': n_tasks,
+                    'category_id': category.id,
+                    'category_name': category.name
+                }
+            ]
+        })

@@ -22,5 +22,9 @@ class TestResultsCache(Test):
 
         unanalysed_categories = results_cache.get_unanalysed_by_category()
         assert_equal(unanalysed_categories, [
-            dict(id=category1.id, name=category1.name, n_unanalysed=1)
+            {
+                'category_id': category1.id,
+                'category_name': category1.name,
+                'n_unanalysed': 1
+            }
         ])
