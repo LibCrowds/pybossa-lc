@@ -23,7 +23,7 @@ MAIL_QUEUE = Queue('email', connection=sentinel.master)
 @login_required
 @admin_required
 @BLUEPRINT.route('/templates/pending')
-def pending_templates():
+def get_pending_templates():
     """Return pending templates, enhanced with diffs."""
     pending_templates = project_tmpl_repo.get_all_pending()
     approved_templates = project_tmpl_repo.get_all()
@@ -60,20 +60,16 @@ def approve_template(template_id):
         template.pending = False
         project_tmpl_repo.approve(template)
 
-        # Update task redundancy
-
-        # Reanalyse all results that use this template
         presenter = category.info.get('presenter')
         cat_projects = project_repo.filter_by(category_id=category.id)
         tmpl_projects = [project for project in cat_projects
                          if project.info.get('template_id') == template.id]
         presenter = category.info.get('presenter')
+
+        # Update task redundancy and reanalyse all results for related projects
         for project in tmpl_projects:
-            # Update task redundancy
             n_answers = template.min_answers
             task_repo.update_tasks_redundancy(project, n_answers)
-
-            # Reanalyse all results
             analyse_all(project.id, presenter)
 
         # Send email
