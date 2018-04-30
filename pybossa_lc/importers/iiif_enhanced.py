@@ -56,7 +56,6 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
                     raise BulkImportException(err_msg)
                 data_copy = data.copy()
 
-
                 data_copy['target'] = anno['target']
                 data_copy['parent_task_id'] = result.task_id
                 data_copy['parent_annotation_id'] = anno['id']
@@ -69,7 +68,7 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
             result_repo.update(result)
 
         # Return sorted by target
-        return child_task_data
+        return sorted(child_task_data, key=lambda x: x['target'])
 
     def _get_link(self, manifest_uri, canvas_index):
         """Overwrite to return BL viewer link for BL items."""

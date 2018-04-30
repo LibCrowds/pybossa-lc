@@ -157,6 +157,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
                                                 parent_id=parent.id)
         tasks = importer.tasks()
         task_info = [task['info'] for task in tasks]
+        expected = sorted(expected, key=lambda x: x['target'])
         assert_equal(task_info, expected)
 
 
