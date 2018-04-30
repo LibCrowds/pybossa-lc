@@ -31,7 +31,6 @@ class TestJsonAnnotationExporter(Test):
     @with_context
     def test_get_response_data(self):
         """Test JSON Annotation data returned."""
-        result_repo = ResultRepository(db)
         anno_fixtures = AnnotationFixtures()
         annotations = [anno_fixtures.create()] * 10
         category = CategoryFactory()
