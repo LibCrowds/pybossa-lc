@@ -7,7 +7,6 @@ from werkzeug.exceptions import default_exceptions
 from pybossa.core import project_repo
 
 from ..cache import annotations as annotations_cache
-from .. import volume_repo
 
 
 BLUEPRINT = Blueprint('lc_annotations', __name__)
