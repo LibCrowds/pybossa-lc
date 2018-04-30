@@ -55,6 +55,14 @@ class BaseAnalyst():
         task = task_repo.get_task(result.task_id)
         task_runs = task_repo.filter_task_runs_by(task_id=task.id)
 
+        # Check for modified results
+        if result.info and result.info.get('modified'):
+            return
+
+        # Check for parent results
+        if result.info and result.info.get('has_children'):
+            return
+
         task_run_df = self.get_task_run_df(task_runs)
         tmpl = self.get_project_template(result.project_id)
         target = self.get_task_target(task)
@@ -82,22 +90,13 @@ class BaseAnalyst():
         norm_func = self.normalise_transcription
         df = df.applymap(lambda x: norm_func(x, tmpl.rules))
 
-        # Check for minimum matching answers
+        # Store matching answers matching answers or update n_answers
         has_matches = self.has_n_matches(tmpl.min_answers, df)
         if has_matches:
-            old_annos = []
-            if isinstance(result.info, dict):
-                old_annos = result.info.get('annotations', [])
-
-            # Store matched (or previously modified) answers
             for column in df:
                 value = df[column].value_counts().idxmax()
-                modified_annos = self.get_modified_annos(old_annos, column)
-                if modified_annos:
-                    annotations += modified_annos
-                else:
-                    anno = self.create_describing_anno(target, value, column)
-                    annotations.append(anno)
+                anno = self.create_describing_anno(target, value, column)
+                annotations.append(anno)
         elif not df.empty:
             is_complete = False
 
@@ -419,23 +418,6 @@ class BaseAnalyst():
         if modified:
             anno['body'][0]['modified'] = self.get_xsd_datetime()
         return anno
-
-    def get_modified_annos(self, anno_list, tag):
-        """Check for a manually modified describing annotation."""
-        matches = []
-        for anno in anno_list:
-            if anno['motivation'] != 'describing':
-                continue
-
-            tag_matches = [body for body in anno['body']
-                           if body['purpose'] == 'tagging' and
-                           body['value'] == tag]
-            modified = [body for body in anno['body']
-                        if body['purpose'] == 'describing' and
-                        'modified' in body]
-            if tag_matches and modified:
-                matches.append(anno)
-        return matches
 
     def get_rect_from_selection_anno(self, anno):
         """Return a rectangle from a selection annotation."""

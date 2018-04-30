@@ -577,71 +577,6 @@ class TestAnalyst(Test):
     @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
     @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
     @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_project_template')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
-    def test_modified_annotations_are_not_updated(self,
-                                                  mock_create_desc_anno,
-                                                  mock_get_tmpl,
-                                                  mock_get_tags,
-                                                  mock_get_transcriptions_df,
-                                                  mock_get_comments):
-        """Test that a manually modified result is not updated."""
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create()
-        n_answers = 3
-        tmpl.min_answers = n_answers
-        mock_get_tmpl.return_value = tmpl
-        project = ProjectFactory.create()
-        target = 'example.com'
-        current_value = 'foo'
-        current_tag = 'bar'
-        new_value = 'baz'
-        new_tag = 'qux'
-        task_info = dict(target=target)
-        task = TaskFactory.create(n_answers=n_answers, project=project,
-                                  info=task_info)
-        TaskRunFactory.create_batch(n_answers, task=task, info={
-            new_value: new_value,
-            current_tag: current_value
-        })
-        original_answer = dict(annotations=[
-            {
-                "motivation": "describing",
-                "body": [
-                    {
-                        "type": "TextualBody",
-                        "purpose": "describing",
-                        "value": current_value,
-                        "format": "text/plain",
-                        "modified": "2015-01-29T09:00:00Z"
-                    },
-                    {
-                        "type": "TextualBody",
-                        "purpose": "tagging",
-                        "value": current_tag
-                    }
-                ]
-            }
-        ])
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        result.info = original_answer
-        self.result_repo.update(result)
-        data = {
-            new_tag: [new_value] * n_answers,
-            current_tag: [current_value] * n_answers
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        mock_create_desc_anno.return_value = {}
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 2)
-        mock_create_desc_anno.assert_called_once_with(target, new_value,
-                                                      new_tag)
-
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
     @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
     def test_transcriptions_are_normalised(self,
                                            mock_create_desc_anno,
@@ -1019,3 +954,29 @@ class TestAnalyst(Test):
         annotations = result.info['annotations']
         assert_equal(len(annotations), 1)
         assert_equal(annotations[0]['target'], source)
+
+    @with_context
+    def test_result_with_child_not_updated(self):
+        """Test that a result is not updated when it has a child."""
+        project = ProjectFactory()
+        task = TaskFactory(project=project, n_answers=1)
+        TaskRunFactory(task=task)
+        result = self.result_repo.get_by(task_id=task.id)
+        info = dict(annotations='foo', has_children=True)
+        result.info = info
+        self.result_repo.update(result)
+        self.base_analyst.analyse(result.id)
+        assert_equal(result.info, info)
+
+    @with_context
+    def test_modified_result_not_updated(self):
+        """Test that a result is not updated when it has been modified."""
+        project = ProjectFactory()
+        task = TaskFactory(project=project, n_answers=1)
+        TaskRunFactory(task=task)
+        result = self.result_repo.get_by(task_id=task.id)
+        info = dict(annotations='foo', modified=True)
+        result.info = info
+        self.result_repo.update(result)
+        self.base_analyst.analyse(result.id)
+        assert_equal(result.info, info)
