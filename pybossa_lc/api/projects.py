@@ -91,7 +91,12 @@ def new(category_short_name):
 
 def handle_valid_project_form(form, template, volume, category):
     """Handle a valid project form."""
-    webhook = '{0}lc/analysis'.format(request.url_root)
+    import_data = volume.get('data', {})
+    import_data['type'] = volume.get('importer')
+
+    # Use enhanced IIIF importer for IIIF projects
+    if import_data['type'] == 'iiif':
+        import_data['type'] = 'iiif-enhanced'
 
     # Check for parent
     if template.parent_template_id:
@@ -107,13 +112,10 @@ def handle_valid_project_form(form, template, volume, category):
             flash(msg, 'error')
             return
 
-        parent_manifest_uri = url_for('.iiif_parent_manifest',
-                                      category_short_name=category.short_name,
-                                      project_id=parent.id,
-                                      _external=True)
-        volume['data'] = dict(manifest_uri=parent_manifest_uri)
+        import_data['parent_id'] = parent.id
 
     # Create project
+    webhook = '{0}lc/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
                       description=template.description,
@@ -138,8 +140,6 @@ def handle_valid_project_form(form, template, volume, category):
 
     # Attempt to generate the tasks
     success = True
-    import_data = volume.get('data', {})
-    import_data['type'] = volume.get('importer')
     try:
         msg = _import_tasks(project, **import_data)
         flash(msg, 'success')
@@ -215,66 +215,3 @@ def validate_parent(project):
         return False
 
     return True
-
-
-@BLUEPRINT.route('/<category_short_name>/parent/iiif/<int:project_id>')
-def iiif_parent_manifest(category_short_name, project_id):
-    """Return a pseudo-manifest for a parent IIIF project."""
-    category = project_repo.get_category_by(short_name=category_short_name)
-    if not category:  # pragma: no cover
-        abort(404)
-
-    project = project_repo.get(project_id)
-    if not project:  # pragma: no cover
-        abort(404)
-
-    print category.info.get('volumes', [])
-
-    try:
-        volume = [vol for vol in category.info.get('volumes', [])
-                  if vol['id'] == project.info.get('volume_id')][0]
-    except IndexError:
-        abort(400)
-
-    print volume
-
-    try:
-        manifest_uri = volume['data']['manifest_uri']
-    except KeyError:
-        abort(400)
-
-    resp = requests.get(manifest_uri)
-    manifest = resp.json()
-
-    # Sort results annotations by canvas
-    results = result_repo.filter_by(project_id=project.id)
-    annotations_by_canvas = {}
-    for result in results:
-        if not result.info:
-            continue
-
-        annotations = result.info.get('annotations', [])
-        for anno in annotations:
-            target = anno['target']
-            if isinstance(target, dict):
-                target = anno['target']['source']
-
-            canvas_annos = annotations_by_canvas.get(target, [])
-            canvas_annos.append(anno)
-            annotations_by_canvas[target] = canvas_annos
-
-    # Modify the manifest with a canvas for each annotation
-    new_canvases = []
-    for canvas in manifest['sequences'][0]['canvases']:
-        for anno in annotations_by_canvas.get(canvas['id'], []):
-            canvas_copy = copy.deepcopy(canvas)
-            canvas_copy['id'] = anno['target']
-            new_canvases.append(canvas_copy)
-
-    manifest['sequences'][0]['canvases'] = new_canvases
-
-    # Return modified manifest as JSON
-    response = make_response(json.dumps(manifest))
-    response.mimetype = 'application/json'
-    response.status_code = 200
-    return response

@@ -161,7 +161,7 @@ class TestProjectsApi(web.Helper):
         project = project_repo.get(1)
 
         # Check correct task data imported
-        expected = call(task_repo, project.id, type='iiif',
+        expected = call(task_repo, project.id, type='iiif-enhanced',
                         manifest_uri=self.manifest_uri)
         assert_equal(mock_importer.create_tasks.call_args_list, [expected])
 
@@ -358,10 +358,11 @@ class TestProjectsApi(web.Helper):
     @patch('pybossa.core.importer.count_tasks_to_import', return_value=1)
     def test_project_built_from_valid_parent_template(self, mock_count,
                                                       mock_create_tasks):
-        """Test that child project built from parent."""
+        """Test that import data modified for IIIF child projects."""
         self.register()
         user = user_repo.get(1)
-        vol = dict(id='123abc', name='My Volume', importer='iiif')
+        vol = dict(id='123abc', name='My Volume', importer='iiif',
+                   data=dict(manifest_uri=self.manifest_uri))
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
@@ -396,8 +397,7 @@ class TestProjectsApi(web.Helper):
 
         self.app_post_json(endpoint, data=form_data)
 
-        url_base = 'http://localhost/lc/projects/{0}/parent/iiif/{1}'
-        parent_manifest_uri = url_base.format(category.short_name, parent.id)
-        expected_call = call(task_repo, 1, type='iiif',
-                             manifest_uri=parent_manifest_uri)
+        expected_call = call(task_repo, 1, type='iiif-enhanced',
+                             manifest_uri=self.manifest_uri,
+                             parent_id=parent.id)
         assert_equal(mock_create_tasks.call_args_list, [expected_call])
