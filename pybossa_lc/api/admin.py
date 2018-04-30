@@ -124,17 +124,11 @@ def reject_template(template_id):
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/results')
-def results():
-    """Return an overview of results for each category."""
-    unanalysed_categories = results_cache.get_unanalysed_by_category()
-
-    if request.method == 'POST':
-        csrf = None
-    else:
-        csrf = generate_csrf()
-
-    response = dict(unanalysed_categories=unanalysed_categories)
+@BLUEPRINT.route('/results/unanalysed')
+def unanalysed_results():
+    """Return an overview of unanalysed results for each category."""
+    results = results_cache.get_unanalysed_by_category()
+    response = dict(results=results)
     return handle_content_type(response)
 
 
