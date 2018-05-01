@@ -439,7 +439,6 @@ class BaseAnalyst():
         else:
             raise ValueError('Invalid Annotation body')
 
-
     def get_rect_from_selection_anno(self, anno):
         """Return a rectangle from a selection annotation."""
         media_frag = anno['target']['selector']['value']
