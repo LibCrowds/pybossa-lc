@@ -113,6 +113,14 @@ class BaseAnalyst():
         if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
             map(self.strip_fragment_selector, annotations)
 
+        # Add any links to child annotations
+        parent_annotation_id = task.info.get('parent_annotation_id')
+        if parent_annotation_id:
+            non_comment_annos = [anno for anno in annotations
+                                 if anno.get('motivation') != 'commenting']
+            for anno in non_comment_annos:
+                self.add_linking_body(anno, parent_annotation_id)
+
         result.info = dict(annotations=annotations)
         result_repo.update(result)
 
@@ -411,6 +419,26 @@ class BaseAnalyst():
         if modified:
             anno['body'][0]['modified'] = self.get_xsd_datetime()
         return anno
+
+    def add_linking_body(self, anno, uri):
+        """Add a link to a SpecificResource to the body of an Annotation."""
+        link = {
+            "purpose": "linking",
+            "type": "SpecificResource",
+            "value": uri
+        }
+        if not anno.get('body'):
+            anno['body'] = link
+        elif isinstance(anno['body'], list):
+            anno['body'].append(link)
+        elif isinstance(anno['body'], dict):
+            anno['body'] = [
+                anno['body'],
+                link
+            ]
+        else:
+            raise ValueError('Invalid Annotation body')
+
 
     def get_rect_from_selection_anno(self, anno):
         """Return a rectangle from a selection annotation."""
