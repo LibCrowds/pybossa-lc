@@ -173,10 +173,12 @@ def get_wa_category_page(category_id, page):
 
     default_limit = current_app.config.get('ANNOTATIONS_PER_PAGE')
     limit = request.args.get('limit', default_limit)
+    offset = limit * (page - 1)
     order_by = request.args.get('orderby')
     iris = request.args.get('iris')
     data = annotations_cache.search_by_category(category.id, contains=contains,
-                                                limit=limit, order_by=order_by)
+                                                limit=limit, offset=offset,
+                                                order_by=order_by)
 
     spa_server_name = current_app.config.get('SPA_SERVER_NAME')
     url_base = '{0}/lc/annotations/wa/collection'.format(spa_server_name)

@@ -21,7 +21,8 @@ def get(anno_id):
         return [anno for anno in annotations if anno['id'] == anno_id][0]
 
 
-def search_by_category(category_id, contains=None, limit=None, order_by=None):
+def search_by_category(category_id, contains=None, limit=None, offset=None,
+                       order_by=None):
     """Search annotations by category."""
     if not contains:
         contains = {}
@@ -49,12 +50,14 @@ def search_by_category(category_id, contains=None, limit=None, order_by=None):
         WHERE annotations.anno @> :contains
         ORDER BY annotations.anno->>:order_by
         LIMIT :limit
+        OFFSET :offset
         '''
     )
     results = session.execute(sql, dict(category_id=json.dumps(category_id),
                                         r_contains=json.dumps(r_contains),
                                         contains=json.dumps(contains),
-                                        limit=limit, order_by=order_by))
+                                        limit=limit, offset=offset,
+                                        order_by=order_by))
     annotations = []
     count = 0
     for row in results:

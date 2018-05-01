@@ -76,7 +76,6 @@ class TestAnnotationsApi(web.Helper):
         TaskRunFactory.create(task=task, project=project, user=owner)
         result = self.result_repo.get_by(task_id=task.id)
 
-        per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
         annotations = []
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
@@ -167,8 +166,8 @@ class TestAnnotationsApi(web.Helper):
         })
 
     @with_context
-    def test_annotation_page_returned(self):
-        """Test Annotation Page returned."""
+    def test_first_annotation_page_returned(self):
+        """Test first Annotation Page returned."""
         self.register()
         owner = self.user_repo.get(1)
         category = CategoryFactory()
@@ -182,15 +181,16 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
-        page = 1
         query_str = 'foo=bar'
         url_base = '/lc/annotations/wa/collection/{0}'.format(category.id)
-        endpoint = '{0}/{1}'.format(url_base, page)
-        res = self.app_get_json(endpoint + '?' + query_str)
-
         spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
         coll_id_uri = spa_server_name + url_base
 
+        # Test first page
+        page = 1
+        start = per_page * (page - 1)
+        endpoint = '{0}/{1}'.format(url_base, page)
+        res = self.app_get_json(endpoint + '?' + query_str)
         assert_dict_equal(json.loads(res.data), {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "id": "{0}/{1}?{2}".format(coll_id_uri, page, query_str),
@@ -202,7 +202,25 @@ class TestAnnotationsApi(web.Helper):
             },
             "next": "{0}/{1}?{2}".format(coll_id_uri, page + 1, query_str),
             "startIndex": 0,
-            "items": annotations[:per_page * page]
+            "items": annotations[start:start + per_page]
+        })
+
+        # Test last page
+        page = 2
+        start = per_page * (page - 1)
+        endpoint = '{0}/{1}'.format(url_base, page)
+        res = self.app_get_json(endpoint + '?' + query_str)
+        assert_dict_equal(json.loads(res.data), {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "id": "{0}/{1}?{2}".format(coll_id_uri, page, query_str),
+            "type": "AnnotationPage",
+            "partOf": {
+                "id": "{0}?{1}".format(coll_id_uri, query_str),
+                "label": u"{0} Annotations".format(category.name),
+                "total": len(annotations)
+            },
+            "startIndex": 0,
+            "items": annotations[start:start + per_page]
         })
 
     @with_context
