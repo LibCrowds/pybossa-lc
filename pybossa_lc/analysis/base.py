@@ -63,7 +63,7 @@ class BaseAnalyst():
         if result.info and result.info.get('has_children'):
             return
 
-        task_run_df = self.get_task_run_df(task_runs)
+        task_run_df = self.get_task_run_df(task, task_runs)
         tmpl = self.get_project_template(result.project_id)
         target = self.get_task_target(task)
         annotations = []
@@ -164,10 +164,10 @@ class BaseAnalyst():
                 return False
         return True
 
-    def get_task_run_df(self, task_runs):
+    def get_task_run_df(self, task, task_runs):
         """Load task run info into a dataframe."""
         if not task_runs:
-            msg = 'Task {} has no task runs!'.format(task_id)
+            msg = 'Task {} has no task runs!'.format(task.id)
             raise AnalysisException(msg)
 
         data = [self.explode_info(tr) for tr in task_runs]
