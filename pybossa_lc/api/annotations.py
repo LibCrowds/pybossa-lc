@@ -129,7 +129,7 @@ def add_full_wa_ids(annotation):
     if isinstance(annotation['body'], list):
         for item in annotation['body']:
             if item['purpose'] == 'linking':
-                item['value'] = get_full_id(item['value'])
+                item['source'] = get_full_id(item['source'])
 
 
 @BLUEPRINT.route('/wa/<annotation_id>')

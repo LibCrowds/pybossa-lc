@@ -422,7 +422,7 @@ class BaseAnalyst():
         link = {
             "purpose": "linking",
             "type": "SpecificResource",
-            "value": uri
+            "source": uri
         }
         if not anno.get('body'):
             anno['body'] = link

@@ -1025,7 +1025,7 @@ class TestAnalyst(Test):
             body = [a for a in anno['body'] if a['purpose'] == 'linking']
             assert_equal(len(body), 1)
             assert_dict_equal(body[0], {
-                'value': parent_annotation_id,
+                'source': parent_annotation_id,
                 'type': 'SpecificResource',
                 'purpose': 'linking'
             })
