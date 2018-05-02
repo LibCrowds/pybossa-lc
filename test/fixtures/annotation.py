@@ -9,13 +9,9 @@ class AnnotationFixtures(object):
 
     def create(self, motivation='describing', source=None, tag=None,
                value=None):
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        anno_uuid = str(uuid.uuid4())
-        _id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
-
         anno = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": _id,
+            "id": str(uuid.uuid4()),
             "type": "Annotation",
             "motivation": motivation,
         }

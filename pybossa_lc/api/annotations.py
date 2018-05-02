@@ -95,6 +95,9 @@ def get_anno_page(annotations, count, entity, url_base, page,
     items = annotations
     if iris:
         items = [item['id'] for item in items]
+    else:
+        for item in items:
+            add_full_wa_ids(item)
 
     data = {
         "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -115,16 +118,28 @@ def get_anno_page(annotations, count, entity, url_base, page,
     return data
 
 
+def add_full_wa_ids(annotation):
+    """Update WA IDs to link to the current SPA server."""
+    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
+
+    def get_full_id(_id):
+        return '{0}/lc/annotations/wa/{1}'.format(spa_server_name, _id)
+
+    annotation['id'] = get_full_id(annotation['id'])
+    if isinstance(annotation['body'], list):
+        for item in annotation['body']:
+            if item['purpose'] == 'linking':
+                item['value'] = get_full_id(item['value'])
+
+
 @BLUEPRINT.route('/wa/<annotation_id>')
 def get_wa(annotation_id):
     """Return an Annotation."""
-    spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-    full_id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name,
-                                                 annotation_id)
-    anno = annotations_cache.get(full_id)
+    anno = annotations_cache.get(annotation_id)
     if not anno:
         return jsonld_abort(404)
 
+    add_full_wa_ids(anno)
     return jsonld_response(anno)
 
 

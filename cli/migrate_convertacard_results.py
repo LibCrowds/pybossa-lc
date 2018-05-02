@@ -25,13 +25,10 @@ def get_xsd_datetime():
 def get_anno_base(motivation):
     """Return the base for a new Web Annotation."""
     ts_now = get_xsd_datetime()
-    spa_server_name = app.config.get('SPA_SERVER_NAME')
-    anno_uuid = str(uuid.uuid4())
-    _id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
     github_repo = app.config.get('GITHUB_REPO')
     return {
         "@context": "http://www.w3.org/ns/anno.jsonld",
-        "id": _id,
+        "id": str(uuid.uuid4()),
         "type": "Annotation",
         "motivation": motivation,
         "created": ts_now,
@@ -40,7 +37,7 @@ def get_anno_base(motivation):
             "id": github_repo,
             "type": "Software",
             "name": "LibCrowds",
-            "homepage": spa_server_name
+            "homepage": app.config.get('SPA_SERVER_NAME')
         }
     }
 

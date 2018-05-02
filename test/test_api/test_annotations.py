@@ -57,11 +57,13 @@ class TestAnnotationsApi(web.Helper):
         result.info = dict(annotations=[anno])
         self.result_repo.update(result)
 
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        endpoint = anno['id'][len(spa_server_name):]
+        endpoint = '/lc/annotations/wa/{}'.format(anno['id'])
         res = self.app_get_json(endpoint)
 
         self.check_response(res)
+
+        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
+        anno['id'] = spa_server_name + endpoint
 
         assert_equal(json.loads(res.data), anno)
 
@@ -142,7 +144,9 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.anno_fixtures.create()] * (per_page + 1)
+        annotations = []
+        for i in range(per_page + 1):
+            annotations.append(self.anno_fixtures.create())
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -166,8 +170,8 @@ class TestAnnotationsApi(web.Helper):
         })
 
     @with_context
-    def test_first_annotation_page_returned(self):
-        """Test first Annotation Page returned."""
+    def test_annotation_page_returned(self):
+        """Test Annotation Page returned."""
         self.register()
         owner = self.user_repo.get(1)
         category = CategoryFactory()
@@ -177,7 +181,9 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.anno_fixtures.create()] * (per_page + 1)
+        annotations = []
+        for i in range(per_page + 1):
+            annotations.append(self.anno_fixtures.create())
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -185,6 +191,11 @@ class TestAnnotationsApi(web.Helper):
         url_base = '/lc/annotations/wa/collection/{0}'.format(category.id)
         spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
         coll_id_uri = spa_server_name + url_base
+
+        for anno in annotations:
+            full_id = '{0}/lc/annotations/wa/{1}'.format(spa_server_name,
+                                                         anno['id'])
+            anno['id'] = full_id
 
         # Test first page
         page = 1
@@ -235,7 +246,9 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.anno_fixtures.create()] * per_page
+        annotations = []
+        for i in range(per_page):
+            annotations.append(self.anno_fixtures.create())
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
@@ -258,7 +271,9 @@ class TestAnnotationsApi(web.Helper):
         result = self.result_repo.get_by(task_id=task.id)
 
         per_page = flask_app.config.get('ANNOTATIONS_PER_PAGE')
-        annotations = [self.anno_fixtures.create()] * (per_page + 1)
+        annotations = []
+        for i in range(per_page + 1):
+            annotations.append(self.anno_fixtures.create())
         result.info = dict(annotations=annotations)
         self.result_repo.update(result)
 
