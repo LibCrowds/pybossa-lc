@@ -16,13 +16,6 @@ from pybossa.core import db, create_app
 app = create_app(run_as_server=False)
 
 
-def get_anno_id():
-    """Return the anno ID."""
-    spa_server_name = app.config.get('SPA_SERVER_NAME')
-    anno_uuid = str(uuid.uuid4())
-    return '{0}/lc/annotations/wa/{1}'.format(spa_server_name, anno_uuid)
-
-
 @click.command()
 def run():
     with app.app_context():
@@ -36,12 +29,14 @@ def run():
         for result in results:
             annotations = result.info['annotations']
             for anno in annotations:
-                if 'id' not in anno:
-                    anno['id'] = get_anno_id()
+                if 'id' not in anno:  # Add new ID if none
+                    anno['id'] = str(uuid.uuid4())
+                elif '://' in anno['id']:  # Remove URI based IDs
+                    anno['id'] = anno['id'].split('/')[-1]
 
             result.info['annotations'] = annotations
 
-            new_info = dict(annotations=annotations)
+            new_info = result.info.copy()
             query = text('''UPDATE result
                             SET info=:info
                             WHERE id=:id''')
