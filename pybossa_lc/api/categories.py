@@ -263,11 +263,7 @@ def search_item_tags(short_name):
     if not category:  # pragma: no cover
         abort(404)
 
-    tags = category.info.get('tags', [])
-
-    # Clear any old non-Annotation tags
-    tags = [t for t in tags if isinstance(t, dict)
-            and t.get('type') == 'Annotation']
+    tags = category.info.get('tmp_tag_annotations', [])
 
     query = request.args.get('query')
     if query:
@@ -308,11 +304,7 @@ def add_item_tag(short_name):
                 "type": "Image"
             }
 
-        tags = category.info.get('tags', [])
-
-        # Clear any old non-Annotation tags
-        tags = [t for t in tags if isinstance(t, dict)
-                and t.get('type') == 'Annotation']
+        tags = category.info.get('tmp_tag_annotations', [])
 
         try:
             idx = [i for i, _tag in enumerate(tags)
@@ -339,7 +331,7 @@ def add_item_tag(short_name):
                 tags[idx] = tag
             else:
                 tags.append(tag)
-            category.info['tags'] = tags
+            category.info['tmp_tag_annotations'] = tags
             project_repo.update_category(category)
             flash("Tag added", 'success')
         else:
