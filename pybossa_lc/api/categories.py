@@ -10,6 +10,7 @@ from pybossa.util import handle_content_type, get_avatar_url
 from pybossa.util import redirect_content_type
 from pybossa.core import project_repo
 from pybossa.core import uploader, importer
+from pybossa.core import csrf
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
@@ -227,19 +228,19 @@ def export_collection_data(short_name):
     return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
 
 
-@BLUEPRINT.route('/<short_name>/tags')
-def get_tags(short_name):
+@BLUEPRINT.route('/<short_name>/project-tags')
+def project_tags(short_name):
     """Return all tags currently associated with the category's projects."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
 
     projects = project_repo.filter_by(category_id=category.id)
-    project_tags = [(k, v) for project in projects
+    tags = [(k, v) for project in projects
                     for k, v in project.info.get('tags', {}).items()]
 
     tags = {}
-    for tag in project_tags:
+    for tag in tags:
         key = tag[0]
         value = tag[1]
         tag_values = tags.get(key, [])
@@ -248,4 +249,101 @@ def get_tags(short_name):
         tags[key] = tag_values
 
     response = dict(tags=tags)
+    return handle_content_type(response)
+
+
+@BLUEPRINT.route('/<short_name>/tags')
+def search_item_tags(short_name):
+    """Search for item tags
+
+    We'll want to move the to a proper annotations server in future, but for
+    now just store them as part of the category object.
+    """
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    tags = category.info.get('tags', [])
+
+    # Clear any old non-Annotation tags
+    tags = [t for t in tags if isinstance(t, dict)
+            and t.get('type') == 'Annotation']
+
+    query = request.args.get('query')
+    if query:
+        tags = [t for t in tags if query in t['body']['value']]
+
+    response = dict(tags=tags)
+    return handle_content_type(response)
+
+
+@csrf.exempt
+@BLUEPRINT.route('/<short_name>/tags/add', methods=['GET', 'POST'])
+def add_item_tag(short_name):
+    """Tag an item.
+
+    We'll want to move the to a proper annotations server in future, but for
+    now just store them as part of the category object.
+    """
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    tag = None
+
+    if request.method == 'POST':
+        data = json.loads(request.data)
+        target = data.get('target')
+        typ = data.get('type')
+        value = data.get('value')
+        if not target or not value or not typ:
+            abort(400)
+
+        if typ not in ['image', 'iiif']:
+            abort(415)
+
+        if typ == 'image':
+            target = {
+                "id": target,
+                "type": "Image"
+            }
+
+        tags = category.info.get('tags', [])
+
+        # Clear any old non-Annotation tags
+        tags = [t for t in tags if isinstance(t, dict)
+                and t.get('type') == 'Annotation']
+
+        try:
+            idx = [i for i, _tag in enumerate(tags)
+                   if _tag['body']['value'] == value][0]
+            tag = tags[idx]
+        except IndexError:
+            idx = -1
+            tag = {
+                "@context": "http://www.w3.org/ns/anno.jsonld",
+                "type": "Annotation",
+                "motivation": "tagging",
+                "body": {
+                    "type": "TextualBody",
+                    "value": value,
+                    "format" : "text/plain"
+                },
+                "target": []
+            }
+
+        tag_has_target = [tgt for tgt in tag['target'] if tgt == target]
+        if not tag_has_target:
+            tag['target'].append(target)
+            if idx >= 0:
+                tags[idx] = tag
+            else:
+                tags.append(tag)
+            category.info['tags'] = tags
+            project_repo.update_category(category)
+            flash("Tag added", 'success')
+        else:
+            flash("Tag already exists", 'info')
+
+    response = dict(tag=tag)
     return handle_content_type(response)
