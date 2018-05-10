@@ -318,6 +318,7 @@ def add_item_tag(short_name):
             tag = {
                 "@context": "http://www.w3.org/ns/anno.jsonld",
                 "type": "Annotation",
+                "id": str(uuid.uuid4())
                 "motivation": "tagging",
                 "body": {
                     "type": "TextualBody",
