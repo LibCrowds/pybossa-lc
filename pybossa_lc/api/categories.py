@@ -266,9 +266,11 @@ def search_item_tags(short_name):
     tags = category.info.get('tmp_tag_annotations', [])
 
     query = request.args.get('query')
-    target = request.args.get('query')
+    target = request.args.get('target')
+
     if query:
         tags = [t for t in tags if query in t['body']['value']]
+
     if target:
         tags = [t for t in tags if target in t['target']]
 
