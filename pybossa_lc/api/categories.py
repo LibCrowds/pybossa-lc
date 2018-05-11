@@ -16,7 +16,7 @@ from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
 
 from ..utils import *
-from ..forms import VolumeForm, CustomExportForm
+from ..forms import VolumeForm, CustomExportForm, IIIFSettingsForm
 from ..exporters.csv_anno_exporter import CsvAnnotationExporter
 from ..exporters.json_anno_exporter import JsonAnnotationExporter
 
@@ -102,6 +102,8 @@ def update_volume(short_name, volume_id):
     import_form = GenericBulkTaskImportForm()(volume['importer'],
                                               **volume.get('data', {}))
 
+    iiif_form = IIIFSettingsForm(**volume.get('iiif_settings', {}))
+
     def update():
         """Helper function to update the current volume."""
         try:
@@ -138,6 +140,22 @@ def update_volume(short_name, volume_id):
                     except BulkImportException as err:
                         flash(err.message, 'error')
 
+            else:
+                flash('Please correct the errors', 'error')
+
+        elif (request.form.get('btn') == 'IIIF' or
+                request.body.get('btn') == 'IIIF'):
+            iiif_form = IIIFSettingsForm(request.body)
+
+            if iiif_form.validate():
+                iiif_settings = {
+                    'image_api_uri': iiif_form.name.image_api_uri,
+                    'image_api_version': iiif_form.name.image_api_version,
+                    'image_api_compliance': iiif_form.name.image_api_compliance
+                }
+                volume['iiif_settings'] = iiif_settings
+                update()
+                flash('Volume updated', 'success')
             else:
                 flash('Please correct the errors', 'error')
 
@@ -193,7 +211,8 @@ def update_volume(short_name, volume_id):
 
     response = dict(form=form, all_importers=all_importers,
                     upload_form=upload_form, import_form=import_form,
-                    volume=volume, has_projects=has_projects)
+                    iiif_form=iiif_form, volume=volume,
+                    has_projects=has_projects)
     return handle_content_type(response)
 
 

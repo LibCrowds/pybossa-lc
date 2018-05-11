@@ -15,6 +15,7 @@ class Volume(object):
         self.data = kwargs.get('data', {})
         self.thumbnail_url = kwargs.get('thumbnail_url')
         self.container = kwargs.get('container')
+        self.iiif_settings = kwargs.get('iiif_settings')
 
     def to_dict(self):
         """Return a dict representation of the object."""

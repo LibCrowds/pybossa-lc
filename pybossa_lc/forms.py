@@ -5,7 +5,7 @@ from flask import current_app
 from flask_wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, validators
 from wtforms import IntegerField, FieldList, FormField, BooleanField
-from wtforms import SelectMultipleField
+from wtforms import DecimalField, SelectMultipleField
 from wtforms.validators import ValidationError
 from wtforms.widgets import HiddenInput
 from pybossa.forms import validator as pb_validator
@@ -143,6 +143,16 @@ class VolumeForm(Form):
                                           pb_validator.NotAllowedChars(),
                                           UniqueVolumeField('short_name')])
     importer = SelectField('Importer')
+
+
+class IIIFSettingsForm(Form):
+    """A form for IIIF settings."""
+    image_api_uri = TextField('API URI',
+                              [validators.Required(), validators.URL()])
+    image_api_version = DecimalField('Version', [validators.Required()],
+                                     default=2.0)
+    image_api_compliance = IntegerField('Compliance Level',
+                                        [validators.Required()], default=0)
 
 
 class CustomExportForm(Form):
