@@ -290,65 +290,62 @@ def add_item_tag(short_name):
     if not category:  # pragma: no cover
         abort(404)
 
-    tag = None
+    data = json.loads(request.data)
+    target = data.get('target')
+    typ = data.get('type')
+    value = data.get('value')
+    if not target or not value or not typ:
+        abort(400)
 
-    if request.method == 'POST':
-        data = json.loads(request.data)
-        target = data.get('target')
-        typ = data.get('type')
-        value = data.get('value')
-        if not target or not value or not typ:
-            abort(400)
+    if typ not in ['image', 'iiif']:
+        abort(415)
 
-        if typ not in ['image', 'iiif']:
-            abort(415)
+    if typ == 'image':
+        target = {
+            "id": target,
+            "type": "Image"
+        }
 
-        if typ == 'image':
-            target = {
-                "id": target,
-                "type": "Image"
-            }
+    tags = category.info.get('tmp_tag_annotations', [])
 
-        tags = category.info.get('tmp_tag_annotations', [])
+    try:
+        idx = [i for i, _tag in enumerate(tags)
+                if _tag['body']['value'] == value][0]
+        tag = tags[idx]
+    except IndexError:
+        idx = -1
+        tag = {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "type": "Annotation",
+            "id": str(uuid.uuid4()),
+            "motivation": "tagging",
+            "body": {
+                "type": "TextualBody",
+                "value": value,
+                "format" : "text/plain"
+            },
+            "target": []
+        }
 
-        try:
-            idx = [i for i, _tag in enumerate(tags)
-                   if _tag['body']['value'] == value][0]
-            tag = tags[idx]
-        except IndexError:
-            idx = -1
-            tag = {
-                "@context": "http://www.w3.org/ns/anno.jsonld",
-                "type": "Annotation",
-                "id": str(uuid.uuid4()),
-                "motivation": "tagging",
-                "body": {
-                    "type": "TextualBody",
-                    "value": value,
-                    "format" : "text/plain"
-                },
-                "target": []
-            }
-
-        tag_has_target = [tgt for tgt in tag['target'] if tgt == target]
-        if not tag_has_target:
-            tag['target'].append(target)
-            if idx >= 0:
-                tags[idx] = tag
-            else:
-                tags.append(tag)
-            category.info['tmp_tag_annotations'] = tags
-            project_repo.update_category(category)
-            flash("Tag added", 'success')
+    tag_has_target = [tgt for tgt in tag['target'] if tgt == target]
+    if not tag_has_target:
+        tag['target'].append(target)
+        if idx >= 0:
+            tags[idx] = tag
         else:
-            flash("Tag already exists", 'info')
+            tags.append(tag)
+        category.info['tmp_tag_annotations'] = tags
+        project_repo.update_category(category)
+        flash("Tag added", 'success')
+    else:
+        flash("Tag already exists", 'info')
 
     response = dict(tag=tag)
     return handle_content_type(response)
 
 
 @csrf.exempt
-@BLUEPRINT.route('/<short_name>/tags/<tag_id>/remove', methods=['POST'])
+@BLUEPRINT.route('/<short_name>/tags/remove', methods=['POST'])
 def remove_item_tag(short_name, tag_id):
     """Remove an item tag.
 
