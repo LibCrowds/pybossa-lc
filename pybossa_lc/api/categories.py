@@ -279,7 +279,7 @@ def search_item_tags(short_name):
 
 
 @csrf.exempt
-@BLUEPRINT.route('/<short_name>/tags/add', methods=['GET', 'POST'])
+@BLUEPRINT.route('/<short_name>/tags/add', methods=['POST'])
 def add_item_tag(short_name):
     """Tag an item.
 
@@ -345,3 +345,30 @@ def add_item_tag(short_name):
 
     response = dict(tag=tag)
     return handle_content_type(response)
+
+
+@csrf.exempt
+@BLUEPRINT.route('/<short_name>/tags/<tag_id>/remove', methods=['POST'])
+def remove_item_tag(short_name, tag_id):
+    """Remove an item tag.
+
+    We'll want to move the to a proper annotations server in future, but for
+    now just store them as part of the category object.
+    """
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    tags = category.info.get('tmp_tag_annotations', [])
+
+    try:
+        idx = [i for i, _tag in enumerate(tags) if _tag.get('id') == tag_id][0]
+    except IndexError:
+        abort(404)
+
+    del tags[idx]
+    category.info['tmp_tag_annotations'] = tags
+    project_repo.update_category(category)
+    flash("Tag removed", 'success')
+
+    return handle_content_type({})
