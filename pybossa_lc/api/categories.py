@@ -356,6 +356,22 @@ def remove_item_tag(short_name, tag_id):
     if not category:  # pragma: no cover
         abort(404)
 
+    data = json.loads(request.data)
+    target = data.get('target')
+    typ = data.get('type')
+    value = data.get('value')
+    if not target or not value or not typ:
+        abort(400)
+
+    if typ not in ['image', 'iiif']:
+        abort(415)
+
+    if typ == 'image':
+        target = {
+            "id": target,
+            "type": "Image"
+        }
+
     tags = category.info.get('tmp_tag_annotations', [])
 
     try:
@@ -363,7 +379,12 @@ def remove_item_tag(short_name, tag_id):
     except IndexError:
         abort(404)
 
-    del tags[idx]
+    tag = tags[idx]
+
+    # Remove target
+    target_idx = [i for i, _tgt in enumerate(tag['target']) if _tgt == target]
+
+    del tag[target_idx]
     category.info['tmp_tag_annotations'] = tags
     project_repo.update_category(category)
     flash("Tag removed", 'success')
