@@ -150,9 +150,12 @@ class IIIFSettingsForm(Form):
     image_api_uri = TextField('API URI',
                               [validators.Required(), validators.URL()])
     image_api_version = DecimalField('Version', [validators.Required()],
-                                     default=2.0)
+                                     places=1, default=2.0)
+    compliance_validators = [
+        validators.NumberRange(min=0, max=2)
+    ]
     image_api_compliance = IntegerField('Compliance Level',
-                                        [validators.Required()], default=0)
+                                        compliance_validators, default=0)
 
 
 class CustomExportForm(Form):

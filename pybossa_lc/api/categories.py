@@ -149,9 +149,9 @@ def update_volume(short_name, volume_id):
 
             if iiif_form.validate():
                 iiif_settings = {
-                    'image_api_uri': iiif_form.name.image_api_uri,
-                    'image_api_version': iiif_form.name.image_api_version,
-                    'image_api_compliance': iiif_form.name.image_api_compliance
+                    'image_api_uri': iiif_form.image_api_uri.data,
+                    'image_api_version': iiif_form.image_api_version.data,
+                    'image_api_compliance': iiif_form.image_api_compliance.data
                 }
                 volume['iiif_settings'] = iiif_settings
                 update()
