@@ -310,7 +310,7 @@ def add_item_tag(short_name):
 
     try:
         idx = [i for i, _tag in enumerate(tags)
-                if _tag['body']['value'] == value][0]
+               if _tag['body']['value'] == value][0]
         tag = tags[idx]
     except IndexError:
         idx = -1
@@ -346,7 +346,7 @@ def add_item_tag(short_name):
 
 @csrf.exempt
 @BLUEPRINT.route('/<short_name>/tags/remove', methods=['POST'])
-def remove_item_tag(short_name, tag_id):
+def remove_item_tag(short_name):
     """Remove an item tag.
 
     We'll want to move the to a proper annotations server in future, but for
@@ -375,16 +375,17 @@ def remove_item_tag(short_name, tag_id):
     tags = category.info.get('tmp_tag_annotations', [])
 
     try:
-        idx = [i for i, _tag in enumerate(tags) if _tag.get('id') == tag_id][0]
+        idx = [i for i, _tag in enumerate(tags)
+               if _tag['body']['value'] == value][0]
     except IndexError:
         abort(404)
 
     tag = tags[idx]
 
     # Remove target
-    target_idx = [i for i, _tgt in enumerate(tag['target']) if _tgt == target]
-
-    del tag[target_idx]
+    new_targets = [tgt for tgt in tag['target'] if tgt != target]
+    tag['target'] = new_targets
+    tags[idx] = tag
     category.info['tmp_tag_annotations'] = tags
     project_repo.update_category(category)
     flash("Tag removed", 'success')
