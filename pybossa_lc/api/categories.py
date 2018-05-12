@@ -247,9 +247,9 @@ def export_collection_data(short_name):
     return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
 
 
-@BLUEPRINT.route('/<short_name>/project-tags')
+@BLUEPRINT.route('/<short_name>/project-filters')
 def project_tags(short_name):
-    """Return all tags currently associated with the category's projects."""
+    """Return all filters currently associated with the category's projects."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover
         abort(404)
