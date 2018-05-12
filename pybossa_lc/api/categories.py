@@ -267,11 +267,7 @@ def project_tags(short_name):
         filter_opts = list(set(filter_opts))
         filters[key] = filter_opts
 
-<<<<<<< HEAD
     response = dict(filters=filters)
-=======
-    response = dict(tags=tags)
->>>>>>> 5654280d4c552166d822c8cc65229c219c27db91
     return handle_content_type(response)
 
 
