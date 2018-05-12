@@ -255,17 +255,17 @@ def project_tags(short_name):
         abort(404)
 
     projects = project_repo.filter_by(category_id=category.id)
-    tags = [(k, v) for project in projects
-                    for k, v in project.info.get('tags', {}).items()]
+    filters = [(k, v) for project in projects
+               for k, v in project.info.get('filters', {}).items()]
 
-    tags = {}
-    for tag in tags:
-        key = tag[0]
-        value = tag[1]
-        tag_values = tags.get(key, [])
-        tag_values.append(value)
-        tag_values = list(set(tag_values))
-        tags[key] = tag_values
+    filters = {}
+    for _filter in filters:
+        key = _filter[0]
+        value = _filter[1]
+        filter_opts = filters.get(key, [])
+        filter_opts.append(value)
+        filter_opts = list(set(filter_opts))
+        filters[key] = filter_opts
 
     response = dict(tags=tags)
     return handle_content_type(response)
