@@ -255,11 +255,11 @@ def project_tags(short_name):
         abort(404)
 
     projects = project_repo.filter_by(category_id=category.id)
-    filters = [(k, v) for project in projects
-               for k, v in project.info.get('filters', {}).items()]
+    all_filters = [(k, v) for project in projects
+                   for k, v in project.info.get('filters', {}).items()]
 
     filters = {}
-    for _filter in filters:
+    for _filter in all_filters:
         key = _filter[0]
         value = _filter[1]
         filter_opts = filters.get(key, [])
