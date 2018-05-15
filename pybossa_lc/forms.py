@@ -156,22 +156,3 @@ class IIIFSettingsForm(Form):
     ]
     image_api_compliance = IntegerField('Compliance Level',
                                         compliance_validators, default=0)
-
-
-class CustomExportForm(Form):
-    """A form for creating a custom export."""
-    id = TextField(label=None, widget=HiddenInput())
-    short_name = TextField('Short Name', [validators.Required(),
-                                          pb_validator.NotAllowedChars()])
-    name = TextField('Name', [validators.Required()])
-    root_template_id = SelectField('Root Template', choices=[
-        ('None', '')
-    ])
-    motivation = SelectField('Motivation', choices=[
-        ('tagging', 'Tagging'),
-        ('describing', 'Describing'),
-        ('commenting', 'Commenting')
-    ])
-    include = SelectMultipleField('Include', choices=[
-        ('None', '')
-    ])

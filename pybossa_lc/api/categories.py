@@ -16,7 +16,7 @@ from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
 
 from ..utils import *
-from ..forms import VolumeForm, CustomExportForm, IIIFSettingsForm
+from ..forms import VolumeForm, IIIFSettingsForm
 from ..exporters.csv_anno_exporter import CsvAnnotationExporter
 from ..exporters.json_anno_exporter import JsonAnnotationExporter
 
