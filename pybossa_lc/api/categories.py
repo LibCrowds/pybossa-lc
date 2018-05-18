@@ -247,6 +247,7 @@ def export_collection_data(short_name):
     return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
 
 
+@BLUEPRINT.route('/<short_name>/project-tags')
 @BLUEPRINT.route('/<short_name>/project-filters')
 def project_tags(short_name):
     """Return all filters currently associated with the category's projects."""
