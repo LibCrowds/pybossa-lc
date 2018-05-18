@@ -44,14 +44,12 @@ class PyBossaLC(Plugin):
         from .api.projects import BLUEPRINT as projects
         from .api.categories import BLUEPRINT as categories
         from .api.templates import BLUEPRINT as templates
-        from .api.annotations import BLUEPRINT as annotations
         from .api.admin import BLUEPRINT as admin
         from .api.users import BLUEPRINT as users
         app.register_blueprint(analysis, url_prefix='/lc/analysis')
         app.register_blueprint(projects, url_prefix='/lc/projects')
         app.register_blueprint(categories, url_prefix='/lc/categories')
         app.register_blueprint(templates, url_prefix='/lc/templates')
-        app.register_blueprint(annotations, url_prefix='/lc/annotations')
         app.register_blueprint(admin, url_prefix='/lc/admin')
         app.register_blueprint(users, url_prefix='/lc/users')
 

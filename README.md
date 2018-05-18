@@ -11,7 +11,6 @@ functions for generating LibCrowds projects and analysing their results.
 Key features:
 
 - Analyses task run data and stores final results as Web Annotations
-- Serves annotations according to the Web Annotations protocol
 - Defines a templating system for configuring and generating projects
 - Enables the creation of projects with parent-child relationships
 - Replaces default PYBOSSA emails with custom templates
