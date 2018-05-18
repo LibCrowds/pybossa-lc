@@ -28,6 +28,7 @@ class PyBossaLC(Plugin):
         self.setup_blueprints()
         self.replace_email_templates()
         self.setup_enhanced_iiif_importer()
+        wa_client.init_app(app)
         enqueue_periodic_jobs()
 
     def configure(self):

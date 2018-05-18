@@ -17,8 +17,6 @@ from pybossa.importers import BulkImportException
 
 from ..utils import *
 from ..forms import VolumeForm, IIIFSettingsForm
-from ..exporters.csv_anno_exporter import CsvAnnotationExporter
-from ..exporters.json_anno_exporter import JsonAnnotationExporter
 
 
 BLUEPRINT = Blueprint('lc_categories', __name__)
@@ -214,37 +212,6 @@ def update_volume(short_name, volume_id):
                     iiif_form=iiif_form, volume=volume,
                     has_projects=has_projects)
     return handle_content_type(response)
-
-
-@BLUEPRINT.route('/<short_name>/export')
-def export_collection_data(short_name):
-    """Export collection data."""
-    category = project_repo.get_category_by(short_name=short_name)
-    if not category:  # pragma: no cover
-        abort(404)
-
-    motivation = request.args.get('type')
-    fmt = request.args.get('format')
-    if not (motivation and fmt):
-        abort(404)
-
-    if fmt not in ['csv', 'json']:
-        abort(415)
-
-    if motivation not in ['describing', 'tagging', 'commenting']:
-        abort(415)
-
-    def respond_json(export_fmt_id):
-        json_custom_exporter = JsonAnnotationExporter()
-        res = json_custom_exporter.response_zip(category, export_fmt_id)
-        return res
-
-    def respond_csv(export_fmt_id):
-        csv_custom_exporter = CsvAnnotationExporter()
-        res = csv_custom_exporter.response_zip(category, export_fmt_id)
-        return res
-
-    return {"json": respond_json, "csv": respond_csv}[fmt](motivation)
 
 
 @BLUEPRINT.route('/<short_name>/project-tags')

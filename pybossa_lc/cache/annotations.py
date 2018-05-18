@@ -8,19 +8,6 @@ from pybossa.core import db
 session = db.slave_session
 
 
-def get(anno_id):
-    """Return an annotation by ID."""
-    anno_query = json.dumps([{"id": anno_id}])
-    sql = text('''SELECT info->>'annotations' AS annotations
-               FROM result
-               WHERE info->'annotations' @> :anno_query
-               ''')
-    db_results = session.execute(sql, dict(anno_query=anno_query))
-    for row in db_results:
-        annotations = json.loads(row.annotations)
-        return [anno for anno in annotations if anno['id'] == anno_id][0]
-
-
 def search_by_category(category_id, contains=None, limit=None, offset=None,
                        order_by=None):
     """Search annotations by category."""
