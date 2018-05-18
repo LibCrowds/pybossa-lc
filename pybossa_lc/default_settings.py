@@ -5,6 +5,3 @@ GITHUB_REPO = 'https://github.com/LibCrowds/libcrowds'
 
 # Email all comment annotations to administrators
 EMAIL_COMMENT_ANNOTATIONS = False
-
-# Number of annotations to return per page
-ANNOTATIONS_PER_PAGE = 100
