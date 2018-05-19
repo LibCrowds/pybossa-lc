@@ -28,13 +28,13 @@ class WebAnnotationClient(object):
         response.raise_for_status()
         return response.json
 
-    def add_collection(self, iri, annotation):
+    def create_annotation(self, iri, annotation):
         """Add an Annotation."""
         response = requests.post(iri, data=json.dumps(annotation))
         response.raise_for_status()
         return response.json
 
-    def _get_prefer_headers(self, minimal, iris):
+    def _get_prefer_headers(self, minimal=False, iris=False):
         """Return the Prefer header for given container preferences."""
         ns = ['http://www.w3.org/ns/oa#PreferContainedDescriptions']
         if iris:
@@ -42,3 +42,33 @@ class WebAnnotationClient(object):
         if minimal:
             ns.append('http://www.w3.org/ns/ldp#PreferMinimalContainer')
         return 'return=representation; include="{0}"'.format(' '.join(ns))
+
+    def search_annotations(self, collectionIri, contains):
+        """Search for Annotations with the given content."""
+        collection_id = collectionIri.split('/')[-2]
+        endpoint = self.base_url.rstrip('/') + '/search/annotations'
+        params = {
+            'collection.id': collection_id,
+            contains: contains
+        }
+        headers = {
+            'Prefer': self._get_prefer_headers(minimal=True)
+        }
+        response = requests.get(endpoint, params=params, headers=headers)
+        data = response.json
+        if data['total'] == 0:
+            return []
+
+        annotations = []
+        def add_page_items(pageIri):
+            r = requests.get(pageIri)
+            if r.status_code != 200:
+                return
+            annotations.extend(data.json['items'])
+            _next = data.json.get('next')
+            if _next:
+                add_page_items(_next)
+
+        first = data['first']
+        add_page_items(first)
+        return annotations

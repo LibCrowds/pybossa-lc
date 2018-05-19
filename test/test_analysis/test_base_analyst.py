@@ -485,29 +485,43 @@ class TestBaseAnalyst(Test):
         }
         mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
 
-    # @with_context
-    # def test_result_with_child_not_updated(self):
-    #     """Test that a result is not updated when it has a child."""
-    #     task = self.create_task_with_context(1)
-    #     TaskRunFactory(task=task)
-    #     result = self.result_repo.get_by(task_id=task.id)
-    #     info = dict(annotations='foo', has_children=True)
-    #     result.info = info
-    #     self.result_repo.update(result)
-    #     self.base_analyst.analyse(result.id)
-    #     assert_equal(result.info, info)
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_modified_results_not_updated(self, mock_client):
+        """Test results are not updated if an Annotation has been modified."""
+        task = self.ctx.create_task(1)
+        TaskRunFactory(task=task)
+        result = self.result_repo.get_by(task_id=task.id)
+        self.base_analyst.analyse(result.id)
+        mock_client.search_annotations.return_value = [{
+            'modified': 'fake-time'
+        }]
+        assert_equal(mock_client.create_annotation.called, False)
 
-    # @with_context
-    # def test_modified_result_not_updated(self):
-    #     """Test that a result is not updated when it has been modified."""
-    #     task = self.create_task_with_context(1)
-    #     TaskRunFactory(task=task)
-    #     result = self.result_repo.get_by(task_id=task.id)
-    #     info = dict(annotations='foo', modified=True)
-    #     result.info = info
-    #     self.result_repo.update(result)
-    #     self.base_analyst.analyse(result.id)
-    #     assert_equal(result.info, info)
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_modified_results_not_updated(self, mock_client):
+        """Test results are not updated if an Annotation has been modified."""
+        task = self.ctx.create_task(1)
+        TaskRunFactory(task=task)
+        result = self.result_repo.get_by(task_id=task.id)
+        result.info = dict(has_children=True)
+        self.result_repo.update(result)
+        self.base_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_result_with_child_not_updated(self, mock_client):
+        """Test that a result is not updated when it has a child."""
+        task = self.ctx.create_task(1)
+        TaskRunFactory(task=task)
+        result = self.result_repo.get_by(task_id=task.id)
+        info = dict(annotations='foo', has_children=True)
+        result.info = info
+        self.result_repo.update(result)
+        self.base_analyst.analyse(result.id)
+        assert_equal(result.info, info)
 
     # @with_context
     # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')

@@ -1,6 +1,8 @@
 # -*- coding: utf8 -*-
 """ResultCollection model."""
 
+from flask import url_for
+
 from .base import Base
 
 
@@ -30,6 +32,18 @@ class ResultCollection(Base):
         anno = self._get_tagging_annotation(result, target, value, rect)
         self._create_annotation(anno)
         return anno
+
+    def get_by_result(self, result):
+        """Return current Annotations for a result."""
+        contains = {
+            'generator': [
+                {
+                    'id': url_for('api.api_result', oid=result.id),
+                    'type': 'Software'
+                }
+            ]
+        }
+        return self._get_all_annotations(contains)
 
     def _validate(self, **kwargs):
         """Verify that the given values exist."""

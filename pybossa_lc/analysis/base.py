@@ -60,12 +60,8 @@ class BaseAnalyst():
         category = project_repo.get_category(project.category_id)
         rc = self._get_rc(category)
 
-        # Check for modified results
-        if result.info and result.info.get('modified'):
-            return
-
-        # Check for parent results
-        if result.info and result.info.get('has_children'):
+        can_update = self._can_update_result(rc, result)
+        if not can_update:
             return
 
         tr_df = self.get_task_run_df(task, task_runs)
@@ -103,6 +99,16 @@ class BaseAnalyst():
         empty_results = [r for r in results if not r.info]
         for result in empty_results:
             self.analyse(result.id)
+
+    def _can_update_result(self, rc, result):
+        """Check if a result can be updated."""
+        annotations = rc.get_by_result(result)
+        for anno in annotations:
+            print 2
+            if anno.get('modified'):
+        if result.info and result.info.get('has_children'):
+            return False
+        return True
 
     def _handle_comments(self, result_collection, result, task_run_df, target,
                          silent):
