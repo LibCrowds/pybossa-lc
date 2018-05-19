@@ -25,7 +25,14 @@ class WebAnnotationClient(object):
         headers = {'Prefer': self._get_prefer_headers(minimal, iris)}
         params = {'page': page} if page else {}
         response = requests.get(iri, params=params, headers=headers)
-        return response.data
+        response.raise_for_status()
+        return response.json
+
+    def add_collection(self, iri, annotation):
+        """Add an Annotation."""
+        response = requests.post(iri, data=json.dumps(annotation))
+        response.raise_for_status()
+        return response.json
 
     def _get_prefer_headers(self, minimal, iris):
         """Return the Prefer header for given container preferences."""
