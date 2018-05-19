@@ -39,3 +39,6 @@ pybossa/
 
 # Coverage
 .coverage
+
+# Swap files
+*.swp
