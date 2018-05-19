@@ -7,3 +7,4 @@ Z3950_DATABASES = {
 }
 SPA_SERVER_NAME = 'http://example.com'
 EMAIL_COMMENT_ANNOTATIONS = True
+CRYPTOPAN_KEY = '32-char-str-for-AES-key-and-pad.'
