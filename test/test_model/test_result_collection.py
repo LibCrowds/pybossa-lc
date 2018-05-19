@@ -61,7 +61,7 @@ class TestResultCollection(Test):
             },
             'target': target
         })
-        mock_client.create_annotations.assert_called_once_with(iri, anno)
+        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -96,7 +96,7 @@ class TestResultCollection(Test):
             },
             'target': target
         })
-        mock_client.create_annotations.assert_called_once_with(iri, anno)
+        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -142,7 +142,7 @@ class TestResultCollection(Test):
                 }
             }
         })
-        mock_client.create_annotations.assert_called_once_with(iri, anno)
+        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -187,7 +187,7 @@ class TestResultCollection(Test):
             ],
             'target': target
         })
-        mock_client.create_annotations.assert_called_once_with(iri, anno)
+        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_comment_values(self, mock_client):
