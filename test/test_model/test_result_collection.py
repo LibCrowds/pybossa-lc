@@ -25,13 +25,13 @@ class TestResultCollection(Test):
     def test_add_comment(self, mock_client):
         """Test that a comment Annotation is added."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         target = 'foo'
         value = 'bar'
         user = UserFactory.create()
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
-        anno = result_collection.add_comment(result, target, value, user)
+        anno = rc.add_comment(result, target, value, user)
         assert_dict_equal(anno, {
             'motivation': 'commenting',
             'type': 'Annotation',
@@ -61,18 +61,19 @@ class TestResultCollection(Test):
             },
             'target': target
         })
+        mock_client.create_annotations.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
     def test_add_tag(self, mock_client):
         """Test that a tagging Annotation is added."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         target = 'foo'
         value = 'bar'
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
-        anno = result_collection.add_tag(result, target, value)
+        anno = rc.add_tag(result, target, value)
         assert_dict_equal(anno, {
             'motivation': 'tagging',
             'type': 'Annotation',
@@ -95,19 +96,20 @@ class TestResultCollection(Test):
             },
             'target': target
         })
+        mock_client.create_annotations.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
     def test_add_tag_with_fragment(self, mock_client):
         """Test that a tagging Annotation is added with a FragmentSelector."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         target = 'foo'
         value = 'bar'
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
         rect = dict(x=100, y=100, w=50, h=50)
-        anno = result_collection.add_tag(result, target, value, rect)
+        anno = rc.add_tag(result, target, value, rect)
         assert_dict_equal(anno, {
             'motivation': 'tagging',
             'type': 'Annotation',
@@ -140,20 +142,21 @@ class TestResultCollection(Test):
                 }
             }
         })
+        mock_client.create_annotations.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
     def test_add_transcription(self, mock_client):
         """Test that a describing Annotation is added."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         target = 'foo'
         value = 'bar'
         tag = 'baz'
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
         rect = dict(x=100, y=100, w=50, h=50)
-        anno = result_collection.add_transcription(result, target, value, tag)
+        anno = rc.add_transcription(result, target, value, tag)
         assert_dict_equal(anno, {
             'motivation': 'describing',
             'type': 'Annotation',
@@ -184,12 +187,13 @@ class TestResultCollection(Test):
             ],
             'target': target
         })
+        mock_client.create_annotations.assert_called_once_with(iri, anno)
 
     @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_comment_values(self, mock_client):
         """Test ValueError raised when invalid comment values."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         result = Result(project_id=1, task_run_ids=[])
         required = ['target', 'value']
         invalid = ['', None]
@@ -198,7 +202,7 @@ class TestResultCollection(Test):
                 values = {k: 'foo' for k in required}
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
-                    result_collection.add_comment(result, **values)
+                    rc.add_comment(result, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
@@ -206,7 +210,7 @@ class TestResultCollection(Test):
     def test_error_when_invalid_tag_values(self, mock_client):
         """Test ValueError raised when invalid tag values."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         result = Result(project_id=1, task_run_ids=[])
         required = ['target', 'value']
         invalid = ['', None]
@@ -215,7 +219,7 @@ class TestResultCollection(Test):
                 values = {k: 'foo' for k in required}
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
-                    result_collection.add_tag(result, **values)
+                    rc.add_tag(result, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
@@ -223,7 +227,7 @@ class TestResultCollection(Test):
     def test_error_when_invalid_transcription_values(self, mock_client):
         """Test ValueError raised when invalid transcription values."""
         iri = 'example.com'
-        result_collection = ResultCollection(iri)
+        rc = ResultCollection(iri)
         result = Result(project_id=1, task_run_ids=[])
         required = ['target', 'value', 'tag']
         invalid = ['', None]
@@ -232,6 +236,24 @@ class TestResultCollection(Test):
                 values = {k: 'foo' for k in required}
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
-                    result_collection.add_transcription(result, **values)
+                    rc.add_transcription(result, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_annotations_searched_by_result(self, mock_client):
+        """Test Annotations are searched for by result."""
+        iri = 'example.com'
+        rc = ResultCollection(iri)
+        result = Result(project_id=1, task_run_ids=[])
+        rc.get_by_result(result)
+        contains = {
+            'generator': [
+                {
+                    'id': url_for('api.api_result', oid=result.id),
+                    'type': 'Software'
+                }
+            ]
+        }
+        mock_client.search_annotations.assert_called_once_with(iri, contains)
