@@ -2,9 +2,14 @@
 """Test IIIF Annotation analyst."""
 
 import pandas
+from mock import patch, call
 from nose.tools import *
-from default import Test
+from default import Test, with_context, flask_app, db
+from flask import url_for
+from factories import UserFactory, TaskRunFactory
+from pybossa.repositories import ResultRepository, TaskRepository
 
+from ..fixtures.context import ContextFixtures
 from pybossa_lc.analysis.iiif_annotation import IIIFAnnotationAnalyst
 
 
@@ -12,6 +17,9 @@ class TestIIIFAnnotationAnalyst(Test):
 
     def setUp(self):
         super(TestIIIFAnnotationAnalyst, self).setUp()
+        self.ctx = ContextFixtures()
+        self.result_repo = ResultRepository(db)
+        self.task_repo = TaskRepository(db)
         self.iiif_analyst = IIIFAnnotationAnalyst()
         self.comments = ['Some comment']
         self.tags = {
@@ -127,3 +135,741 @@ class TestIIIFAnnotationAnalyst(Test):
         task_run_df = pandas.DataFrame(self.data)
         df = self.iiif_analyst.get_transcriptions_df(task_run_df)
         assert_dict_equal(df.to_dict(), self.transcriptions_df.to_dict())
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_analysis_with_no_transcriptions(self, mock_client):
+        """Test IIIF analysis with no transcriptions."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target)
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'describing',
+            'body': [
+                {
+                    'purpose': 'describing',
+                    'value': ''
+                },
+                {
+                    'purpose': 'tagging',
+                    'value': 'foo'
+                }
+            ]
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_fragment_selector_stripped(self, mock_client):
+        """Test IIIF fragment selector is stripped if rule applied."""
+        n_answers = 3
+        source = 'example.com'
+        target = {
+            'source': source,
+            'selector': {
+                'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                'type': 'FragmentSelector',
+                'value': '?xywh=100,100,100,100'
+            }
+        }
+        rules = dict(remove_fragment_selector=True)
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules=rules,
+                                    anno_collection=anno_collection)
+        tag = 'foo'
+        value = 'bar'
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'describing',
+            'body': [
+                {
+                    'purpose': 'describing',
+                    'value': value
+                },
+                {
+                    'purpose': 'tagging',
+                    'value': 'foo'
+                }
+            ]
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'describing',
+            'type': 'Annotation',
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': [
+                {
+                    'type': 'TextualBody',
+                    'purpose': 'describing',
+                    'value': value,
+                    'format': 'text/plain'
+                },
+                {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                }
+            ],
+            'target': source
+        })
+
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_comment_annotation_created(self, mock_client):
+        """Test IIIF comment annotations are created."""
+        n_answers = 1
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target,
+                                    anno_collection=anno_collection)
+        user = UserFactory()
+        value = 'foo'
+        TaskRunFactory.create_batch(n_answers, user=user, task=task, info=[
+            {
+                'motivation': 'commenting',
+                'body': {
+                    'value': value
+                }
+            }
+        ])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'commenting',
+            'type': 'Annotation',
+            'creator': {
+                'id': url_for('api.api_user', oid=user.id),
+                'type': 'Person',
+                'name': user.fullname,
+                'nickname': user.name
+            },
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': value,
+                'format': 'text/plain'
+            },
+            'target': target
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_transcriptions_are_normalised(self, mock_client):
+        """Test IIIF transcriptions are normalised according to set rules."""
+        n_answers = 1
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        rules = dict(case='title', whitespace='full_stop',
+                     trim_punctuation=True)
+        task = self.ctx.create_task(n_answers, target, rules=rules,
+                                    anno_collection=anno_collection)
+        tag = 'foo'
+        values = ['HeLLo!', ' hello ', ' hELLO.']
+        for value in values:
+            TaskRunFactory.create(task=task, info=[
+                {
+                    'motivation': 'describing',
+                    'body': [
+                        {
+                            'purpose': 'describing',
+                            'value': value
+                        },
+                        {
+                            'purpose': 'tagging',
+                            'value': tag
+                        }
+                    ]
+                }
+            ])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'describing',
+            'type': 'Annotation',
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': [
+                {
+                    'type': 'TextualBody',
+                    'purpose': 'describing',
+                    'value': 'Hello',
+                    'format': 'text/plain'
+                },
+                {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                }
+            ],
+            'target': target
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_with_matching_transcriptions(self, mock_client):
+        """Test IIIF results with matching transcriptions."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection)
+        value = 'foo'
+        tag = 'bar'
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'describing',
+            'body': [
+                {
+                    'purpose': 'describing',
+                    'value': value
+                },
+                {
+                    'purpose': 'tagging',
+                    'value': tag
+                }
+            ]
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'describing',
+            'type': 'Annotation',
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': [
+                {
+                    'type': 'TextualBody',
+                    'purpose': 'describing',
+                    'value': value,
+                    'format': 'text/plain'
+                },
+                {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                }
+            ],
+            'target': target
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_increased_when_not_max(self, mock_client):
+        """Test IIIF task redundancy is updated when max not reached."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    max_answers=n_answers + 1)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'describing',
+                'body': [
+                    {
+                        'purpose': 'describing',
+                        'value': i
+                    },
+                    {
+                        'purpose': 'tagging',
+                        'value': i
+                    }
+                ]
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers + 1)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_when_max(self, mock_client):
+        """Test IIIF task redundancy is not updated when max is reached."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target, max_answers=n_answers)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'describing',
+                'body': [
+                    {
+                        'purpose': 'describing',
+                        'value': i
+                    },
+                    {
+                        'purpose': 'tagging',
+                        'value': i
+                    }
+                ]
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_for_tags(self, mock_client):
+        """Test IIIF task redundancy is not updated for tags."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    max_answers=n_answers + 1)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'tagging',
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': 'foo'
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{0},{0},{0}'.format(i)
+                    }
+                }
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_for_comments(self, mock_client):
+        """Test IIIF task redundancy is not updated for comments."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    max_answers=n_answers + 1)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'commenting',
+                'body': {
+                    'type': 'TextualBody',
+                    'value': i,
+                    'purpose': 'commenting',
+                    'format': 'text/plain'
+                }
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_when_no_values(self, mock_client):
+        """Test IIIF task redundancy is not updated when no values."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    max_answers=n_answers + 1)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'describing',
+                'body': [
+                    {
+                        'purpose': 'describing',
+                        'value': ''
+                    },
+                    {
+                        'purpose': 'tagging',
+                        'value': 'foo'
+                    }
+                ]
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+        assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_equal_regions_combined(self, mock_client):
+        """Test IIIF equal tag regions are combined."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection)
+        rect = dict(x=400, y=200, w=100, h=150)
+        tag = 'foo'
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'tagging',
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'tagging',
+                'value': tag
+            },
+            'target': {
+                'source': 'example.com',
+                'selector': {
+                    'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                    'type': 'FragmentSelector',
+                    'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                            rect['y'],
+                                                            rect['w'],
+                                                            rect['h'])
+                }
+            }
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'tagging',
+            'type': 'Annotation',
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'tagging',
+                'value': tag
+            },
+            'target': {
+                'source': 'example.com',
+                'selector': {
+                    'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                    'type': 'FragmentSelector',
+                    'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                            rect['y'],
+                                                            rect['w'],
+                                                            rect['h'])
+                }
+            }
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_equal_regions_combined(self, mock_client):
+        """Test IIIF equal tag regions are combined."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection)
+        rect = dict(x=400, y=200, w=100, h=150)
+        tag = 'foo'
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'tagging',
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'tagging',
+                'value': tag
+            },
+            'target': {
+                'source': 'example.com',
+                'selector': {
+                    'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                    'type': 'FragmentSelector',
+                    'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                            rect['y'],
+                                                            rect['w'],
+                                                            rect['h'])
+                }
+            }
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'tagging',
+            'type': 'Annotation',
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'tagging',
+                'value': tag
+            },
+            'target': {
+                'source': 'example.com',
+                'selector': {
+                    'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                    'type': 'FragmentSelector',
+                    'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                            rect['y'],
+                                                            rect['w'],
+                                                            rect['h'])
+                }
+            }
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_similar_regions_combined(self, mock_client):
+        """Test IIIF similar tag regions are combined."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection)
+        rect1 = dict(x=90, y=100, w=110, h=90)
+        rect2 = dict(x=100, y=110, w=90, h=100)
+        rect3 = dict(x=110, y=90, w=100, h=110)
+        rects = [rect1, rect2, rect3]
+        tag = 'foo'
+        for rect in rects:
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'tagging',
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                                rect['y'],
+                                                                rect['w'],
+                                                                rect['h'])
+                    }
+                }
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'tagging',
+            'type': 'Annotation',
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'tagging',
+                'value': tag
+            },
+            'target': {
+                'source': 'example.com',
+                'selector': {
+                    'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                    'type': 'FragmentSelector',
+                    'value': '?xywh=90,90,120,110'
+                }
+            }
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_different_regions_combined(self, mock_client):
+        """Test IIIF different tag regions are not combined."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection)
+        rect1 = dict(x=10, y=10, w=10, h=10)
+        rect2 = dict(x=100, y=100, w=100, h=100)
+        rect3 = dict(x=200, y=200, w=200, h=200)
+        rects = [rect1, rect2, rect3]
+        tag = 'foo'
+        for rect in rects:
+            TaskRunFactory.create(task=task, info=[{
+                'motivation': 'tagging',
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                                rect['y'],
+                                                                rect['w'],
+                                                                rect['h'])
+                    }
+                }
+            }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.iiif_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.call_args_list, [
+            call(anno_collection, {
+                'motivation': 'tagging',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{1},{2},{3}'.format(rect1['x'],
+                                                                rect1['y'],
+                                                                rect1['w'],
+                                                                rect1['h'])
+                    }
+                }
+            }),
+            call(anno_collection, {
+                'motivation': 'tagging',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{1},{2},{3}'.format(rect2['x'],
+                                                                rect2['y'],
+                                                                rect2['w'],
+                                                                rect2['h'])
+                    }
+                }
+            }),
+            call(anno_collection, {
+                'motivation': 'tagging',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{1},{2},{3}'.format(rect3['x'],
+                                                                rect3['y'],
+                                                                rect3['w'],
+                                                                rect3['h'])
+                    }
+                }
+            })
+        ])

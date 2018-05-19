@@ -3,12 +3,13 @@
 
 import pandas
 from nose.tools import *
-from freezegun import freeze_time
-from default import Test, with_context, db
-from factories import TaskFactory, TaskRunFactory, CategoryFactory
-from factories import ProjectFactory
-from pybossa.repositories import ProjectRepository, ResultRepository
+from mock import patch, call
+from default import Test, with_context, db, flask_app
+from factories import TaskRunFactory, UserFactory
+from pybossa.repositories import ResultRepository, TaskRepository
+from flask import url_for
 
+from ..fixtures.context import ContextFixtures
 from ..fixtures.template import TemplateFixtures
 from pybossa_lc.analysis.z3950 import Z3950Analyst
 
@@ -17,10 +18,10 @@ class TestZ3950Analyst(Test):
 
     def setUp(self):
         super(TestZ3950Analyst, self).setUp()
+        self.ctx = ContextFixtures()
         self.z3950_analyst = Z3950Analyst()
-        self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
-
+        self.task_repo = TaskRepository(db)
         self.data = {
             'user_id': [1],
             'control_number': ['123'],
@@ -28,23 +29,6 @@ class TestZ3950Analyst(Test):
             'foo': ['bar'],
             'comments': ['Some comment']
         }
-
-    def create_task_with_context(self, n_answers, target, max_answers=None):
-        """Create a category, project and tasks."""
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create()
-        tmpl.min_answers = n_answers
-        tmpl.max_answers = max_answers or n_answers
-        tmpl.rules = dict(case='title', whitespace='full_stop',
-                          trim_punctuation=True)
-        project_info = dict(template_id=tmpl.id)
-        category.info['templates'] = [tmpl.to_dict()]
-        self.project_repo.update_category(category)
-        project = ProjectFactory.create(category=category, info=project_info)
-        task_info = dict(target=target)
-        return TaskFactory.create(n_answers=n_answers, project=project,
-                                  info=task_info)
 
     def test_get_comments(self):
         """Test Z3950 comments are returned."""
@@ -70,11 +54,12 @@ class TestZ3950Analyst(Test):
         })
 
     @with_context
-    def test_analysis_with_no_transcriptions(self):
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_analysis_with_no_transcriptions(self, mock_client):
         """Test Z3950 analysis with no transcriptions."""
         n_answers = 3
         target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
+        task = self.ctx.create_task(n_answers, target)
         TaskRunFactory.create_batch(n_answers, task=task, info={
             'control_number': '',
             'reference': '',
@@ -82,16 +67,15 @@ class TestZ3950Analyst(Test):
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         self.z3950_analyst.analyse(result.id)
-        assert_equal(result.info, {
-            'annotations': []
-        })
+        assert_equal(mock_client.create_annotation.called, False)
 
     @with_context
-    def test_analysis_with_transcriptions_and_old_keys(self):
-        """Test Z3950 analysis with transcriptions and old keys."""
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_analysis_with_no_transcriptions_and_old_keys(self, mock_client):
+        """Test Z3950 analysis with no transcriptions and old keys."""
         n_answers = 3
         target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
+        task = self.ctx.create_task(n_answers, target)
         TaskRunFactory.create_batch(n_answers, task=task, info={
             'oclc': '',
             'shelfmark': '',
@@ -99,6 +83,331 @@ class TestZ3950Analyst(Test):
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
         self.z3950_analyst.analyse(result.id)
-        assert_equal(result.info, {
-            'annotations': []
+        assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_analysis_with_no_reference(self, mock_client):
+        """Test Z3950 analysis with no reference."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'control_number': 'foo',
+            'reference': '',
+            'comments': ''
         })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_analysis_with_no_control_number(self, mock_client):
+        """Test Z3950 analysis with no control number."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'control_number': '',
+            'reference': 'foo',
+            'comments': ''
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_comment_annotation_created(self, mock_client):
+        """Test Z3950 comment annotations are created."""
+        n_answers = 1
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target,
+                                    anno_collection=anno_collection)
+        user = UserFactory()
+        value = 'foo'
+        TaskRunFactory.create_batch(n_answers, user=user, task=task, info={
+            'control_number': '',
+            'reference': '',
+            'comments': value
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'commenting',
+            'type': 'Annotation',
+            'creator': {
+                'id': url_for('api.api_user', oid=user.id),
+                'type': 'Person',
+                'name': user.fullname,
+                'nickname': user.name
+            },
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': value,
+                'format': 'text/plain'
+            },
+            'target': target
+        })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_transcriptions_are_normalised(self, mock_client):
+        """Test Z3950 transcriptions are normalised according to set rules."""
+        n_answers = 1
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        rules = dict(case='title', whitespace='full_stop',
+                     trim_punctuation=True)
+        task = self.ctx.create_task(n_answers, target, rules=rules,
+                                    anno_collection=anno_collection)
+        control_number = 'foo'
+        references = ['OR 123  456.', 'Or.123.456. ', 'or 123 456']
+        for value in references:
+            TaskRunFactory.create(task=task, info={
+                'reference': value,
+                'control_number': control_number,
+                'comments': ''
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.call_args_list, [
+            call(anno_collection, {
+                'motivation': 'describing',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': [
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'describing',
+                        'value': control_number.capitalize(),
+                        'format': 'text/plain'
+                    },
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'tagging',
+                        'value': 'control_number'
+                    }
+                ],
+                'target': target
+            }),
+            call(anno_collection, {
+                'motivation': 'describing',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': [
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'describing',
+                        'value': 'Or.123.456',
+                        'format': 'text/plain'
+                    },
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'tagging',
+                        'value': 'reference'
+                    }
+                ],
+                'target': target
+            })
+        ])
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_with_matching_transcriptions(self, mock_client):
+        """Test Z3950 results with matching transcriptions."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection)
+        reference = 'foo'
+        control_number = 'bar'
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'reference': reference,
+            'control_number': control_number,
+            'comments': ''
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        assert_equal(mock_client.create_annotation.call_args_list, [
+            call(anno_collection, {
+                'motivation': 'describing',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': [
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'describing',
+                        'value': control_number,
+                        'format': 'text/plain'
+                    },
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'tagging',
+                        'value': 'control_number'
+                    }
+                ],
+                'target': target
+            }),
+            call(anno_collection, {
+                'motivation': 'describing',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': [
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'describing',
+                        'value': reference,
+                        'format': 'text/plain'
+                    },
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'tagging',
+                        'value': 'reference'
+                    }
+                ],
+                'target': target
+            })
+        ])
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_increased_when_not_max(self, mock_client):
+        """Test Z3950 task redundancy is updated when max not reached."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target, max_answers=4)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info={
+                'reference': i,
+                'control_number': i,
+                'comments': ''
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers + 1)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_when_max(self, mock_client):
+        """Test Z3950 task redundancy is not updated when max is reached."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target, max_answers=3)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info={
+                'reference': i,
+                'control_number': i,
+                'comments': ''
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.called, False)
+
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_for_comments(self, mock_client):
+        """Test Z3950 task redundancy is not updated for comments."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    max_answers=n_answers + 1)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info={
+                'reference': 'foo',
+                'control_number': 'bar',
+                'comments': i
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_redundancy_not_increased_when_no_values(self, mock_client):
+        """Test Z3950 task redundancy is not updated when no values."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    max_answers=n_answers + 1)
+        for i in range(n_answers):
+            TaskRunFactory.create(task=task, info={
+                'reference': '',
+                'control_number': '',
+                'comments': ''
+            })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        self.z3950_analyst.analyse(result.id)
+        updated_task = self.task_repo.get_task(task.id)
+        assert_equal(updated_task.n_answers, n_answers)
+        assert_equal(mock_client.create_annotation.called, False)

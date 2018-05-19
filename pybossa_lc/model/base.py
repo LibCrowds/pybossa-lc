@@ -59,7 +59,6 @@ class Base(object):
             "nickname": user.name
         }
 
-
     def _create_annotation(self, anno):
         """Create an Annotation."""
-        wa_client.create_annotation(self.iri, anno)
+        wa_client.create_annotation(self.iri, anno)  # pragma: no cover

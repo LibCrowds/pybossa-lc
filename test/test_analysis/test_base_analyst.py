@@ -4,8 +4,7 @@
 import json
 import numpy
 import pandas
-from mock import patch, call
-from freezegun import freeze_time
+from mock import patch, call, MagicMock
 from factories import TaskFactory, TaskRunFactory, ProjectFactory, UserFactory
 from factories import CategoryFactory
 from default import db, Test, with_context, flask_app
@@ -14,39 +13,24 @@ from pybossa.core import result_repo, task_repo
 from pybossa.repositories import ResultRepository, TaskRepository
 from pybossa.repositories import ProjectRepository
 
+from ..fixtures.context import ContextFixtures
 from ..fixtures.template import TemplateFixtures
 from pybossa_lc.analysis.base import BaseAnalyst
+from pybossa_lc.analysis import AnalysisException
 
 
-class TestAnalyst(Test):
+class TestBaseAnalyst(Test):
 
     def setUp(self):
-        super(TestAnalyst, self).setUp()
+        super(TestBaseAnalyst, self).setUp()
         BaseAnalyst.__abstractmethods__ = frozenset()
+        self.ctx = ContextFixtures()
         self.base_analyst = BaseAnalyst()
         self.project_repo = ProjectRepository(db)
         self.result_repo = ResultRepository(db)
         self.task_repo = TaskRepository(db)
-
-    def create_task_with_context(self, n_answers, target, max_answers=None,
-                                 rules=None, info=None):
-        """Create a category, project and tasks."""
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        tmpl = tmpl_fixtures.create()
-        tmpl.min_answers = n_answers
-        tmpl.max_answers = max_answers or n_answers
-        if rules:
-            tmpl.rules = rules
-        project_info = dict(template_id=tmpl.id)
-        category.info['templates'] = [tmpl.to_dict()]
-        self.project_repo.update_category(category)
-        project = ProjectFactory.create(category=category, info=project_info)
-        task_info = dict(target=target)
-        if info:
-            task_info.update(info)
-        return TaskFactory.create(n_answers=n_answers, project=project,
-                                  info=task_info)
+        assert_dict_equal.__self__.maxDiff = None
+        assert_equal.__self__.maxDiff = None
 
     @with_context
     @patch("pybossa_lc.analysis.base.BaseAnalyst.analyse")
@@ -399,12 +383,6 @@ class TestAnalyst(Test):
         rect = self.base_analyst.get_rect_from_selection_anno(fake_anno)
         assert_dict_equal(rect, {'x': 400, 'y': 200, 'w': 101, 'h': 151})
 
-    @freeze_time("19-11-1984")
-    def test_get_xsd_datetime(self):
-        """Test that a timestamp is returned in the correct format."""
-        ts = self.base_analyst.get_xsd_datetime()
-        assert_equal(ts, '1984-11-19T00:00:00Z')
-
     @with_context
     def test_get_project_template(self):
         """Test that the correct template is returned."""
@@ -420,7 +398,7 @@ class TestAnalyst(Test):
         CategoryFactory.create(info=cat_info)
         project_info = dict(template_id=tmpl1.id)
         project = ProjectFactory(info=project_info)
-        returned_tmpl = self.base_analyst.get_project_template(project.id)
+        returned_tmpl = self.base_analyst.get_project_template(project)
         assert_equal(returned_tmpl.to_dict(), tmpl1.to_dict())
 
     @with_context
@@ -432,14 +410,14 @@ class TestAnalyst(Test):
         project_info = dict(template_id='bar')
         UserFactory.create(info=user_info)
         project = ProjectFactory(info=project_info)
-        self.base_analyst.get_project_template(project.id)
+        self.base_analyst.get_project_template(project)
 
     @with_context
     @raises(ValueError)
     def test_get_non_existant_project_template(self):
         """Test that getting a non-existant template throws an error."""
         project = ProjectFactory()
-        self.base_analyst.get_project_template(project.id)
+        self.base_analyst.get_project_template(project)
 
     def test_dataframe_keys_replaced(self):
         """Test that dataframe keys are replaced and columns merged."""
@@ -458,78 +436,6 @@ class TestAnalyst(Test):
         assert_dict_equal(new_df.to_dict(), {
             'foo': {0: 'bar', 1: 'bar'},
             'baz': {0: 'qux', 1: 'qux'}
-        })
-
-    @with_context
-    def test_get_generator(self):
-        """Test that the correct annotation generator is returned."""
-        generator = self.base_analyst.get_anno_generator()
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        github_repo = flask_app.config.get('GITHUB_REPO')
-        assert_dict_equal(generator, {
-            "id": github_repo,
-            "type": "Software",
-            "name": "LibCrowds",
-            "homepage": spa_server_name
-        })
-
-    @with_context
-    def test_get_creator(self):
-        """Test that the correct annotation creator is returned."""
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        user = UserFactory.create()
-        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
-        creator = self.base_analyst.get_anno_creator(user)
-        assert_dict_equal(creator, {
-            'id': url,
-            'type': 'Person',
-            'name': user.fullname,
-            'nickname': user.name
-        })
-
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.uuid')
-    def test_create_commenting_anno(self, mock_uuid):
-        """Test that a commenting annotation is created correctly."""
-        fake_uuid = '123-456-789'
-        mock_uuid.uuid4.return_value = fake_uuid
-        name = 'foo'
-        fullname = 'bar'
-        target = 'baz'
-        value = 'qux'
-        github_repo = flask_app.config.get('GITHUB_REPO')
-        spa_server_name = flask_app.config.get('SPA_SERVER_NAME')
-        user = UserFactory.create(name=name, fullname=fullname)
-        creator_url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'),
-                                              user.id)
-        anno = self.base_analyst.create_commenting_anno(target, value, user.id)
-        assert_dict_equal(anno, {
-            '@context': 'http://www.w3.org/ns/anno.jsonld',
-            'id': fake_uuid,
-            'motivation': 'commenting',
-            'type': 'Annotation',
-            'generated': '1984-11-19T00:00:00Z',
-            'created': '1984-11-19T00:00:00Z',
-            'generator': {
-                "id": github_repo,
-                "type": "Software",
-                "name": "LibCrowds",
-                "homepage": spa_server_name
-            },
-            'creator': {
-                'id': creator_url,
-                'type': 'Person',
-                'name': fullname,
-                'nickname': name
-            },
-            'body': {
-                'type': 'TextualBody',
-                'purpose': 'commenting',
-                'value': value,
-                'format': 'text/plain'
-            },
-            'target': target
         })
 
     @with_context
@@ -557,7 +463,7 @@ class TestAnalyst(Test):
                 'format': 'text/plain'
             }
         }
-        task = self.create_task_with_context(1, target)
+        task = self.ctx.create_task(1, target)
         json_anno = json.dumps(fake_anno, indent=2, sort_keys=True)
         self.base_analyst.email_comment_anno(task, fake_anno)
 
@@ -579,456 +485,81 @@ class TestAnalyst(Test):
         }
         mock_enqueue.assert_called_once_with(mock_send_mail, expected_msg)
 
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
-    def test_transcriptions_are_normalised(self,
-                                           mock_create_desc_anno,
-                                           mock_get_tags,
-                                           mock_get_transcriptions_df,
-                                           mock_get_comments):
-        """Test transcriptions are normalised according to set rules."""
-        n_answers = 3
-        target = 'example.com'
-        tag = 'foo'
-        rules = dict(case='title', whitespace='full_stop',
-                     trim_punctuation=True)
-        task = self.create_task_with_context(n_answers, target, rules=rules)
-        data = {
-            tag: ['OR 123  456.', 'Or.123.456. ', 'or 123 456']
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        mock_create_desc_anno.return_value = {}
-        for value in data[tag]:
-            TaskRunFactory.create(task=task, info={
-                tag: value
-            })
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        expected = 'Or.123.456'
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 1)
-        mock_create_desc_anno.assert_called_once_with(target, expected, tag)
+    # @with_context
+    # def test_result_with_child_not_updated(self):
+    #     """Test that a result is not updated when it has a child."""
+    #     task = self.create_task_with_context(1)
+    #     TaskRunFactory(task=task)
+    #     result = self.result_repo.get_by(task_id=task.id)
+    #     info = dict(annotations='foo', has_children=True)
+    #     result.info = info
+    #     self.result_repo.update(result)
+    #     self.base_analyst.analyse(result.id)
+    #     assert_equal(result.info, info)
 
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_empty_results(self,
-                           mock_get_tags,
-                           mock_get_transcriptions_df,
-                           mock_get_comments):
-        """Test that an empty result is updated correctly."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        tag = 'foo'
-        data = {
-            tag: [''] * n_answers
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        for value in data[tag]:
-            TaskRunFactory.create(task=task, info={
-                tag: value
-            })
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(result.info, {
-            'annotations': []
-        })
+    # @with_context
+    # def test_modified_result_not_updated(self):
+    #     """Test that a result is not updated when it has been modified."""
+    #     task = self.create_task_with_context(1)
+    #     TaskRunFactory(task=task)
+    #     result = self.result_repo.get_by(task_id=task.id)
+    #     info = dict(annotations='foo', modified=True)
+    #     result.info = info
+    #     self.result_repo.update(result)
+    #     self.base_analyst.analyse(result.id)
+    #     assert_equal(result.info, info)
 
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_commenting_anno')
-    def test_comment_annotation_created(self,
-                                        mock_create_comment_anno,
-                                        mock_get_tags,
-                                        mock_get_transcriptions_df,
-                                        mock_get_comments):
-        """Test that a comment annotation is created during analysis."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        user_id = 1
-        value = 'foo'
-        comment = (user_id, value)
-        mock_get_comments.return_value = [comment]
-        mock_create_comment_anno.return_value = {}
-        TaskRunFactory.create_batch(n_answers, task=task, info={})
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 1)
-        mock_create_comment_anno.assert_called_once_with(target, value,
-                                                         user_id)
+    # @with_context
+    # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+    # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+    # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+    # def test_link_added_for_child_annotations(self,
+    #                                           mock_get_tags,
+    #                                           mock_get_transcriptions_df,
+    #                                           mock_get_comments):
+    #     """Test that linking body is added for all child annotations."""
+    #     n_answers = 2
+    #     target = 'example.com'
+    #     parent_annotation_id = 'foo'
+    #     task_info = dict(parent_annotation_id=parent_annotation_id)
+    #     task = self.create_task_with_context(n_answers, target, info=task_info)
+    #     mock_get_tags.return_value = {
+    #         'foo': [dict(x=100, y=100, w=100, h=100)] * n_answers
+    #     }
+    #     mock_get_comments.return_value = [(1, 'foo')]
+    #     mock_get_transcriptions_df.return_value = pandas.DataFrame({
+    #         'foo': ['bar'] * n_answers
+    #     })
 
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_describing_anno')
-    def test_with_matching_transcriptions(self,
-                                          mock_create_desc_anno,
-                                          mock_get_tags,
-                                          mock_get_transcriptions_df,
-                                          mock_get_comments):
-        """Test that results with matching transcriptions."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        tag1 = 'Foo'
-        tag2 = 'Bar'
-        val1 = 'Baz'
-        val2 = 'Qux'
-        TaskRunFactory.create_batch(n_answers, task=task, info={
-            tag1: val1,
-            tag2: val2
-        })
-        data = {
-            tag1: [val1] * n_answers,
-            tag2: [val2] * n_answers
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        mock_create_desc_anno.return_value = {}
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 2)
-        call_args_list = mock_create_desc_anno.call_args_list
-        assert_equal(len(call_args_list), 2)
-        assert_in(call(target, val1, tag1), call_args_list)
-        assert_in(call(target, val2, tag2), call_args_list)
+    #     TaskRunFactory.create_batch(n_answers, task=task)
+    #     result = self.result_repo.filter_by(project_id=task.project_id)[0]
+    #     self.base_analyst.analyse(result.id)
+    #     annotations = result.info['annotations']
+    #     assert_equal(len(annotations), 3)
 
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_results_with_non_matching_answers(self,
-                                               mock_get_tags,
-                                               mock_get_transcriptions_df,
-                                               mock_get_comments):
-        """Test results with non-matching answers are updated correctly."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        tag1 = 'foo'
-        tag2 = 'bar'
-        for i in range(n_answers):
-            TaskRunFactory.create(task=task, info={
-                tag1: i,
-                tag2: i
-            })
-        data = {
-            tag1: range(n_answers),
-            tag2: range(n_answers)
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(result.info['annotations'], [])
+    #     linked_annos = [anno for anno in annotations
+    #                     if anno['motivation'] != 'commenting']
+    #     commenting_annos = [anno for anno in annotations
+    #                         if anno['motivation'] == 'commenting']
 
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_tagging_anno')
-    def test_equal_regions_combined(self,
-                                    mock_create_tagging_anno,
-                                    mock_get_tags,
-                                    mock_get_transcriptions_df,
-                                    mock_get_comments):
-        """Test that equal regions are combined."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        rect = dict(x=400, y=200, w=100, h=150)
-        tag = 'foo'
-        mock_get_tags.return_value = {
-            tag: [rect] * n_answers
-        }
-        mock_create_tagging_anno.return_value = {}
-        expected_target = {
-            'source': target,
-            'selector': {
-                'conformsTo': 'http://www.w3.org/TR/media-frags/',
-                'type': 'FragmentSelector',
-                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
-                                                        rect['w'], rect['h'])
-            }
-        }
-        TaskRunFactory.create_batch(n_answers, task=task)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 1)
-        mock_create_tagging_anno.assert_called_once_with(expected_target, tag)
+    #     for anno in linked_annos:
+    #         assert isinstance(anno['body'], list)
+    #         body = [a for a in anno['body'] if a['purpose'] == 'linking']
+    #         assert_equal(len(body), 1)
+    #         assert_dict_equal(body[0], {
+    #             'source': parent_annotation_id,
+    #             'type': 'SpecificResource',
+    #             'purpose': 'linking'
+    #         })
 
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_tagging_anno')
-    def test_similar_regions_combined(self,
-                                      mock_create_tagging_anno,
-                                      mock_get_tags,
-                                      mock_get_transcriptions_df,
-                                      mock_get_comments):
-        """Test that similar regions are combined."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        rect1 = dict(x=90, y=100, w=110, h=90)
-        rect2 = dict(x=100, y=110, w=90, h=100)
-        rect3 = dict(x=110, y=90, w=100, h=110)
-        tag = 'foo'
-        mock_get_tags.return_value = {
-            tag: [rect1, rect2, rect3]
-        }
-        mock_create_tagging_anno.return_value = {}
-        expected_target = {
-            'source': target,
-            'selector': {
-                'conformsTo': 'http://www.w3.org/TR/media-frags/',
-                'type': 'FragmentSelector',
-                'value': '?xywh=90,90,120,110'
-            }
-        }
-        TaskRunFactory.create_batch(n_answers, task=task)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 1)
-        mock_create_tagging_anno.assert_called_once_with(expected_target, tag)
+    #     for anno in commenting_annos:
+    #         assert_equal(anno['body']['purpose'], 'commenting')
 
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.create_tagging_anno')
-    def test_different_regions_not_combined(self,
-                                            mock_create_tagging_anno,
-                                            mock_get_tags,
-                                            mock_get_transcriptions_df,
-                                            mock_get_comments):
-        """Test that different regions are not combined."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target)
-        tag = 'foo'
-        rect1 = dict(x=10, y=10, w=10, h=10)
-        rect2 = dict(x=100, y=100, w=100, h=100)
-        rect3 = dict(x=200, y=200, w=200, h=200)
-        rects = [rect1, rect2, rect3]
-        mock_get_tags.return_value = {
-            tag: rects
-        }
-        mock_create_tagging_anno.return_value = {}
-        expected_targets = [{
-            'source': target,
-            'selector': {
-                'conformsTo': 'http://www.w3.org/TR/media-frags/',
-                'type': 'FragmentSelector',
-                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
-                                                        rect['w'], rect['h'])
-            }
-        } for rect in rects]
-        TaskRunFactory.create_batch(n_answers, task=task)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        assert_equal(len(result.info['annotations']), 3)
-        call_args_list = mock_create_tagging_anno.call_args_list
-        expected_calls = [call(expected_targets[i], tag)
-                          for i in range(n_answers)]
-        assert_equal(call_args_list, expected_calls)
-
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_redundancy_increased_when_not_max(self,
-                                               mock_get_tags,
-                                               mock_get_transcriptions_df,
-                                               mock_get_comments):
-        """Test that redundancy is updated when max not reached."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target, max_answers=4)
-        tag = 'Foo'
-        val = 'Bar'
-        for i in range(n_answers):
-            TaskRunFactory.create(task=task, info={
-                tag: val
-            })
-        data = {
-            tag: ['{}{}'.format(val, i) for i in range(n_answers)],
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        updated_task = self.task_repo.get_task(task.id)
-        assert_equal(result.info['annotations'], [])
-        assert_equal(updated_task.n_answers, n_answers + 1)
-
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_redundancy_not_increased_when_max(self,
-                                               mock_get_tags,
-                                               mock_get_transcriptions_df,
-                                               mock_get_comments):
-        """Test that redundancy is not updated when max is reached."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target,
-                                             max_answers=n_answers)
-        tag = 'Foo'
-        val = 'Bar'
-        for i in range(n_answers):
-            TaskRunFactory.create(task=task, info={
-                tag: val
-            })
-        data = {
-            tag: ['{}{}'.format(val, i) for i in range(n_answers)],
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        updated_task = self.task_repo.get_task(task.id)
-        assert_equal(result.info['annotations'], [])
-        assert_equal(updated_task.n_answers, n_answers)
-
-    @with_context
-    @freeze_time("19-11-1984")
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_redundancy_not_increased(self,
-                                      mock_get_tags,
-                                      mock_get_transcriptions_df,
-                                      mock_get_comments):
-        """Test that redundancy is not updated for non-transcriptions."""
-        n_answers = 3
-        target = 'example.com'
-        task = self.create_task_with_context(n_answers, target, max_answers=4)
-        TaskRunFactory.create_batch(n_answers, task=task)
-        mock_get_transcriptions_df.return_value = pandas.DataFrame({})
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        updated_task = self.task_repo.get_task(task.id)
-        assert_equal(result.info['annotations'], [])
-        assert_equal(updated_task.n_answers, n_answers)
-
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_fragment_selector_stripped(self,
-                                        mock_get_tags,
-                                        mock_get_transcriptions_df,
-                                        mock_get_comments):
-        """Test a fragment selector is stripped if rule applied."""
-        n_answers = 3
-        source = 'example.com'
-        target = {
-            'source': source,
-            'selector': {
-                'conformsTo': 'http://www.w3.org/TR/media-frags/',
-                'type': 'FragmentSelector',
-                'value': '?xywh=100,100,100,100'
-            }
-        }
-        rules = dict(remove_fragment_selector=True)
-        task = self.create_task_with_context(n_answers, target, rules=rules)
-
-        tag = 'foo'
-        data = {
-            tag: ['bar'] * n_answers
-        }
-        mock_get_transcriptions_df.return_value = pandas.DataFrame(data)
-        for value in data[tag]:
-            TaskRunFactory.create(task=task, info={
-                tag: value
-            })
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        annotations = result.info['annotations']
-        assert_equal(len(annotations), 1)
-        assert_equal(annotations[0]['target'], source)
-
-    @with_context
-    def test_result_with_child_not_updated(self):
-        """Test that a result is not updated when it has a child."""
-        project = ProjectFactory()
-        task = TaskFactory(project=project, n_answers=1)
-        TaskRunFactory(task=task)
-        result = self.result_repo.get_by(task_id=task.id)
-        info = dict(annotations='foo', has_children=True)
-        result.info = info
-        self.result_repo.update(result)
-        self.base_analyst.analyse(result.id)
-        assert_equal(result.info, info)
-
-    @with_context
-    def test_modified_result_not_updated(self):
-        """Test that a result is not updated when it has been modified."""
-        project = ProjectFactory()
-        task = TaskFactory(project=project, n_answers=1)
-        TaskRunFactory(task=task)
-        result = self.result_repo.get_by(task_id=task.id)
-        info = dict(annotations='foo', modified=True)
-        result.info = info
-        self.result_repo.update(result)
-        self.base_analyst.analyse(result.id)
-        assert_equal(result.info, info)
-
-    @with_context
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    def test_link_added_for_child_annotations(self,
-                                              mock_get_tags,
-                                              mock_get_transcriptions_df,
-                                              mock_get_comments):
-        """Test that linking body is added for all child annotations."""
-        n_answers = 2
-        target = 'example.com'
-        parent_annotation_id = 'foo'
-        task_info = dict(parent_annotation_id=parent_annotation_id)
-        task = self.create_task_with_context(n_answers, target, info=task_info)
-        mock_get_tags.return_value = {
-            'foo': [dict(x=100, y=100, w=100, h=100)] * n_answers
-        }
-        mock_get_comments.return_value = [(1, 'foo')]
-        mock_get_transcriptions_df.return_value = pandas.DataFrame({
-            'foo': ['bar'] * n_answers
-        })
-
-        TaskRunFactory.create_batch(n_answers, task=task)
-        result = self.result_repo.filter_by(project_id=task.project_id)[0]
-        self.base_analyst.analyse(result.id)
-        annotations = result.info['annotations']
-        assert_equal(len(annotations), 3)
-
-        linked_annos = [anno for anno in annotations
-                        if anno['motivation'] != 'commenting']
-        commenting_annos = [anno for anno in annotations
-                            if anno['motivation'] == 'commenting']
-
-        for anno in linked_annos:
-            assert isinstance(anno['body'], list)
-            body = [a for a in anno['body'] if a['purpose'] == 'linking']
-            assert_equal(len(body), 1)
-            assert_dict_equal(body[0], {
-                'source': parent_annotation_id,
-                'type': 'SpecificResource',
-                'purpose': 'linking'
-            })
-
-        for anno in commenting_annos:
-            assert_equal(anno['body']['purpose'], 'commenting')
+    # @with_context
+    # def test_analysis_exception_if_no_annotation_collection(self):
+    #     """Test that AnnotationCollection must be setup."""
+    #     task = self.create_task_with_context(1, 'example.com',
+    #                                          anno_collection=None)
+    #     TaskRunFactory.create(task=task)
+    #     result = self.result_repo.filter_by(project_id=task.project_id)[0]
+    #     assert_raises(AnalysisException, self.base_analyst.analyse, result.id)

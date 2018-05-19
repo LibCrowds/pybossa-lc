@@ -25,6 +25,7 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail
 
 from . import AnalysisException
+from ..model.result_collection import ResultCollection
 
 
 MAIL_QUEUE = Queue('email', connection=sentinel.master)
@@ -50,10 +51,15 @@ class BaseAnalyst():
 
     def analyse(self, result_id, silent=True):
         """Analyse a result."""
-        from pybossa.core import result_repo, task_repo
+        from .. import wa_client
+        from pybossa.core import result_repo, task_repo, project_repo
+        from pybossa.core import user_repo
         result = result_repo.get(result_id)
         task = task_repo.get_task(result.task_id)
-        task_runs = task_repo.filter_task_runs_by(task_id=task.id)
+        task_runs = task.task_runs
+        project = project_repo.get(result.project_id)
+        category = project_repo.get_category(project.category_id)
+        rc = self._get_rc(category)
 
         # Check for modified results
         if result.info and result.info.get('modified'):
@@ -64,29 +70,35 @@ class BaseAnalyst():
             return
 
         task_run_df = self.get_task_run_df(task, task_runs)
-        tmpl = self.get_project_template(result.project_id)
+        tmpl = self.get_project_template(project)
         target = self.get_task_target(task)
-        annotations = []
         is_complete = True
+
+        # Apply rule to strip fragment selectors
+        rule = 'remove_fragment_selector'
+        if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
+            target = self.strip_fragment_selector(target)
 
         # Handle comments
         comments = self.get_comments(task_run_df)
-        for comment in comments:
-            user_id = comment[0]
-            value = comment[1]
-            comment_anno = self.create_commenting_anno(target, value, user_id)
-            annotations.append(comment_anno)
-            if not silent:
-                self.email_comment_anno(task, comment_anno)
+        if comments:
+            for comment in comments:
+                user_id = comment[0]
+                value = comment[1]
+                user = user_repo.get(user_id)
+                if not value:
+                    continue
+                comment_anno = rc.add_comment(result, target, value, user)
+                if not silent:
+                    self.email_comment_anno(task, comment_anno)
 
         # Handle tags
         tags = self.get_tags(task_run_df)
-        for tag, rects in tags.items():
-            clusters = self.cluster_rects(rects)
-            for cluster in clusters:
-                fragment_target = self.create_fragment_target(target, cluster)
-                tagging_anno = self.create_tagging_anno(fragment_target, tag)
-                annotations.append(tagging_anno)
+        if tags:
+            for tag, rects in tags.items():
+                clusters = self.cluster_rects(rects)
+                for cluster in clusters:
+                    rc.add_tag(result, target, tag, cluster)
 
         # Get non-empty transcriptions
         df = self.get_transcriptions_df(task_run_df)
@@ -101,17 +113,11 @@ class BaseAnalyst():
         if has_matches:
             for column in df:
                 value = df[column].value_counts().idxmax()
-                anno = self.create_describing_anno(target, value, column)
-                annotations.append(anno)
+                anno = rc.add_transcription(result, target, value, column)
         elif not df.empty:
             is_complete = False
 
         self.update_n_answers_required(task, is_complete, tmpl.max_answers)
-
-        # Apply rule to strip fragment selectors
-        rule = 'remove_fragment_selector'
-        if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
-            map(self.strip_fragment_selector, annotations)
 
         # Add any links to child annotations
         parent_annotation_id = task.info.get('parent_annotation_id')
@@ -120,9 +126,6 @@ class BaseAnalyst():
                                  if anno.get('motivation') != 'commenting']
             for anno in non_comment_annos:
                 self.add_linking_body(anno, parent_annotation_id)
-
-        result.info = dict(annotations=annotations)
-        result_repo.update(result)
 
     def analyse_all(self, project_id):
         """Analyse all results for a project."""
@@ -139,6 +142,17 @@ class BaseAnalyst():
         for result in empty_results:
             self.analyse(result.id)
 
+    def _get_rc(self, category):
+        """Return an AnnotationCollection for the results.
+
+        The AnnotationCollection IRI should be set from the frontend.
+        """
+        iri = category.info.get('annotations', {}).get('results')
+        if not iri:
+            raise AnalysisException('AnnotationCollection not setup')
+
+        return ResultCollection(iri)
+
     def drop_keys(self, task_run_df, keys):
         """Drop keys from the info fields of a task run dataframe."""
         keyset = set()
@@ -152,6 +166,12 @@ class BaseAnalyst():
         """Drop rows that contain no data."""
         task_run_df = task_run_df.replace('', numpy.nan)
         task_run_df = task_run_df.dropna(how='all')
+        return task_run_df
+
+    def drop_empty_columns(self, task_run_df):
+        """Drop columns that contain no data."""
+        task_run_df = task_run_df.replace('', numpy.nan)
+        task_run_df = task_run_df.dropna(how='all', axis='columns')
         return task_run_df
 
     def has_n_matches(self, min_answers, task_run_df):
@@ -187,11 +207,9 @@ class BaseAnalyst():
                     item_data[k] = v
         return item_data
 
-    def get_project_template(self, project_id):
+    def get_project_template(self, project):
         """Return the project's template."""
-        from pybossa.core import project_repo
         from .. import project_tmpl_repo
-        project = project_repo.get(project_id)
         template_id = project.info.get('template_id')
         if not template_id:
             msg = 'Invalid project template: Project {}'.format(project.id)
@@ -316,126 +334,6 @@ class BaseAnalyst():
             return task.info['url']
         return None
 
-    def get_xsd_datetime(self):
-        """Return timestamp expressed in the UTC xsd:datetime format."""
-        return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-
-    def create_fragment_target(self, target, rect):
-        """Return a fragment target."""
-        return {
-            'source': target,
-            'selector': {
-                'conformsTo': 'http://www.w3.org/TR/media-frags/',
-                'type': 'FragmentSelector',
-                'value': '?xywh={0},{1},{2},{3}'.format(rect['x'], rect['y'],
-                                                        rect['w'], rect['h'])
-            }
-        }
-
-    def get_anno_generator(self):
-        """Return a reference to the LibCrowds software."""
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        github_repo = current_app.config.get('GITHUB_REPO')
-        return {
-            "id": github_repo,
-            "type": "Software",
-            "name": "LibCrowds",
-            "homepage": spa_server_name
-        }
-
-    def get_anno_creator(self, user):
-        """Return a reference to a LibCrowds user."""
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        url = '{}/api/user/{}'.format(spa_server_name.rstrip('/'), user.id)
-        return {
-            "id": url,
-            "type": "Person",
-            "name": user.fullname,
-            "nickname": user.name
-        }
-
-    def get_anno_base(self, motivation):
-        """Return the base for a new Web Annotation."""
-        ts_now = self.get_xsd_datetime()
-        return {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
-            "id": str(uuid.uuid4()),
-            "type": "Annotation",
-            "motivation": motivation,
-            "created": ts_now,
-            "generated": ts_now,
-            "generator": self.get_anno_generator()
-        }
-
-    def create_commenting_anno(self, target, value, user_id=None):
-        """Create a Web Annotation with the commenting motivation."""
-        from pybossa.core import user_repo
-        anno = self.get_anno_base('commenting')
-        anno['target'] = target
-        anno['body'] = {
-            "type": "TextualBody",
-            "value": value,
-            "purpose": "commenting",
-            "format": "text/plain"
-        }
-
-        if user_id:
-            user = user_repo.get(user_id)
-            if user:
-                anno['creator'] = self.get_anno_creator(user)
-        return anno
-
-    def create_tagging_anno(self, target, value):
-        """Create a Web Annotation with the tagging motivation."""
-        anno = self.get_anno_base('tagging')
-        anno['target'] = target
-        anno['body'] = {
-            "type": "TextualBody",
-            "purpose": "tagging",
-            "value": value
-        }
-        return anno
-
-    def create_describing_anno(self, target, value, tag, modified=False):
-        """Create a Web Annotation with the describing motivation."""
-        anno = self.get_anno_base('describing')
-        anno['target'] = target
-        anno['body'] = [
-            {
-                "type": "TextualBody",
-                "purpose": "describing",
-                "value": value,
-                "format": "text/plain"
-            },
-            {
-                "type": "TextualBody",
-                "purpose": "tagging",
-                "value": tag
-            }
-        ]
-        if modified:
-            anno['body'][0]['modified'] = self.get_xsd_datetime()
-        return anno
-
-    def add_linking_body(self, anno, uri):
-        """Add a link to a SpecificResource to the body of an Annotation."""
-        link = {
-            "purpose": "linking",
-            "type": "SpecificResource",
-            "source": uri
-        }
-        if not anno.get('body'):
-            anno['body'] = link
-        elif isinstance(anno['body'], list):
-            anno['body'].append(link)
-        elif isinstance(anno['body'], dict):
-            anno['body'] = [
-                anno['body'],
-                link
-            ]
-        else:
-            raise ValueError('Invalid Annotation body')
-
     def get_rect_from_selection_anno(self, anno):
         """Return a rectangle from a selection annotation."""
         media_frag = anno['target']['selector']['value']
@@ -525,8 +423,8 @@ class BaseAnalyst():
                                       annotation=json_anno)
         MAIL_QUEUE.enqueue(send_mail, msg)
 
-    def strip_fragment_selector(self, anno):
-        """Strip a fragment selector from an annotation, if present."""
-        if isinstance(anno['target'], dict) and 'source' in anno['target']:
-            anno['target'] = anno['target']['source']
-        return anno
+    def strip_fragment_selector(self, target):
+        """Strip a fragment selector from a target, if present."""
+        if isinstance(target, dict) and 'source' in target:
+            return target['source']
+        return target

@@ -10,13 +10,24 @@ from . import AnalysisException
 
 class IIIFAnnotationAnalyst(BaseAnalyst):
 
-    def get_comments(self, task_run_df):
-        """Return a list of comments."""
-        ty = type(task_run_df.get('info'))
-        if ty is list:
-            msg = "Invalid task runs: info is a '{}' not a 'list'".format(ty)
+    def _validate(self, task_run_df):
+        """Verify that all info fields are lists."""
+        for v in task_run_df['info'].tolist():
+            ty = type(v)
+            if not ty == list:
+                msg = ('Invalid task run: info must be {0}, '
+                       'not {1}'.format(list, ty))
+                raise AnalysisException(msg)
+
+
+        if not all(type(v) == list for v in task_run_df['info'].tolist()):
+            msg = "Invalid task runs: info must be a list"
+            print all(type(v) == list for v in task_run_df['info'].tolist())
             raise AnalysisException(msg)
 
+    def get_comments(self, task_run_df):
+        """Return a list of comments."""
+        self._validate(task_run_df)
         comments = []
         for _index, row in task_run_df.iterrows():
             user_id = row['user_id']
@@ -29,11 +40,7 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
 
     def get_tags(self, task_run_df):
         """Return a dict of tags against fragment selectors."""
-        ty = type(task_run_df.get('info'))
-        if ty is list:
-            msg = "Invalid task runs: info is a '{}' not a 'list'".format(ty)
-            raise AnalysisException(msg)
-
+        self._validate(task_run_df)
         annotations = list(itertools.chain(*task_run_df['info']))
         tags = {}
         for anno in annotations:
@@ -52,11 +59,7 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
 
     def get_transcriptions_df(self, task_run_df):
         """Return a dataframe of transcriptions."""
-        ty = type(task_run_df.get('info'))
-        if ty is list:
-            msg = "Invalid task runs: info is a '{}' not a 'list'".format(ty)
-            raise AnalysisException(msg)
-
+        self._validate(task_run_df)
         annotations = list(itertools.chain(*task_run_df['info']))
         transcriptions = {}
         for anno in annotations:
