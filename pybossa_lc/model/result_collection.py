@@ -34,7 +34,7 @@ class ResultCollection(Base):
     def _validate(self, **kwargs):
         """Verify that the given values exist."""
         for k, v in kwargs.items():
-            if not v or len(v) < 1:
+            if not v or len(str(v)) < 1:
                 err_msg = '"{}" is a required value'.format(k)
                 raise ValueError(err_msg)
 
