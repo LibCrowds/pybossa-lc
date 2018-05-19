@@ -53,7 +53,6 @@ class BaseAnalyst():
         """Analyse a result."""
         from .. import wa_client
         from pybossa.core import result_repo, task_repo, project_repo
-        from pybossa.core import user_repo
         result = result_repo.get(result_id)
         task = task_repo.get_task(result.task_id)
         task_runs = task.task_runs
@@ -69,55 +68,18 @@ class BaseAnalyst():
         if result.info and result.info.get('has_children'):
             return
 
-        task_run_df = self.get_task_run_df(task, task_runs)
+        tr_df = self.get_task_run_df(task, task_runs)
         tmpl = self.get_project_template(project)
         target = self.get_task_target(task)
-        is_complete = True
 
         # Apply rule to strip fragment selectors
         rule = 'remove_fragment_selector'
         if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
             target = self.strip_fragment_selector(target)
 
-        # Handle comments
-        comments = self.get_comments(task_run_df)
-        if comments:
-            for comment in comments:
-                user_id = comment[0]
-                value = comment[1]
-                user = user_repo.get(user_id)
-                if not value:
-                    continue
-                comment_anno = rc.add_comment(result, target, value, user)
-                if not silent:
-                    self.email_comment_anno(task, comment_anno)
-
-        # Handle tags
-        tags = self.get_tags(task_run_df)
-        if tags:
-            for tag, rects in tags.items():
-                clusters = self.cluster_rects(rects)
-                for cluster in clusters:
-                    rc.add_tag(result, target, tag, cluster)
-
-        # Get non-empty transcriptions
-        df = self.get_transcriptions_df(task_run_df)
-        df = self.drop_empty_rows(df)
-
-        # Normalise Transcriptions
-        norm_func = self.normalise_transcription
-        df = df.applymap(lambda x: norm_func(x, tmpl.rules))
-
-        # Store matching answers matching answers or update n_answers
-        has_matches = self.has_n_matches(tmpl.min_answers, df)
-        if has_matches:
-            for column in df:
-                value = df[column].value_counts().idxmax()
-                anno = rc.add_transcription(result, target, value, column)
-        elif not df.empty:
-            is_complete = False
-
-        self.update_n_answers_required(task, is_complete, tmpl.max_answers)
+        self._handle_comments(rc, result, tr_df, target, silent)
+        self._handle_tags(rc, result, tr_df, target)
+        self._handle_transcriptions(rc, result, tr_df, target, tmpl, task)
 
         # Add any links to child annotations
         parent_annotation_id = task.info.get('parent_annotation_id')
@@ -141,6 +103,50 @@ class BaseAnalyst():
         empty_results = [r for r in results if not r.info]
         for result in empty_results:
             self.analyse(result.id)
+
+    def _handle_comments(self, result_collection, result, task_run_df, target,
+                         silent):
+        """Handle creation of any comment Annotations."""
+        from pybossa.core import user_repo
+        comments = self.get_comments(task_run_df)
+        if comments:
+            for comment in comments:
+                user_id = comment[0]
+                val = comment[1]
+                user = user_repo.get(user_id)
+                if not val:
+                    continue
+                anno = result_collection.add_comment(result, target, val, user)
+                if not silent:
+                    self.email_comment_anno(task, anno)
+
+    def _handle_tags(self, result_collection, result, task_run_df, target):
+        """Handle creation of any tagging Annotations."""
+        tags = self.get_tags(task_run_df)
+        if tags:
+            for tag, rects in tags.items():
+                clusters = self.cluster_rects(rects)
+                for cluster in clusters:
+                    result_collection.add_tag(result, target, tag, cluster)
+
+    def _handle_transcriptions(self, result_collection, result, task_run_df,
+                               target, tmpl, task):
+        """Handle creation of any transcription Annotations."""
+        df = self.get_transcriptions_df(task_run_df)
+        df = self.drop_empty_rows(df)
+        df = df.applymap(lambda x: self.normalise_transcription(x, tmpl.rules))
+
+        is_complete = True
+        has_matches = self.has_n_matches(tmpl.min_answers, df)
+        if has_matches:
+            for column in df:
+                value = df[column].value_counts().idxmax()
+                anno = result_collection.add_transcription(result, target,
+                                                           value, column)
+        elif not df.empty:
+            is_complete = False
+
+        self.update_n_answers_required(task, is_complete, tmpl.max_answers)
 
     def _get_rc(self, category):
         """Return an AnnotationCollection for the results.
