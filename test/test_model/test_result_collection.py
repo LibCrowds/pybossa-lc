@@ -184,3 +184,54 @@ class TestResultCollection(Test):
             ],
             'target': target
         })
+
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_error_when_invalid_comment_values(self, mock_client):
+        """Test ValueError raised when invalid comment values."""
+        iri = 'example.com'
+        result_collection = ResultCollection(iri)
+        result = Result(project_id=1, task_run_ids=[])
+        required = ['target', 'value']
+        invalid = ['', None]
+        for key in required:
+            for bad_value in invalid:
+                values = {k: 'foo' for k in required}
+                values[key] = bad_value
+                with assert_raises(ValueError) as exc:
+                    result_collection.add_comment(result, **values)
+                err_msg = exc.exception.message
+                assert_equal(err_msg, '"{}" is a required value'.format(key))
+
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_error_when_invalid_tag_values(self, mock_client):
+        """Test ValueError raised when invalid tag values."""
+        iri = 'example.com'
+        result_collection = ResultCollection(iri)
+        result = Result(project_id=1, task_run_ids=[])
+        required = ['target', 'value']
+        invalid = ['', None]
+        for key in required:
+            for bad_value in invalid:
+                values = {k: 'foo' for k in required}
+                values[key] = bad_value
+                with assert_raises(ValueError) as exc:
+                    result_collection.add_tag(result, **values)
+                err_msg = exc.exception.message
+                assert_equal(err_msg, '"{}" is a required value'.format(key))
+
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_error_when_invalid_transcription_values(self, mock_client):
+        """Test ValueError raised when invalid transcription values."""
+        iri = 'example.com'
+        result_collection = ResultCollection(iri)
+        result = Result(project_id=1, task_run_ids=[])
+        required = ['target', 'value', 'tag']
+        invalid = ['', None]
+        for key in required:
+            for bad_value in invalid:
+                values = {k: 'foo' for k in required}
+                values[key] = bad_value
+                with assert_raises(ValueError) as exc:
+                    result_collection.add_transcription(result, **values)
+                err_msg = exc.exception.message
+                assert_equal(err_msg, '"{}" is a required value'.format(key))

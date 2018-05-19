@@ -12,21 +12,31 @@ class ResultCollection(Base):
 
     def add_comment(self, result, target, value, user=None):
         """Add a commenting Annotation."""
+        self._validate(target=target, value=value)
         anno = self._get_commenting_annotation(result, target, value, user)
         self._create_annotation(anno)
         return anno
 
     def add_transcription(self, result, target, value, tag):
         """Add a describing Annotation."""
+        self._validate(target=target, value=value, tag=tag)
         anno = self._get_describing_annotation(result, target, value, tag)
         self._create_annotation(anno)
         return anno
 
     def add_tag(self, result, target, value, rect=None):
         """Add a tagging Annotation."""
+        self._validate(target=target, value=value)
         anno = self._get_tagging_annotation(result, target, value, rect)
         self._create_annotation(anno)
         return anno
+
+    def _validate(self, **kwargs):
+        """Verify that the given values exist."""
+        for k, v in kwargs.items():
+            if not v or len(v) < 1:
+                err_msg = '"{}" is a required value'.format(k)
+                raise ValueError(err_msg)
 
     def _get_commenting_annotation(self, result, target, value, user):
         """Return a commenting Annotation."""
