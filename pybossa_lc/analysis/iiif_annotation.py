@@ -19,7 +19,6 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
                        'not {1}'.format(list, ty))
                 raise AnalysisException(msg)
 
-
         if not all(type(v) == list for v in task_run_df['info'].tolist()):
             msg = "Invalid task runs: info must be a list"
             print all(type(v) == list for v in task_run_df['info'].tolist())

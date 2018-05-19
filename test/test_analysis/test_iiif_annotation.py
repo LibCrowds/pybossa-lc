@@ -227,7 +227,6 @@ class TestIIIFAnnotationAnalyst(Test):
             'target': source
         })
 
-
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
     def test_comment_annotation_created(self, mock_client):

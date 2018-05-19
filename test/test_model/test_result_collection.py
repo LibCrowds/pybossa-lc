@@ -173,17 +173,17 @@ class TestResultCollection(Test):
                 }
             ],
             'body': [
-              {
-                "type": "TextualBody",
-                "purpose": "describing",
-                "value": value,
-                "format": "text/plain"
-              },
-              {
-                  "type": "TextualBody",
-                  "purpose": "tagging",
-                  "value": tag
-              }
+                {
+                    "type": "TextualBody",
+                    "purpose": "describing",
+                    "value": value,
+                    "format": "text/plain"
+                },
+                {
+                    "type": "TextualBody",
+                    "purpose": "tagging",
+                    "value": tag
+                }
             ],
             'target': target
         })

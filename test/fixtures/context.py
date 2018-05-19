@@ -1,6 +1,3 @@
-
-
-
 # -*- coding: utf8 -*-
 
 from factories import CategoryFactory, ProjectFactory, TaskFactory

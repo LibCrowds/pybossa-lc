@@ -106,6 +106,7 @@ class BaseAnalyst():
         for anno in annotations:
             print 2
             if anno.get('modified'):
+                return False
         if result.info and result.info.get('has_children'):
             return False
         return True

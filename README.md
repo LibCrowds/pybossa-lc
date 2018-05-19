@@ -1,6 +1,7 @@
 # pybossa-lc
 
 [![Build Status](https://travis-ci.org/LibCrowds/pybossa-lc.svg?branch=master)](https://travis-ci.org/LibCrowds/pybossa-lc)
+[![Coverage Status](https://coveralls.io/repos/github/LibCrowds/pybossa-lc/badge.svg?branch=master)](https://coveralls.io/github/LibCrowds/pybossa-lc?branch=master)
 
 > A PYBOSSA plugin for managing LibCrowds projects.
 

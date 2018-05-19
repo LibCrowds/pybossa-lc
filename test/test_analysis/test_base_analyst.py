@@ -523,57 +523,57 @@ class TestBaseAnalyst(Test):
         self.base_analyst.analyse(result.id)
         assert_equal(result.info, info)
 
-    # @with_context
-    # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-    # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-    # @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-    # def test_link_added_for_child_annotations(self,
-    #                                           mock_get_tags,
-    #                                           mock_get_transcriptions_df,
-    #                                           mock_get_comments):
-    #     """Test that linking body is added for all child annotations."""
-    #     n_answers = 2
-    #     target = 'example.com'
-    #     parent_annotation_id = 'foo'
-    #     task_info = dict(parent_annotation_id=parent_annotation_id)
-    #     task = self.create_task_with_context(n_answers, target, info=task_info)
-    #     mock_get_tags.return_value = {
-    #         'foo': [dict(x=100, y=100, w=100, h=100)] * n_answers
-    #     }
-    #     mock_get_comments.return_value = [(1, 'foo')]
-    #     mock_get_transcriptions_df.return_value = pandas.DataFrame({
-    #         'foo': ['bar'] * n_answers
-    #     })
+# @with_context
+# @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
+# @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
+# @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
+# def test_link_added_for_child_annotations(self,
+#                                           mock_get_tags,
+#                                           mock_get_transcriptions_df,
+#                                           mock_get_comments):
+#     """Test that linking body is added for all child annotations."""
+#     n_answers = 2
+#     target = 'example.com'
+#     parent_annotation_id = 'foo'
+#     task_info = dict(parent_annotation_id=parent_annotation_id)
+#     task = self.create_task_with_context(n_answers, target, info=task_info)
+#     mock_get_tags.return_value = {
+#         'foo': [dict(x=100, y=100, w=100, h=100)] * n_answers
+#     }
+#     mock_get_comments.return_value = [(1, 'foo')]
+#     mock_get_transcriptions_df.return_value = pandas.DataFrame({
+#         'foo': ['bar'] * n_answers
+#     })
 
-    #     TaskRunFactory.create_batch(n_answers, task=task)
-    #     result = self.result_repo.filter_by(project_id=task.project_id)[0]
-    #     self.base_analyst.analyse(result.id)
-    #     annotations = result.info['annotations']
-    #     assert_equal(len(annotations), 3)
+#     TaskRunFactory.create_batch(n_answers, task=task)
+#     result = self.result_repo.filter_by(project_id=task.project_id)[0]
+#     self.base_analyst.analyse(result.id)
+#     annotations = result.info['annotations']
+#     assert_equal(len(annotations), 3)
 
-    #     linked_annos = [anno for anno in annotations
-    #                     if anno['motivation'] != 'commenting']
-    #     commenting_annos = [anno for anno in annotations
-    #                         if anno['motivation'] == 'commenting']
+#     linked_annos = [anno for anno in annotations
+#                     if anno['motivation'] != 'commenting']
+#     commenting_annos = [anno for anno in annotations
+#                         if anno['motivation'] == 'commenting']
 
-    #     for anno in linked_annos:
-    #         assert isinstance(anno['body'], list)
-    #         body = [a for a in anno['body'] if a['purpose'] == 'linking']
-    #         assert_equal(len(body), 1)
-    #         assert_dict_equal(body[0], {
-    #             'source': parent_annotation_id,
-    #             'type': 'SpecificResource',
-    #             'purpose': 'linking'
-    #         })
+#     for anno in linked_annos:
+#         assert isinstance(anno['body'], list)
+#         body = [a for a in anno['body'] if a['purpose'] == 'linking']
+#         assert_equal(len(body), 1)
+#         assert_dict_equal(body[0], {
+#             'source': parent_annotation_id,
+#             'type': 'SpecificResource',
+#             'purpose': 'linking'
+#         })
 
-    #     for anno in commenting_annos:
-    #         assert_equal(anno['body']['purpose'], 'commenting')
+#     for anno in commenting_annos:
+#         assert_equal(anno['body']['purpose'], 'commenting')
 
-    # @with_context
-    # def test_analysis_exception_if_no_annotation_collection(self):
-    #     """Test that AnnotationCollection must be setup."""
-    #     task = self.create_task_with_context(1, 'example.com',
-    #                                          anno_collection=None)
-    #     TaskRunFactory.create(task=task)
-    #     result = self.result_repo.filter_by(project_id=task.project_id)[0]
-    #     assert_raises(AnalysisException, self.base_analyst.analyse, result.id)
+# @with_context
+# def test_analysis_exception_if_no_annotation_collection(self):
+#     """Test that AnnotationCollection must be setup."""
+#     task = self.create_task_with_context(1, 'example.com',
+#                                          anno_collection=None)
+#     TaskRunFactory.create(task=task)
+#     result = self.result_repo.filter_by(project_id=task.project_id)[0]
+#     assert_raises(AnalysisException, self.base_analyst.analyse, result.id)

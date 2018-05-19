@@ -60,6 +60,7 @@ class WebAnnotationClient(object):
             return []
 
         annotations = []
+
         def add_page_items(pageIri):
             r = requests.get(pageIri)
             if r.status_code != 200:

@@ -128,4 +128,3 @@ class ResultCollection(Base):
     #         ]
     #     else:
     #         raise ValueError('Invalid Annotation body')
-

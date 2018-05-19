@@ -86,13 +86,13 @@ def analyse_all(project_id, presenter):
     timeout = 1 * HOUR
     analyst = Analyst()
     job = dict(name=analyst.analyse_all,
-                args=[],
-                kwargs={
-                    'presenter': presenter,
-                    'project_id': project_id
-                },
-                timeout=timeout,
-                queue='high')
+               args=[],
+               kwargs={
+                   'presenter': presenter,
+                   'project_id': project_id
+               },
+               timeout=timeout,
+               queue='high')
     enqueue_job(job)
 
 
@@ -101,13 +101,13 @@ def analyse_empty(project_id, presenter):
     timeout = 1 * HOUR
     analyst = Analyst()
     job = dict(name=analyst.analyse_empty,
-                args=[],
-                kwargs={
-                    'presenter': presenter,
-                    'project_id': project_id
-                },
-                timeout=timeout,
-                queue='high')
+               args=[],
+               kwargs={
+                   'presenter': presenter,
+                   'project_id': project_id
+               },
+               timeout=timeout,
+               queue='high')
     enqueue_job(job)
 
 
@@ -115,12 +115,12 @@ def analyse_single(result_id, presenter):
     """Queue a single result for analysis."""
     analyst = Analyst()
     job = dict(name=analyst.analyse,
-                args=[],
-                kwargs={
-                    'presenter': presenter,
-                    'result_id': result_id,
-                    'silent': False
-                },
-                timeout=current_app.config.get('TIMEOUT'),
-                queue='high')
+               args=[],
+               kwargs={
+                   'presenter': presenter,
+                   'result_id': result_id,
+                   'silent': False
+               },
+               timeout=current_app.config.get('TIMEOUT'),
+               queue='high')
     enqueue_job(job)
