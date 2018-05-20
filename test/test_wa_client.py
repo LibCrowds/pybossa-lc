@@ -9,12 +9,12 @@ from pybossa_lc import wa_client
 from .fixtures.response import MockResponse
 
 
+@patch('pybossa_lc.web_annotation_client.requests')
 class TestWAClient(Test):
 
     def setUp(self):
         super(TestWAClient, self).setUp()
 
-    @patch('pybossa_lc.web_annotation_client.requests')
     def test_create_annotation(self, mock_requests):
         """Test create Annotation."""
         iri = 'example.com'
@@ -34,7 +34,6 @@ class TestWAClient(Test):
         mock_requests.post.assert_called_once_with(iri, data=json.dumps(anno))
         assert_dict_equal(result, expected)
 
-    @patch('pybossa_lc.web_annotation_client.requests')
     def test_get_collection(self, mock_requests):
         """Test get AnnotationCollection."""
         iri = 'example.com'
@@ -53,7 +52,7 @@ class TestWAClient(Test):
         mock_requests.get.assert_called_once_with(iri, headers=headers)
         assert_dict_equal(result, expected)
 
-    def test_get_prefer_headers(self):
+    def test_get_prefer_headers(self, mock_requests):
         """Test get Prefer headers."""
         base = 'return=representation; include="{0}"'
         default = wa_client._get_prefer_headers()
@@ -79,7 +78,6 @@ class TestWAClient(Test):
         ]
         assert_equal(minimal_iris, base.format(' '.join(ns)))
 
-    @patch('pybossa_lc.web_annotation_client.requests')
     def test_search_annotations(self, mock_requests):
         """Test search Annotations."""
         collection_id = 'foo'
@@ -103,14 +101,13 @@ class TestWAClient(Test):
         fake_resp = MockResponse(json.dumps(fake_collection))
         mock_requests.get.return_value = fake_resp
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
-        endpoint = base_url + '/search/annotations'
+        endpoint = base_url + '/search/annotations/'
 
         result = wa_client.search_annotations(iri, contains)
         mock_requests.get.assert_called_once_with(endpoint, headers=headers,
                                                   params=params)
         assert_equal(result, [])
 
-    @patch('pybossa_lc.web_annotation_client.requests')
     def test_search_annotations_with_pages(self, mock_requests):
         """Test search Annotations with multiple pages."""
         collection_id = 'foo'
@@ -147,7 +144,7 @@ class TestWAClient(Test):
           MockResponse(json.dumps(fake_page2))
         ]
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
-        endpoint = base_url + '/search/annotations'
+        endpoint = base_url + '/search/annotations/'
 
         result = wa_client.search_annotations(iri, contains)
         assert_equal(mock_requests.get.call_args_list, [
@@ -156,3 +153,20 @@ class TestWAClient(Test):
           call(fake_page1['next'])
         ])
         assert_equal(result, fake_page1['items'] + fake_page2['items'])
+
+    def test_delete_batch(self, mock_requests):
+        """Test delete a batch of Annotations."""
+        iri = 'annotations.example.com/foo/bar'
+        fake_annos = [
+            {
+                'id': 'foo'
+            },
+            {
+                'id': 'bar'
+            }
+        ]
+        base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
+        endpoint = base_url + '/batch/'
+        wa_client.delete_batch(fake_annos)
+        data = json.dumps(fake_annos)
+        mock_requests.delete.assert_called_once_with(endpoint, data=data)

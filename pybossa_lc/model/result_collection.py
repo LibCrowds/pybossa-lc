@@ -50,7 +50,11 @@ class ResultCollection(Base):
                 }
             ]
         }
-        return self._get_all_annotations(contains)
+        return self._search_annotations(contains)
+
+    def delete_batch(self, annotations):
+        """Delete a batch of Annotations."""
+        return self._delete_batch(annotations)
 
     def _validate(self, **kwargs):
         """Verify that the given values exist."""
@@ -123,22 +127,3 @@ class ResultCollection(Base):
                                                         rect['w'], rect['h'])
             }
         }
-
-    # def add_linking_body(self, anno, uri):
-    #     """Add a link to a SpecificResource to the body of an Annotation."""
-    #     link = {
-    #         "purpose": "linking",
-    #         "type": "SpecificResource",
-    #         "source": uri
-    #     }
-    #     if not anno.get('body'):
-    #         anno['body'] = link
-    #     elif isinstance(anno['body'], list):
-    #         anno['body'].append(link)
-    #     elif isinstance(anno['body'], dict):
-    #         anno['body'] = [
-    #             anno['body'],
-    #             link
-    #         ]
-    #     else:
-    #         raise ValueError('Invalid Annotation body')

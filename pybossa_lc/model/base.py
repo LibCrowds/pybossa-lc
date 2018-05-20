@@ -64,7 +64,11 @@ class Base(object):
         anno = wa_client.create_annotation(self.iri, anno)
         return anno
 
-    def _get_all_annotations(self, contains):
+    def _search_annotations(self, contains):
         """Get a set of annotations by contents."""
         annotations = wa_client.search_annotations(self.iri, contains)
         return annotations
+
+    def _delete_batch(self, annotations):
+        """Delete a batch of Annotations."""
+        wa_client.delete_batch(annotations)

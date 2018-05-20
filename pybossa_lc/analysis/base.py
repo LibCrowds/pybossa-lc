@@ -59,10 +59,14 @@ class BaseAnalyst():
         project = project_repo.get(result.project_id)
         category = project_repo.get_category(project.category_id)
         rc = self._get_rc(category)
+        annotations = rc.get_by_result(result)
 
-        can_update = self._can_update_result(rc, result)
+        can_update = self._can_update_result(result, annotations)
         if not can_update:
             return
+
+        if annotations:
+            rc.delete_batch(annotations)
 
         tr_df = self.get_task_run_df(task, task_runs)
         tmpl = self.get_project_template(project)
@@ -82,7 +86,6 @@ class BaseAnalyst():
         parent_annotation_id = task.info.get('parent_annotation_id')
         if parent_annotation_id:
             for anno in tags + transcriptions:
-                print anno
                 rc.add_link(result, parent_annotation_id, anno['id'])
 
     def analyse_all(self, project_id):
@@ -100,11 +103,9 @@ class BaseAnalyst():
         for result in empty_results:
             self.analyse(result.id)
 
-    def _can_update_result(self, rc, result):
+    def _can_update_result(self, result, annotations):
         """Check if a result can be updated."""
-        annotations = rc.get_by_result(result)
         for anno in annotations:
-            print 2
             if anno.get('modified'):
                 return False
         if result.info and result.info.get('has_children'):

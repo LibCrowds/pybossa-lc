@@ -3,7 +3,7 @@
 
 import pandas
 from nose.tools import *
-from mock import patch, call
+from mock import patch, call, MagicMock
 from default import Test, with_context, db, flask_app
 from factories import TaskRunFactory, UserFactory
 from pybossa.repositories import ResultRepository, TaskRepository
@@ -411,3 +411,32 @@ class TestZ3950Analyst(Test):
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(updated_task.n_answers, n_answers)
         assert_equal(mock_client.create_annotation.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_old_annotations_deleted(self, mock_client):
+        """Test Z3950 old Annotations deleted before process runs again."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'reference': '',
+            'control_number': '',
+            'comments': ''
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_annos = [
+            {
+                'id': 'baz'
+            },
+            {
+                'id': 'qux'
+            }
+        ]
+        fake_search = MagicMock()
+        fake_search.return_value = fake_annos
+        mock_client.search_annotations = fake_search
+        self.z3950_analyst.analyse(result.id)
+        base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
+        endpoint = base_url + '/batch/'
+        mock_client.delete_batch.assert_called_once_with(fake_annos)

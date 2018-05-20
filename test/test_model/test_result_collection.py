@@ -14,6 +14,7 @@ from pybossa_lc.model.base import Base
 from pybossa_lc.model.result_collection import ResultCollection
 
 
+@patch('pybossa_lc.model.base.wa_client')
 class TestResultCollection(Test):
 
     def setUp(self):
@@ -21,7 +22,6 @@ class TestResultCollection(Test):
         assert_dict_equal.__self__.maxDiff = None
 
     @with_context
-    @patch('pybossa_lc.model.base.wa_client')
     def test_add_comment(self, mock_client):
         """Test that a comment Annotation is added."""
         iri = 'example.com'
@@ -66,7 +66,6 @@ class TestResultCollection(Test):
         })
 
     @with_context
-    @patch('pybossa_lc.model.base.wa_client')
     def test_add_tag(self, mock_client):
         """Test that a tagging Annotation is added."""
         iri = 'example.com'
@@ -103,7 +102,6 @@ class TestResultCollection(Test):
         })
 
     @with_context
-    @patch('pybossa_lc.model.base.wa_client')
     def test_add_tag_with_fragment(self, mock_client):
         """Test that a tagging Annotation is added with a FragmentSelector."""
         iri = 'example.com'
@@ -151,7 +149,6 @@ class TestResultCollection(Test):
         })
 
     @with_context
-    @patch('pybossa_lc.model.base.wa_client')
     def test_add_transcription(self, mock_client):
         """Test that a describing Annotation is added."""
         iri = 'example.com'
@@ -198,7 +195,6 @@ class TestResultCollection(Test):
         })
 
     @with_context
-    @patch('pybossa_lc.model.base.wa_client')
     def test_add_link(self, mock_client):
         """Test that a link Annotation is added."""
         iri = 'example.com'
@@ -231,7 +227,6 @@ class TestResultCollection(Test):
             'target': target
         })
 
-    @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_comment_values(self, mock_client):
         """Test ValueError raised when invalid comment values."""
         iri = 'example.com'
@@ -248,7 +243,6 @@ class TestResultCollection(Test):
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
-    @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_tag_values(self, mock_client):
         """Test ValueError raised when invalid tag values."""
         iri = 'example.com'
@@ -265,7 +259,6 @@ class TestResultCollection(Test):
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
-    @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_transcription_values(self, mock_client):
         """Test ValueError raised when invalid transcription values."""
         iri = 'example.com'
@@ -282,7 +275,6 @@ class TestResultCollection(Test):
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
-    @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_linking_values(self, mock_client):
         """Test ValueError raised when invalid linking values."""
         iri = 'example.com'
@@ -300,7 +292,6 @@ class TestResultCollection(Test):
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
     @with_context
-    @patch('pybossa_lc.model.base.wa_client')
     def test_annotations_searched_by_result(self, mock_client):
         """Test Annotations are searched for by result."""
         iri = 'example.com'
@@ -316,3 +307,20 @@ class TestResultCollection(Test):
             ]
         }
         mock_client.search_annotations.assert_called_once_with(iri, contains)
+
+    @with_context
+    def test_batch_delete_annotations(self, mock_client):
+        """Test Annotations are deleted."""
+        rc = ResultCollection(None)
+        annos = [
+            {
+                'id': 'foo',
+                'type': 'Annotation'
+            },
+                {
+                'id': 'bar',
+                'type': 'Annotation'
+            }
+        ]
+        rc.delete_batch(annos)
+        mock_client.delete_batch.assert_called_once_with(annos)

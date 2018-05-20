@@ -34,6 +34,12 @@ class WebAnnotationClient(object):
         response.raise_for_status()
         return response.json()
 
+    def delete_batch(self, annotations):
+        """Delete a batch of Annotations."""
+        endpoint = self.base_url.rstrip('/') + '/batch/'
+        response = requests.delete(endpoint, data=json.dumps(annotations))
+        response.raise_for_status()
+
     def _get_prefer_headers(self, minimal=False, iris=False):
         """Return the Prefer header for given container preferences."""
         ns = ['http://www.w3.org/ns/oa#PreferContainedDescriptions']
@@ -46,7 +52,7 @@ class WebAnnotationClient(object):
     def search_annotations(self, collectionIri, contains):
         """Search for Annotations with the given content."""
         collection_id = collectionIri.rstrip('/').split('/')[-1]
-        endpoint = self.base_url.rstrip('/') + '/search/annotations'
+        endpoint = self.base_url.rstrip('/') + '/search/annotations/'
         params = {
             'collection.id': collection_id,
             'contains': contains
