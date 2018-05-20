@@ -26,7 +26,6 @@ class PyBossaLC(Plugin):
         """Setup plugin."""
         self.configure()
         self.setup_blueprints()
-        self.replace_email_templates()
         self.setup_enhanced_iiif_importer()
         wa_client.init_app(app)
         enqueue_periodic_jobs()
@@ -53,17 +52,6 @@ class PyBossaLC(Plugin):
         app.register_blueprint(templates, url_prefix='/lc/templates')
         app.register_blueprint(admin, url_prefix='/lc/admin')
         app.register_blueprint(users, url_prefix='/lc/users')
-
-    def replace_email_templates(self):
-        """Replace email templates in the current theme."""
-        if not app.config.get('TESTING'):
-            out_path = os.path.join('pybossa', app.template_folder, 'account',
-                                    'email')
-            in_path = os.path.join('pybossa', 'plugins', 'pybossa_lc',
-                                   'templates', 'email')
-            if not os.path.exists(out_path):
-                os.mkdir(out_path)
-            copy_tree(in_path, out_path)
 
     def setup_enhanced_iiif_importer(self):
         """Setup the enhanced IIIF manifest importer."""
