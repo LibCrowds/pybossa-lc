@@ -415,7 +415,7 @@ class TestZ3950Analyst(Test):
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
     def test_old_annotations_deleted(self, mock_client):
-        """Test Z3950 old Annotations deleted before process runs again."""
+        """Test Z3950 old Annotations deleted."""
         n_answers = 3
         target = 'example.com'
         task = self.ctx.create_task(n_answers, target)

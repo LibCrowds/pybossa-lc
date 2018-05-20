@@ -1108,3 +1108,36 @@ class TestIIIFAnnotationAnalyst(Test):
             },
             'target': target
         })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_old_annotations_deleted(self, mock_client):
+        """Test IIIF old Annotations deleted."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target)
+        user = UserFactory()
+        TaskRunFactory.create_batch(n_answers, user=user, task=task, info=[
+            {
+                'motivation': 'commenting',
+                'body': {
+                    'value': 'foo'
+                }
+            }
+        ])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_annos = [
+            {
+                'id': 'baz'
+            },
+            {
+                'id': 'qux'
+            }
+        ]
+        fake_search = MagicMock()
+        fake_search.return_value = fake_annos
+        mock_client.search_annotations = fake_search
+        self.iiif_analyst.analyse(result.id)
+        base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
+        endpoint = base_url + '/batch/'
+        mock_client.delete_batch.assert_called_once_with(fake_annos)
