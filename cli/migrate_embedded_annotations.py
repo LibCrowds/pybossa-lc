@@ -80,7 +80,7 @@ def run():
                 i += 1
 
             if i % 1000 == 0:
-            print '{0} Annotations exported'.format(i)
+                print '{0} Annotations exported'.format(i)
 
 if __name__ == '__main__':
     run()
