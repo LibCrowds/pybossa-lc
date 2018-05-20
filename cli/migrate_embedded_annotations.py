@@ -46,7 +46,6 @@ def run():
         query = text('''SELECT id, info->>'annotations' AS annotations
                      FROM result
                      WHERE (result.info->>'annotations') IS NOT NULL
-                     LIMIT 100
                      ''')
         db_results = db.engine.execute(query).fetchall()
         i = 0
