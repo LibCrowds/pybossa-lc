@@ -125,7 +125,7 @@ def reject_template(template_id):
 @admin_required
 @BLUEPRINT.route('/results/analyse/all',
                  methods=['GET', 'POST'])
-def analyse_all_results(category_id):
+def analyse_all_results():
     """Analyse all results."""
     if request.method == 'POST':
         categories = get_all_categories()
@@ -147,7 +147,7 @@ def analyse_all_results(category_id):
 @admin_required
 @BLUEPRINT.route('/results/analyse/empty/<int:category_id>',
                  methods=['GET', 'POST'])
-def analyse_empty_results(category_id):
+def analyse_empty_results():
     """Analyse empty results."""
     category = project_repo.get_category(category_id)
     if not category:
