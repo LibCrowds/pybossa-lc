@@ -214,6 +214,7 @@ def update_volume(short_name, volume_id):
     return handle_content_type(response)
 
 
+@BLUEPRINT.route('/<short_name>/tags')
 @BLUEPRINT.route('/<short_name>/project-tags')
 @BLUEPRINT.route('/<short_name>/project-filters')
 def project_tags(short_name):
