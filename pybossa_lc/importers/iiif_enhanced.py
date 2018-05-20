@@ -36,7 +36,6 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
             # Check that parent result is valid
             err_msg = 'A result from the parent project has not been analysed'
             if not isinstance(result.info, dict):
-                print 'foo'
                 raise BulkImportException(err_msg)
             elif 'annotations' not in result.info:
                 raise BulkImportException(err_msg)
