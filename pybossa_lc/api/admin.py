@@ -12,7 +12,6 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail, enqueue_job
 
 from .. import project_tmpl_repo
-from ..cache import results as results_cache
 from ..jobs import analyse_all, analyse_empty
 
 
@@ -119,16 +118,6 @@ def reject_template(template_id):
         csrf = generate_csrf()
 
     response = dict(template=template.to_dict(), csrf=csrf)
-    return handle_content_type(response)
-
-
-@login_required
-@admin_required
-@BLUEPRINT.route('/results/unanalysed')
-def unanalysed_results():
-    """Return an overview of unanalysed results for each category."""
-    results = results_cache.get_unanalysed_by_category()
-    response = dict(results=results)
     return handle_content_type(response)
 
 
