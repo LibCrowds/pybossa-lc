@@ -31,8 +31,11 @@ class TestResultCollection(Test):
         user = UserFactory.create()
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
+        fake_anno = dict(foo='bar')
+        mock_client.create_annotation.return_value = fake_anno
         anno = rc.add_comment(result, target, value, user)
-        assert_dict_equal(anno, {
+        assert_equal(anno, fake_anno)
+        mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'commenting',
             'type': 'Annotation',
             'creator': {
@@ -61,7 +64,6 @@ class TestResultCollection(Test):
             },
             'target': target
         })
-        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -73,8 +75,11 @@ class TestResultCollection(Test):
         value = 'bar'
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
+        fake_anno = dict(foo='bar')
+        mock_client.create_annotation.return_value = fake_anno
         anno = rc.add_tag(result, target, value)
-        assert_dict_equal(anno, {
+        assert_equal(anno, fake_anno)
+        mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'tagging',
             'type': 'Annotation',
             'generator': [
@@ -96,7 +101,6 @@ class TestResultCollection(Test):
             },
             'target': target
         })
-        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -109,8 +113,11 @@ class TestResultCollection(Test):
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
         rect = dict(x=100, y=100, w=50, h=50)
+        fake_anno = dict(foo='bar')
+        mock_client.create_annotation.return_value = fake_anno
         anno = rc.add_tag(result, target, value, rect)
-        assert_dict_equal(anno, {
+        assert_equal(anno, fake_anno)
+        mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'tagging',
             'type': 'Annotation',
             'generator': [
@@ -142,7 +149,6 @@ class TestResultCollection(Test):
                 }
             }
         })
-        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -156,8 +162,11 @@ class TestResultCollection(Test):
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
         rect = dict(x=100, y=100, w=50, h=50)
+        fake_anno = dict(foo='bar')
+        mock_client.create_annotation.return_value = fake_anno
         anno = rc.add_transcription(result, target, value, tag)
-        assert_dict_equal(anno, {
+        assert_equal(anno, fake_anno)
+        mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'describing',
             'type': 'Annotation',
             'generator': [
@@ -187,7 +196,6 @@ class TestResultCollection(Test):
             ],
             'target': target
         })
-        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
@@ -200,8 +208,11 @@ class TestResultCollection(Test):
         user = UserFactory.create()
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         result = Result(project_id=1, task_run_ids=[])
+        fake_anno = dict(foo='bar')
+        mock_client.create_annotation.return_value = fake_anno
         anno = rc.add_link(result, target, body)
-        assert_dict_equal(anno, {
+        assert_equal(anno, fake_anno)
+        mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'linking',
             'type': 'Annotation',
             'generator': [
@@ -219,7 +230,6 @@ class TestResultCollection(Test):
             'body': body,
             'target': target
         })
-        mock_client.create_annotation.assert_called_once_with(iri, anno)
 
     @patch('pybossa_lc.model.base.wa_client')
     def test_error_when_invalid_comment_values(self, mock_client):
