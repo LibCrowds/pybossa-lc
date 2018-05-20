@@ -61,8 +61,10 @@ class Base(object):
 
     def _create_annotation(self, anno):
         """Create an Annotation."""
-        wa_client.create_annotation(self.iri, anno)  # pragma: no cover
+        anno = wa_client.create_annotation(self.iri, anno)
+        return anno
 
     def _get_all_annotations(self, contains):
         """Get a set of annotations by contents."""
-        return wa_client.search_annotations(self.iri, contains)
+        annotations = wa_client.search_annotations(self.iri, contains)
+        return annotations

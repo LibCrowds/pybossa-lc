@@ -16,28 +16,28 @@ class ResultCollection(Base):
         """Add a commenting Annotation."""
         self._validate(target=target, value=value)
         anno = self._get_commenting_annotation(result, target, value, user)
-        self._create_annotation(anno)
+        anno = self._create_annotation(anno)
         return anno
 
     def add_transcription(self, result, target, value, tag):
         """Add a describing Annotation."""
         self._validate(target=target, value=value, tag=tag)
         anno = self._get_describing_annotation(result, target, value, tag)
-        self._create_annotation(anno)
+        anno = self._create_annotation(anno)
         return anno
 
     def add_tag(self, result, target, value, rect=None):
         """Add a tagging Annotation."""
         self._validate(target=target, value=value)
         anno = self._get_tagging_annotation(result, target, value, rect)
-        self._create_annotation(anno)
+        anno = self._create_annotation(anno)
         return anno
 
     def add_link(self, result, target, body):
         """Add a linking Annotation."""
         self._validate(target=target, body=body)
         anno = self._get_linking_annotation(result, target, body)
-        self._create_annotation(anno)
+        anno = self._create_annotation(anno)
         return anno
 
     def get_by_result(self, result):

@@ -873,49 +873,238 @@ class TestIIIFAnnotationAnalyst(Test):
             })
         ])
 
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_link_added_for_transcription_child_annotations(self, mock_client):
+        """Test IIIF linking Annotation created for transcription child."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task_info = dict(parent_annotation_id='anno.example.com/collection/42')
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection,
+                                    info=task_info)
+        value = 'foo'
+        tag = 'bar'
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'describing',
+            'body': [
+                {
+                    'purpose': 'describing',
+                    'value': value
+                },
+                {
+                    'purpose': 'tagging',
+                    'value': tag
+                }
+            ]
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_anno_id = 'baz'
+        mock_client.create_annotation.return_value = {
+            'id': fake_anno_id,
+            'type': 'Annotation'
+        }
+        self.iiif_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.call_args_list, [
+            call(anno_collection, {
+                'motivation': 'describing',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': [
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'describing',
+                        'value': value,
+                        'format': 'text/plain'
+                    },
+                    {
+                        'type': 'TextualBody',
+                        'purpose': 'tagging',
+                        'value': tag
+                    }
+                ],
+                'target': target
+            }),
+            call(anno_collection, {
+                'motivation': 'linking',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': fake_anno_id,
+                'target': task_info['parent_annotation_id']
+            })
+        ])
 
-# @with_context
-# @patch('pybossa_lc.analysis.base.BaseAnalyst.get_comments')
-# @patch('pybossa_lc.analysis.base.BaseAnalyst.get_transcriptions_df')
-# @patch('pybossa_lc.analysis.base.BaseAnalyst.get_tags')
-# def test_link_added_for_child_annotations(self,
-#                                           mock_get_tags,
-#                                           mock_get_transcriptions_df,
-#                                           mock_get_comments):
-#     """Test that linking body is added for all child annotations."""
-#     n_answers = 2
-#     target = 'example.com'
-#     parent_annotation_id = 'foo'
-#     task_info = dict(parent_annotation_id=parent_annotation_id)
-#     task = self.create_task_with_context(n_answers, target, info=task_info)
-#     mock_get_tags.return_value = {
-#         'foo': [dict(x=100, y=100, w=100, h=100)] * n_answers
-#     }
-#     mock_get_comments.return_value = [(1, 'foo')]
-#     mock_get_transcriptions_df.return_value = pandas.DataFrame({
-#         'foo': ['bar'] * n_answers
-#     })
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_link_added_for_tagging_child_annotations(self, mock_client):
+        """Test IIIF linking Annotation created for tagging child."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task_info = dict(parent_annotation_id='anno.example.com/collection/42')
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection,
+                                    info=task_info)
+        tag = 'foo'
+        rect = dict(x=400, y=200, w=100, h=150)
+        TaskRunFactory.create_batch(n_answers, task=task, info=[{
+            'motivation': 'tagging',
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'tagging',
+                'value': tag
+            },
+            'target': {
+                'source': 'example.com',
+                'selector': {
+                    'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                    'type': 'FragmentSelector',
+                    'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                            rect['y'],
+                                                            rect['w'],
+                                                            rect['h'])
+                }
+            }
+        }])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_anno_id = 'baz'
+        mock_client.create_annotation.return_value = {
+            'id': fake_anno_id,
+            'type': 'Annotation'
+        }
+        self.iiif_analyst.analyse(result.id)
+        assert_equal(mock_client.create_annotation.call_args_list, [
+            call(anno_collection, {
+                'motivation': 'tagging',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': {
+                    'type': 'TextualBody',
+                    'purpose': 'tagging',
+                    'value': tag
+                },
+                'target': {
+                    'source': 'example.com',
+                    'selector': {
+                        'conformsTo': 'http://www.w3.org/TR/media-frags/',
+                        'type': 'FragmentSelector',
+                        'value': '?xywh={0},{1},{2},{3}'.format(rect['x'],
+                                                                rect['y'],
+                                                                rect['w'],
+                                                                rect['h'])
+                    }
+                }
+            }),
+            call(anno_collection, {
+                'motivation': 'linking',
+                'type': 'Annotation',
+                'generator': [
+                    {
+                        "id": flask_app.config.get('GITHUB_REPO'),
+                        "type": "Software",
+                        "name": "LibCrowds",
+                        "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                    },
+                    {
+                        "id": url_for('api.api_result', oid=result.id),
+                        "type": "Software"
+                    }
+                ],
+                'body': fake_anno_id,
+                'target': task_info['parent_annotation_id']
+            })
+        ])
 
-#     TaskRunFactory.create_batch(n_answers, task=task)
-#     result = self.result_repo.filter_by(project_id=task.project_id)[0]
-#     self.base_analyst.analyse(result.id)
-#     annotations = result.info['annotations']
-#     assert_equal(len(annotations), 3)
-
-#     linked_annos = [anno for anno in annotations
-#                     if anno['motivation'] != 'commenting']
-#     commenting_annos = [anno for anno in annotations
-#                         if anno['motivation'] == 'commenting']
-
-#     for anno in linked_annos:
-#         assert isinstance(anno['body'], list)
-#         body = [a for a in anno['body'] if a['purpose'] == 'linking']
-#         assert_equal(len(body), 1)
-#         assert_dict_equal(body[0], {
-#             'source': parent_annotation_id,
-#             'type': 'SpecificResource',
-#             'purpose': 'linking'
-#         })
-
-#     for anno in commenting_annos:
-#         assert_equal(anno['body']['purpose'], 'commenting')
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_link_not_added_for_comment_child_annotations(self, mock_client):
+        """Test IIIF linking Annotation not created for comment child."""
+        n_answers = 1
+        target = 'example.com'
+        anno_collection = 'http://eg.com/collection'
+        task_info = dict(parent_annotation_id='anno.example.com/collection/42')
+        task = self.ctx.create_task(n_answers, target, rules={},
+                                    anno_collection=anno_collection,
+                                    info=task_info)
+        value = 'foo'
+        tag = 'bar'
+        user = UserFactory()
+        TaskRunFactory.create(user=user, task=task, info=[
+            {
+                'motivation': 'commenting',
+                'body': {
+                    'value': value
+                }
+            }
+        ])
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_anno_id = 'baz'
+        mock_client.create_annotation.return_value = {
+            'id': fake_anno_id,
+            'type': 'Annotation'
+        }
+        self.iiif_analyst.analyse(result.id)
+        func = mock_client.create_annotation
+        func.assert_called_once_with(anno_collection, {
+            'motivation': 'commenting',
+            'type': 'Annotation',
+            'creator': {
+                'id': url_for('api.api_user', oid=user.id),
+                'type': 'Person',
+                'name': user.fullname,
+                'nickname': user.name
+            },
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'body': {
+                'type': 'TextualBody',
+                'purpose': 'commenting',
+                'value': value,
+                'format': 'text/plain'
+            },
+            'target': target
+        })

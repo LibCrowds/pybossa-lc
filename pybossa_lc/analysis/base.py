@@ -74,16 +74,16 @@ class BaseAnalyst():
             target = self.strip_fragment_selector(target)
 
         self._handle_comments(rc, result, tr_df, target, silent)
-        self._handle_tags(rc, result, tr_df, target)
-        self._handle_transcriptions(rc, result, tr_df, target, tmpl, task)
+        tags = self._handle_tags(rc, result, tr_df, target)
+        transcriptions = self._handle_transcriptions(rc, result, tr_df, target,
+                                                     tmpl, task)
 
         # Add any links to child annotations
         parent_annotation_id = task.info.get('parent_annotation_id')
         if parent_annotation_id:
-            non_comment_annos = [anno for anno in annotations
-                                 if anno.get('motivation') != 'commenting']
-            for anno in non_comment_annos:
-                self.add_linking_body(anno, parent_annotation_id)
+            for anno in tags + transcriptions:
+                print anno
+                rc.add_link(result, parent_annotation_id, anno['id'])
 
     def analyse_all(self, project_id):
         """Analyse all results for a project."""
@@ -130,11 +130,15 @@ class BaseAnalyst():
     def _handle_tags(self, result_collection, result, task_run_df, target):
         """Handle creation of any tagging Annotations."""
         tags = self.get_tags(task_run_df)
+        annotations = []
         if tags:
             for tag, rects in tags.items():
                 clusters = self.cluster_rects(rects)
                 for cluster in clusters:
-                    result_collection.add_tag(result, target, tag, cluster)
+                    anno = result_collection.add_tag(result, target, tag,
+                                                     cluster)
+                    annotations.append(anno)
+        return annotations
 
     def _handle_transcriptions(self, result_collection, result, task_run_df,
                                target, tmpl, task):
@@ -143,6 +147,7 @@ class BaseAnalyst():
         df = self.drop_empty_rows(df)
         df = df.applymap(lambda x: self.normalise_transcription(x, tmpl.rules))
 
+        annotations = []
         is_complete = True
         has_matches = self.has_n_matches(tmpl.min_answers, df)
         if has_matches:
@@ -150,10 +155,12 @@ class BaseAnalyst():
                 value = df[column].value_counts().idxmax()
                 anno = result_collection.add_transcription(result, target,
                                                            value, column)
+                annotations.append(anno)
         elif not df.empty:
             is_complete = False
 
         self.update_n_answers_required(task, is_complete, tmpl.max_answers)
+        return annotations
 
     def _get_rc(self, category):
         """Return an AnnotationCollection for the results.
