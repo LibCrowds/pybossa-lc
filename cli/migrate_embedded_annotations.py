@@ -59,13 +59,12 @@ def run():
 
                 format_annotation(row.id, anno)
                 endpoint = os.environ['CONTAINER_IRI']
-                data = json.dumps(anno)
                 old_iri = anno.pop('id')
                 slug = old_iri.rstrip('/').split('/')[-1]
                 headers = {
                     'Slug': slug
                 }
-                res = requests.post(endpoint, data=data, headers=headers)
+                res = requests.post(endpoint, json=anno, headers=headers)
                 out = res.json()
                 new_iri = out['id']
 
