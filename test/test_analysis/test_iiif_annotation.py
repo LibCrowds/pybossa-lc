@@ -2,7 +2,7 @@
 """Test IIIF Annotation analyst."""
 
 import pandas
-from mock import patch, call
+from mock import patch, call, MagicMock
 from nose.tools import *
 from default import Test, with_context, flask_app, db
 from flask import url_for

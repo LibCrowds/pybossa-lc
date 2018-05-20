@@ -123,19 +123,17 @@ def reject_template(template_id):
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/results/analyse/all/<int:category_id>',
+@BLUEPRINT.route('/results/analyse/all',
                  methods=['GET', 'POST'])
 def analyse_all_results(category_id):
     """Analyse all results."""
-    category = project_repo.get_category(category_id)
-    if not category:
-        abort(404)
-
     if request.method == 'POST':
-        presenter = category.info.get('presenter')
-        projects = project_repo.filter_by(category_id=category.id)
-        for project in projects:
-            analyse_all(project.id, presenter)
+        categories = get_all_categories()
+        for c in categories:
+            presenter = c.info.get('presenter')
+            projects = project_repo.get_all(category_id=c.id)
+            for project in projects:
+                analyse_all(project.id, presenter)
         flash('Analysis of all results queued', 'success')
         csrf = None
     else:
@@ -156,10 +154,12 @@ def analyse_empty_results(category_id):
         abort(404)
 
     if request.method == 'POST':
-        presenter = category.info.get('presenter')
-        projects = project_repo.filter_by(category_id=category.id)
-        for project in projects:
-            analyse_empty(project.id, presenter)
+        categories = get_all_categories()
+        for c in categories:
+            presenter = c.info.get('presenter')
+            projects = project_repo.get_all(category_id=c.id)
+            for project in projects:
+                analyse_empty(project.id, presenter)
         flash('Analysis of empty results queued', 'success')
         csrf = None
     else:
