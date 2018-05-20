@@ -21,17 +21,19 @@ def run():
         db_results = db.engine.execute(query).fetchall()
         with open('out.json', 'wb') as out_file:
             out_file.write('[')
-            first = True
+            i = 0
             for row in db_results:
                 annotations = json.loads(row.annotations)
                 for anno in annotations:
                     if not anno:
                         continue
-                    if not first:
+                    if i:
                         out_file.write(', ')
                     json.dump(anno, out_file, indent=2)
-                    first = False
+                    i += 1
             out_file.write(']')
+        j = db_results.count()
+        print '{0} Annotations exported (from {1} results)'.format(i, j)
 
 if __name__ == '__main__':
     run()
