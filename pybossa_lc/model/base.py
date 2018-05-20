@@ -22,7 +22,7 @@ class Base(object):
 
         The client should raise a requests.exceptions.HTTPError if not.
         """
-        wa_client.get_collection(self.iri)
+        wa_client.get_collection(self.iri, minimal=True)
 
     def _get_annotation_base(self, result, motivation):
         """Return the base for a new Web Annotation."""

@@ -19,7 +19,7 @@ class TestBaseModel(Test):
         """Test IRI checked on initialisation."""
         iri = 'example.com'
         Base(iri)
-        mock_client.get_collection.assert_called_once_with(iri)
+        mock_client.get_collection.assert_called_once_with(iri, minimal=True)
 
     @patch('pybossa_lc.model.base.wa_client')
     def test_create_annotation(self, mock_client):
