@@ -12,6 +12,7 @@ from pybossa.core import sentinel
 from pybossa.jobs import send_mail, enqueue_job
 
 from .. import project_tmpl_repo
+from ..cache import results as results_cache
 from ..jobs import analyse_all, analyse_empty
 
 
@@ -123,17 +124,29 @@ def reject_template(template_id):
 
 @login_required
 @admin_required
-@BLUEPRINT.route('/results/analyse/all',
+@BLUEPRINT.route('/results/unanalysed')
+def unanalysed_results():
+    """Return an overview of unanalysed results for each category."""
+    results = results_cache.get_unanalysed_by_category()
+    response = dict(results=results)
+    return handle_content_type(response)
+
+
+@login_required
+@admin_required
+@BLUEPRINT.route('/results/analyse/all/<int:category_id>',
                  methods=['GET', 'POST'])
-def analyse_all_results():
-    """Analyse all results."""
+def analyse_all_results(category_id):
+    """Analyse all results for a category."""
+    category = project_repo.get_category(category_id)
+    if not category:
+        abort(404)
+
     if request.method == 'POST':
-        categories = get_all_categories()
-        for c in categories:
-            presenter = c.info.get('presenter')
-            projects = project_repo.get_all(category_id=c.id)
-            for project in projects:
-                analyse_all(project.id, presenter)
+        presenter = category.info.get('presenter')
+        projects = project_repo.filter_by(category_id=category.id)
+        for project in projects:
+            analyse_all(project.id, presenter)
         flash('Analysis of all results queued', 'success')
         csrf = None
     else:
@@ -147,19 +160,17 @@ def analyse_all_results():
 @admin_required
 @BLUEPRINT.route('/results/analyse/empty/<int:category_id>',
                  methods=['GET', 'POST'])
-def analyse_empty_results():
-    """Analyse empty results."""
+def analyse_empty_results(category_id):
+    """Analyse empty results for a category."""
     category = project_repo.get_category(category_id)
     if not category:
         abort(404)
 
     if request.method == 'POST':
-        categories = get_all_categories()
-        for c in categories:
-            presenter = c.info.get('presenter')
-            projects = project_repo.get_all(category_id=c.id)
-            for project in projects:
-                analyse_empty(project.id, presenter)
+        presenter = category.info.get('presenter')
+        projects = project_repo.filter_by(category_id=category.id)
+        for project in projects:
+            analyse_empty(project.id, presenter)
         flash('Analysis of empty results queued', 'success')
         csrf = None
     else:
