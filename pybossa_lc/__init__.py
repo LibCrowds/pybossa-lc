@@ -3,7 +3,6 @@
 
 import os
 import json
-from distutils.dir_util import copy_tree
 from flask import current_app as app
 from flask.ext.plugins import Plugin
 from pybossa.extensions import importer
