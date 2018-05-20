@@ -60,7 +60,7 @@ def run():
                 endpoint = os.environ['CONTAINER_IRI']
                 data = json.dumps(anno)
                 old_iri = anno.pop('id')
-                slug = anno_iri.rstrip('/').split('/')[-1]
+                slug = old_iri.rstrip('/').split('/')[-1]
                 headers = {
                     'Slug': slug
                 }
