@@ -42,7 +42,10 @@ The following settings should be added to your main PYBOSSA configuration file:
 
 ``` python
 # SPA server name
-SPA_SERVER_NAME = 'http://example.com'
+SPA_SERVER_NAME = 'https://example.com'
+
+# The base URL of an Explicates Annotation server
+WEB_ANNOTATION_BASE_URL = 'https://annotations.example.com'
 ```
 
 ## Testing
