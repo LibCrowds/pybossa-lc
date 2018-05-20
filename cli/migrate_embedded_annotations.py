@@ -51,6 +51,7 @@ def run():
         db_results = db.engine.execute(query).fetchall()
         i = 0
         for row in db_results:
+            i += 1
             annotations = json.loads(row.annotations)
             for anno in annotations:
                 if not anno:
@@ -77,7 +78,6 @@ def run():
                     '''
                 )
                 db.engine.execute(query, new_iri=new_iri, old_iri=old_iri)
-                i += 1
 
             if i % 1000 == 0:
                 print '{0} Annotations exported'.format(i)
