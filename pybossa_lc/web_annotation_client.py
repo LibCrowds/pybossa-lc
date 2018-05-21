@@ -55,7 +55,7 @@ class WebAnnotationClient(object):
         endpoint = self.base_url.rstrip('/') + '/search/'
         params = {
             'collection.id': collection_id,
-            'contains': contains
+            'contains': json.dumps(contains)
         }
         headers = {
             'Prefer': self._get_prefer_headers(minimal=True)

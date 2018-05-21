@@ -102,10 +102,14 @@ class TestWAClient(Test):
         mock_requests.get.return_value = fake_resp
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
         endpoint = base_url + '/search/'
+        expected_params = {
+            'collection.id': collection_id,
+            'contains': json.dumps(contains)
+        }
 
         result = wa_client.search_annotations(iri, contains)
         mock_requests.get.assert_called_once_with(endpoint, headers=headers,
-                                                  params=params)
+                                                  params=expected_params)
         assert_equal(result, [])
 
     def test_search_annotations_with_pages(self, mock_requests):
@@ -145,10 +149,14 @@ class TestWAClient(Test):
         ]
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
         endpoint = base_url + '/search/'
+        expected_params = {
+            'collection.id': collection_id,
+            'contains': json.dumps(contains)
+        }
 
         result = wa_client.search_annotations(iri, contains)
         assert_equal(mock_requests.get.call_args_list, [
-          call(endpoint, headers=headers, params=params),
+          call(endpoint, headers=headers, params=expected_params),
           call(fake_collection['first']),
           call(fake_page1['next'])
         ])
