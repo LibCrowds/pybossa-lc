@@ -115,7 +115,7 @@ class BaseAnalyst():
             for comment in comments:
                 user_id = comment[0]
                 val = comment[1]
-                user = user_repo.get(user_id)
+                user = user_repo.get(user_id) if user_id else None
                 if not val:
                     continue
                 anno = result_collection.add_comment(result, target, val, user)
