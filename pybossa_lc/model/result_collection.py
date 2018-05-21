@@ -33,13 +33,6 @@ class ResultCollection(Base):
         anno = self._create_annotation(anno)
         return anno
 
-    def add_link(self, result, target, body):
-        """Add a linking Annotation."""
-        self._validate(target=target, body=body)
-        anno = self._get_linking_annotation(result, target, body)
-        anno = self._create_annotation(anno)
-        return anno
-
     def get_by_result(self, result):
         """Return current Annotations for a result."""
         contains = {

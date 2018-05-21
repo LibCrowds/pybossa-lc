@@ -82,12 +82,6 @@ class BaseAnalyst():
         transcriptions = self._handle_transcriptions(rc, result, tr_df, target,
                                                      tmpl, task)
 
-        # Add any links to child annotations
-        parent_annotation_id = task.info.get('parent_annotation_id')
-        if parent_annotation_id:
-            for anno in tags + transcriptions:
-                rc.add_link(result, parent_annotation_id, anno['id'])
-
     def analyse_all(self, project_id):
         """Analyse all results for a project."""
         from pybossa.core import result_repo

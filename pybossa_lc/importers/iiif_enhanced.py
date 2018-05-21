@@ -57,7 +57,6 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
 
                 data_copy['target'] = anno['target']
                 data_copy['parent_task_id'] = result.task_id
-                data_copy['parent_annotation_id'] = anno['id']
                 child_task_data.append(data_copy)
 
             # Add has_children key to parent result

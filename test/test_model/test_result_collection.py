@@ -194,39 +194,6 @@ class TestResultCollection(Test):
             'target': target
         })
 
-    @with_context
-    def test_add_link(self, mock_client):
-        """Test that a link Annotation is added."""
-        iri = 'example.com'
-        rc = ResultCollection(iri)
-        target = 'foo'
-        body = 'bar'
-        user = UserFactory.create()
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        result = Result(project_id=1, task_run_ids=[])
-        fake_anno = dict(foo='bar')
-        mock_client.create_annotation.return_value = fake_anno
-        anno = rc.add_link(result, target, body)
-        assert_equal(anno, fake_anno)
-        mock_client.create_annotation.assert_called_once_with(iri, {
-            'motivation': 'linking',
-            'type': 'Annotation',
-            'generator': [
-                {
-                    "id": flask_app.config.get('GITHUB_REPO'),
-                    "type": "Software",
-                    "name": "LibCrowds",
-                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
-                },
-                {
-                    "id": url_for('api.api_result', oid=result.id),
-                    "type": "Software"
-                }
-            ],
-            'body': body,
-            'target': target
-        })
-
     def test_error_when_invalid_comment_values(self, mock_client):
         """Test ValueError raised when invalid comment values."""
         iri = 'example.com'
@@ -272,22 +239,6 @@ class TestResultCollection(Test):
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
                     rc.add_transcription(result, **values)
-                err_msg = exc.exception.message
-                assert_equal(err_msg, '"{}" is a required value'.format(key))
-
-    def test_error_when_invalid_linking_values(self, mock_client):
-        """Test ValueError raised when invalid linking values."""
-        iri = 'example.com'
-        rc = ResultCollection(iri)
-        result = Result(project_id=1, task_run_ids=[])
-        required = ['target', 'body']
-        invalid = ['', None]
-        for key in required:
-            for bad_value in invalid:
-                values = {k: 'foo' for k in required}
-                values[key] = bad_value
-                with assert_raises(ValueError) as exc:
-                    rc.add_link(result, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 

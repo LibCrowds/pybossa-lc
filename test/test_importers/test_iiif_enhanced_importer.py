@@ -149,7 +149,6 @@ class TestBulkTaskIIIFEnhancedImport(Test):
                         'url': '{}/full/max/0/default.jpg'.format(img_id),
                         'url_m': '{}/full/240,/0/default.jpg'.format(img_id),
                         'url_b': '{}/full/1024,/0/default.jpg'.format(img_id),
-                        'parent_annotation_id': anno['id'],
                         'parent_task_id': task.id
                     })
 
