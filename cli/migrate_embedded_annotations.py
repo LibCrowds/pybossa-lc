@@ -75,7 +75,7 @@ def run():
         for project in projects:
 
             query = text('''SELECT id, info->>'annotations' AS annotations
-                        FROM result
+                        FROM result, task
                         WHERE (result.info->>'annotations') IS NOT NULL
                         AND result.project_id=:project_id
                         AND result.task_id=task.id
