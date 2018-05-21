@@ -52,7 +52,7 @@ class WebAnnotationClient(object):
     def search_annotations(self, collectionIri, contains):
         """Search for Annotations with the given content."""
         collection_id = collectionIri.rstrip('/').split('/')[-1]
-        endpoint = self.base_url.rstrip('/') + '/search/annotations/'
+        endpoint = self.base_url.rstrip('/') + '/search/'
         params = {
             'collection.id': collection_id,
             'contains': contains
