@@ -14,6 +14,7 @@ python cli/migrate_embedded_annotations.py
 
 import os
 import json
+import click
 import requests
 from flask import url_for
 from sqlalchemy.sql import text
@@ -41,29 +42,57 @@ def format_annotation(result_id, anno):
     ]
 
 
+def get_category_id():
+    """Prompt for a category ID."""
+    query = text('''SELECT id, name FROM category''')
+    db_results = db.engine.execute(query)
+    categories = db_results.fetchall()
+    for category in categories:
+        print '{0}: {1}'.format(category.id, category.name)
+    category_id = click.prompt('Please enter a category ID', type=int)
+    if category_id not in [c.id for c in categories]:
+        raise ValueError('Invalid choice')
+    return category_id
+
+
+def get_projects(category_id):
+    """Get the category's projects."""
+    query = text('''SELECT id
+                    FROM project
+                    WHERE category_id=:category_id''')
+    db_results = db.engine.execute(query, category_id=category_id)
+    projects = db_results.fetchall()
+    print('Updating {} projects'.format(len(projects)))
+    return projects
+
 def run():
     with app.app_context():
-        query = text('''SELECT id, info->>'annotations' AS annotations
-                     FROM result
-                     WHERE (result.info->>'annotations') IS NOT NULL
-                     ''')
-        db_results = db.engine.execute(query).fetchall()
+        container_iri = click.prompt('Please enter a container IRI', type=str)
+        category_id = get_category_id()
+        projects = get_projects()
         i = 0
-        for row in db_results:
-            i += 1
-            annotations = json.loads(row.annotations)
-            for anno in annotations:
-                if not anno:
-                    continue
+        for project in projects:
+
+            query = text('''SELECT id, info->>'annotations' AS annotations
+                        FROM result
+                        WHERE (result.info->>'annotations') IS NOT NULL
+                        AND result.project_id=:project_id
+                        AND result.task_id=task.id
+                        ''')
+            db_results = db.engine.execute(query).fetchall()
+            for row in db_results:
+                annotations = json.loads(row.annotations)
+                for anno in annotations:
+                    if not anno:
+                        continue
 
                 format_annotation(row.id, anno)
-                endpoint = os.environ['CONTAINER_IRI']
                 old_iri = anno.pop('id')
                 slug = old_iri.rstrip('/').split('/')[-1]
                 headers = {
                     'Slug': slug
                 }
-                res = requests.post(endpoint, json=anno, headers=headers)
+                res = requests.post(container_iri, json=anno, headers=headers)
                 out = res.json()
                 new_iri = out['id']
 
@@ -76,8 +105,9 @@ def run():
                     '''
                 )
                 db.engine.execute(query, new_iri=new_iri, old_iri=old_iri)
+                i += 1
 
-            if i % 1000 == 0:
+            if i % 100 == 0:
                 print '{0} Annotations exported'.format(i)
 
 if __name__ == '__main__':
