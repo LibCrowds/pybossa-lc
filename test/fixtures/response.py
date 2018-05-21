@@ -13,4 +13,4 @@ class MockResponse:
         return json.loads(self.json_data)
 
     def raise_for_status(self):
-       pass
+        pass

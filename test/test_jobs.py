@@ -118,15 +118,11 @@ class TestJobs(Test):
         jobs.analyse_single(result_id, presenter)
         job = dict(name=mock_analyst().analyse,
                    args=[],
-                   kwargs={
-                       'presenter': presenter,
-                       'result_id': result_id,
-                       'silent': False
-                   },
+                   kwargs={'presenter': presenter, 'result_id': result_id,
+                           'silent': False},
                    timeout=flask_app.config.get('TIMEOUT'),
                    queue='high')
         mock_enqueue.assert_called_with(job)
-
 
     @with_context
     @patch('pybossa_lc.jobs.enqueue_job')
@@ -139,10 +135,7 @@ class TestJobs(Test):
         jobs.analyse_empty(project_id, presenter)
         job = dict(name=mock_analyst().analyse_empty,
                    args=[],
-                   kwargs={
-                       'presenter': presenter,
-                       'project_id': project_id
-                   },
+                   kwargs={'presenter': presenter, 'project_id': project_id},
                    timeout=timeout,
                    queue='high')
         mock_enqueue.assert_called_with(job)
@@ -158,10 +151,7 @@ class TestJobs(Test):
         jobs.analyse_all(project_id, presenter)
         job = dict(name=mock_analyst().analyse_all,
                    args=[],
-                   kwargs={
-                       'presenter': presenter,
-                       'project_id': project_id
-                   },
+                   kwargs={'presenter': presenter, 'project_id': project_id},
                    timeout=timeout,
                    queue='high')
         mock_enqueue.assert_called_with(job)

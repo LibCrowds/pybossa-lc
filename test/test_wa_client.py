@@ -19,13 +19,13 @@ class TestWAClient(Test):
         """Test create Annotation."""
         iri = 'example.com'
         anno = {
-          'body': 'foo',
-          'target': 'bar'
+            'body': 'foo',
+            'target': 'bar'
         }
         expected = {
-          'id': 'baz',
-          'body': 'foo',
-          'target': 'bar'
+            'id': 'baz',
+            'body': 'foo',
+            'target': 'bar'
         }
         fake_resp = MockResponse(json.dumps(expected))
         mock_requests.post.return_value = fake_resp
@@ -42,8 +42,8 @@ class TestWAClient(Test):
             'Prefer': 'return=representation; include="{}"'.format(ns)
         }
         expected = {
-          'id': 'foo',
-          'label': 'bar'
+            'id': 'foo',
+            'label': 'bar'
         }
         fake_resp = MockResponse(json.dumps(expected))
         mock_requests.get.return_value = fake_resp
@@ -57,24 +57,24 @@ class TestWAClient(Test):
         base = 'return=representation; include="{0}"'
         default = wa_client._get_prefer_headers()
         ns = [
-          'http://www.w3.org/ns/oa#PreferContainedDescriptions'
+            'http://www.w3.org/ns/oa#PreferContainedDescriptions'
         ]
         assert_equal(default, base.format(' '.join(ns)))
         minimal = wa_client._get_prefer_headers(minimal=True)
         ns = [
-          'http://www.w3.org/ns/oa#PreferContainedDescriptions',
-          'http://www.w3.org/ns/ldp#PreferMinimalContainer'
+            'http://www.w3.org/ns/oa#PreferContainedDescriptions',
+            'http://www.w3.org/ns/ldp#PreferMinimalContainer'
         ]
         assert_equal(minimal, base.format(' '.join(ns)))
         iris = wa_client._get_prefer_headers(iris=True)
         ns = [
-          'http://www.w3.org/ns/oa#PreferContainedIRIs'
+            'http://www.w3.org/ns/oa#PreferContainedIRIs'
         ]
         assert_equal(iris, base.format(' '.join(ns)))
         minimal_iris = wa_client._get_prefer_headers(minimal=True, iris=True)
         ns = [
-          'http://www.w3.org/ns/oa#PreferContainedIRIs',
-          'http://www.w3.org/ns/ldp#PreferMinimalContainer'
+            'http://www.w3.org/ns/oa#PreferContainedIRIs',
+            'http://www.w3.org/ns/ldp#PreferMinimalContainer'
         ]
         assert_equal(minimal_iris, base.format(' '.join(ns)))
 
@@ -83,8 +83,8 @@ class TestWAClient(Test):
         collection_id = 'foo'
         iri = 'example.com/{}'.format(collection_id)
         ns = [
-          'http://www.w3.org/ns/oa#PreferContainedDescriptions',
-          'http://www.w3.org/ns/ldp#PreferMinimalContainer'
+            'http://www.w3.org/ns/oa#PreferContainedDescriptions',
+            'http://www.w3.org/ns/ldp#PreferMinimalContainer'
         ]
         base_prefer = 'return=representation; include="{}"'
         headers = {
@@ -96,7 +96,7 @@ class TestWAClient(Test):
             'contains': contains
         }
         fake_collection = {
-          'total': 0
+            'total': 0
         }
         fake_resp = MockResponse(json.dumps(fake_collection))
         mock_requests.get.return_value = fake_resp
@@ -117,8 +117,8 @@ class TestWAClient(Test):
         collection_id = 'foo'
         iri = 'example.com/{}'.format(collection_id)
         ns = [
-          'http://www.w3.org/ns/oa#PreferContainedDescriptions',
-          'http://www.w3.org/ns/ldp#PreferMinimalContainer'
+            'http://www.w3.org/ns/oa#PreferContainedDescriptions',
+            'http://www.w3.org/ns/ldp#PreferMinimalContainer'
         ]
         base_prefer = 'return=representation; include="{}"'
         headers = {
@@ -130,22 +130,22 @@ class TestWAClient(Test):
             'contains': contains
         }
         fake_collection = {
-          'total': 10,
-          'first': 'http://annotations.example.com/page1'
+            'total': 10,
+            'first': 'http://annotations.example.com/page1'
         }
         fake_page1 = {
-          'total': 10,
-          'items': [1, 2, 3, 4, 5],
-          'next': 'http://annotations.example.com/page2'
+            'total': 10,
+            'items': [1, 2, 3, 4, 5],
+            'next': 'http://annotations.example.com/page2'
         }
         fake_page2 = {
-          'total': 10,
-          'items': [6, 7, 8, 9, 10]
+            'total': 10,
+            'items': [6, 7, 8, 9, 10]
         }
         mock_requests.get.side_effect = [
-          MockResponse(json.dumps(fake_collection)),
-          MockResponse(json.dumps(fake_page1)),
-          MockResponse(json.dumps(fake_page2))
+            MockResponse(json.dumps(fake_collection)),
+            MockResponse(json.dumps(fake_page1)),
+            MockResponse(json.dumps(fake_page2))
         ]
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
         endpoint = base_url + '/search/'
@@ -156,9 +156,9 @@ class TestWAClient(Test):
 
         result = wa_client.search_annotations(iri, contains)
         assert_equal(mock_requests.get.call_args_list, [
-          call(endpoint, headers=headers, params=expected_params),
-          call(fake_collection['first']),
-          call(fake_page1['next'])
+            call(endpoint, headers=headers, params=expected_params),
+            call(fake_collection['first']),
+            call(fake_page1['next'])
         ])
         assert_equal(result, fake_page1['items'] + fake_page2['items'])
 
