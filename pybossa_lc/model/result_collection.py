@@ -89,13 +89,6 @@ class ResultCollection(Base):
         ]
         return anno
 
-    def _get_linking_annotation(self, result, target, body):
-        """Return a linking Annotation."""
-        anno = self._get_annotation_base(result, 'linking')
-        anno['target'] = target
-        anno['body'] = body
-        return anno
-
     def _get_tagging_annotation(self, result, target, value, rect):
         """Return a tagging Annotation."""
         anno = self._get_annotation_base(result, 'tagging')
