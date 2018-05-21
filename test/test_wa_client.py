@@ -31,7 +31,7 @@ class TestWAClient(Test):
         mock_requests.post.return_value = fake_resp
 
         result = wa_client.create_annotation(iri, anno)
-        mock_requests.post.assert_called_once_with(iri, data=anno)
+        mock_requests.post.assert_called_once_with(iri, json=anno)
         assert_dict_equal(result, expected)
 
     def test_get_collection(self, mock_requests):
@@ -176,4 +176,4 @@ class TestWAClient(Test):
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
         endpoint = base_url + '/batch/'
         wa_client.delete_batch(fake_annos)
-        mock_requests.delete.assert_called_once_with(endpoint, data=fake_annos)
+        mock_requests.delete.assert_called_once_with(endpoint, json=fake_annos)
