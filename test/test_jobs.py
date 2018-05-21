@@ -70,7 +70,6 @@ class TestJobs(Test):
     def test_invalid_volumes_identified(self, mock_send_mail):
         """Check that invalid volumes are identified."""
         category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
         vol = dict(id='foo', name='bar')
         category.info = dict(volumes=[vol], published=True)
         self.project_repo.update_category(category)
@@ -108,3 +107,61 @@ class TestJobs(Test):
             call(mail_dict1),
             call(mail_dict2)
         ])
+
+    @with_context
+    @patch('pybossa_lc.jobs.enqueue_job')
+    @patch('pybossa_lc.jobs.Analyst')
+    def test_analyse_single(self, mock_analyst, mock_enqueue):
+        """Test analysis of single result queued."""
+        result_id = 42
+        presenter = 'my-presenter'
+        jobs.analyse_single(result_id, presenter)
+        job = dict(name=mock_analyst().analyse,
+                   args=[],
+                   kwargs={
+                       'presenter': presenter,
+                       'result_id': result_id,
+                       'silent': False
+                   },
+                   timeout=flask_app.config.get('TIMEOUT'),
+                   queue='high')
+        mock_enqueue.assert_called_with(job)
+
+
+    @with_context
+    @patch('pybossa_lc.jobs.enqueue_job')
+    @patch('pybossa_lc.jobs.Analyst')
+    def test_analyse_empty(self, mock_analyst, mock_enqueue):
+        """Test analysis of empty results queued."""
+        project_id = 42
+        presenter = 'my-presenter'
+        timeout = 1 * 60 * 60
+        jobs.analyse_empty(project_id, presenter)
+        job = dict(name=mock_analyst().analyse_empty,
+                   args=[],
+                   kwargs={
+                       'presenter': presenter,
+                       'project_id': project_id
+                   },
+                   timeout=timeout,
+                   queue='high')
+        mock_enqueue.assert_called_with(job)
+
+    @with_context
+    @patch('pybossa_lc.jobs.enqueue_job')
+    @patch('pybossa_lc.jobs.Analyst')
+    def test_analyse_all(self, mock_analyst, mock_enqueue):
+        """Test analysis of all results queued."""
+        project_id = 42
+        presenter = 'my-presenter'
+        timeout = 1 * 60 * 60
+        jobs.analyse_all(project_id, presenter)
+        job = dict(name=mock_analyst().analyse_all,
+                   args=[],
+                   kwargs={
+                       'presenter': presenter,
+                       'project_id': project_id
+                   },
+                   timeout=timeout,
+                   queue='high')
+        mock_enqueue.assert_called_with(job)
