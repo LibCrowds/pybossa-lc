@@ -14,21 +14,21 @@ class ResultCollection(Base):
 
     def add_comment(self, result, target, value, user=None):
         """Add a commenting Annotation."""
-        self._validate(target=target, value=value)
+        self._validate_required_values(target=target, value=value)
         anno = self._get_commenting_annotation(result, target, value, user)
         anno = self._create_annotation(anno)
         return anno
 
     def add_transcription(self, result, target, value, tag):
         """Add a describing Annotation."""
-        self._validate(target=target, value=value, tag=tag)
+        self._validate_required_values(target=target, value=value, tag=tag)
         anno = self._get_describing_annotation(result, target, value, tag)
         anno = self._create_annotation(anno)
         return anno
 
     def add_tag(self, result, target, value, rect=None):
         """Add a tagging Annotation."""
-        self._validate(target=target, value=value)
+        self._validate_required_values(target=target, value=value)
         anno = self._get_tagging_annotation(result, target, value, rect)
         anno = self._create_annotation(anno)
         return anno
@@ -49,10 +49,10 @@ class ResultCollection(Base):
         """Delete a batch of Annotations."""
         return self._delete_batch(annotations)
 
-    def _validate(self, **kwargs):
+    def _validate_required_values(self, **kwargs):
         """Verify that the given values exist."""
         for k, v in kwargs.items():
-            if not v or len(str(v)) < 1:
+            if not v or len(unicode(v)) < 1:
                 err_msg = '"{}" is a required value'.format(k)
                 raise ValueError(err_msg)
 

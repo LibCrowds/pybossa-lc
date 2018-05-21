@@ -1,14 +1,14 @@
 # -*- coding: utf8 -*-
 """Test result collection model."""
 
-from flask import current_app
+import itertools
 from nose.tools import *
 from mock import patch
 from default import Test, with_context, flask_app
 from requests.exceptions import HTTPError
 from factories import UserFactory
 from pybossa.model.result import Result
-from flask import url_for
+from flask import url_for, current_app
 
 from pybossa_lc.model.base import Base
 from pybossa_lc.model.result_collection import ResultCollection
@@ -268,10 +268,44 @@ class TestResultCollection(Test):
                 'id': 'foo',
                 'type': 'Annotation'
             },
-                {
+            {
                 'id': 'bar',
                 'type': 'Annotation'
             }
         ]
         rc.delete_batch(annos)
         mock_client.delete_batch.assert_called_once_with(annos)
+
+    @with_context
+    def test_transcription_values_validated(self, mock_client):
+        """Test validation for required transcription values."""
+        rc = ResultCollection(None)
+        result = Result(project_id=1, task_run_ids=[])
+        # Check it doesn't raise exception for valid values
+        rc.add_transcription(result, 'example.com', u'\xa3', 42)
+        # Then check empty string and None for each required value
+        for comb in itertools.combinations(['foo', 'bar', '', None], 3):
+            assert_raises(ValueError, rc.add_transcription, result, comb[0],
+                          comb[1], comb[2])
+
+    @with_context
+    def test_tagging_values_validated(self, mock_client):
+        """Test validation for required tagging values."""
+        rc = ResultCollection(None)
+        result = Result(project_id=1, task_run_ids=[])
+        # Check it doesn't raise exception for valid values
+        rc.add_tag(result, 'example.com', u'\xa3')
+        # Then check empty string and None for each required value
+        for comb in itertools.combinations(['foo', '', None], 2):
+            assert_raises(ValueError, rc.add_tag, result, comb[0], comb[1])
+
+    @with_context
+    def test_comment_values_validated(self, mock_client):
+        """Test validation for required comment values."""
+        rc = ResultCollection(None)
+        result = Result(project_id=1, task_run_ids=[])
+        # Check it doesn't raise exception for valid values
+        rc.add_comment(result, 'example.com', u'\xa3')
+        # Then check empty string and None for each required value
+        for comb in itertools.combinations(['foo', '', None], 2):
+            assert_raises(ValueError, rc.add_comment, result, comb[0], comb[1])

@@ -66,6 +66,9 @@ class TestZ3950Analyst(Test):
             'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.called, False)
 
@@ -82,6 +85,9 @@ class TestZ3950Analyst(Test):
             'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.called, False)
 
@@ -98,6 +104,9 @@ class TestZ3950Analyst(Test):
             'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.called, False)
 
@@ -114,6 +123,9 @@ class TestZ3950Analyst(Test):
             'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.called, False)
 
@@ -134,6 +146,9 @@ class TestZ3950Analyst(Test):
             'comments': value
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         func = mock_client.create_annotation
         func.assert_called_once_with(anno_collection, {
@@ -186,6 +201,9 @@ class TestZ3950Analyst(Test):
                 'comments': ''
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.call_args_list, [
             call(anno_collection, {
@@ -267,6 +285,9 @@ class TestZ3950Analyst(Test):
             'comments': ''
         })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         func = mock_client.create_annotation
         assert_equal(mock_client.create_annotation.call_args_list, [
@@ -346,6 +367,9 @@ class TestZ3950Analyst(Test):
                 'comments': ''
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.called, False)
 
@@ -366,6 +390,9 @@ class TestZ3950Analyst(Test):
                 'comments': ''
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.create_annotation.called, False)
 
@@ -387,8 +414,10 @@ class TestZ3950Analyst(Test):
                 'comments': i
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
-
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(updated_task.n_answers, n_answers)
 
@@ -407,6 +436,9 @@ class TestZ3950Analyst(Test):
                 'comments': ''
             })
         result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         updated_task = self.task_repo.get_task(task.id)
         assert_equal(updated_task.n_answers, n_answers)
@@ -436,7 +468,32 @@ class TestZ3950Analyst(Test):
         fake_search = MagicMock()
         fake_search.return_value = fake_annos
         mock_client.search_annotations = fake_search
-        self.z3950_analyst.analyse(result.id)
-        base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
-        endpoint = base_url + '/batch/'
+        self.z3950_analyst.analyse(result.id, analyse_full=True)
         mock_client.delete_batch.assert_called_once_with(fake_annos)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_results_with_annotations_not_analysed(self, mock_client):
+        """Test results with Annotations already not analysed by default."""
+        n_answers = 3
+        target = 'example.com'
+        task = self.ctx.create_task(n_answers, target)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'reference': 'foo',
+            'control_number': 'bar',
+            'comments': ''
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_annos = [
+            {
+                'id': 'baz'
+            },
+            {
+                'id': 'qux'
+            }
+        ]
+        fake_search = MagicMock()
+        fake_search.return_value = fake_annos
+        mock_client.search_annotations = fake_search
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(mock_client.delete_batch.called, False)

@@ -49,7 +49,7 @@ class BaseAnalyst():
         """Return a dataframe of transcriptions."""
         pass
 
-    def analyse(self, result_id, silent=True):
+    def analyse(self, result_id, silent=True, analyse_full=False):
         """Analyse a result."""
         from .. import wa_client
         from pybossa.core import result_repo, task_repo, project_repo
@@ -61,7 +61,7 @@ class BaseAnalyst():
         rc = self._get_rc(category)
         annotations = rc.get_by_result(result)
 
-        can_update = self._can_update_result(result, annotations)
+        can_update = self._can_update_result(result, annotations, analyse_full)
         if not can_update:
             return
 
@@ -87,7 +87,7 @@ class BaseAnalyst():
         from pybossa.core import result_repo
         results = result_repo.filter_by(project_id=project_id)
         for result in results:
-            self.analyse(result.id)
+            self.analyse(result.id, analyse_full=True)
 
     def analyse_empty(self, project_id):
         """Analyse all empty results for a project."""
@@ -97,8 +97,11 @@ class BaseAnalyst():
         for result in empty_results:
             self.analyse(result.id)
 
-    def _can_update_result(self, result, annotations):
+    def _can_update_result(self, result, annotations, analyse_full):
         """Check if a result can be updated."""
+        print annotations, analyse_full
+        if annotations and not analyse_full:
+            return False
         for anno in annotations:
             if anno.get('modified'):
                 return False

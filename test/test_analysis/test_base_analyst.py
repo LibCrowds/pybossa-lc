@@ -44,13 +44,13 @@ class TestBaseAnalyst(Test):
         result.info = dict(annotations=[{}])
         self.result_repo.update(result)
         self.base_analyst.analyse_all(project.id)
-        expected = [call(t.id) for t in tasks]
+        expected = [call(t.id, analyse_full=True) for t in tasks]
         assert_equal(mock_analyse.call_args_list, expected)
 
     @with_context
     @patch("pybossa_lc.analysis.base.BaseAnalyst.analyse")
     def test_analyse_empty(self, mock_analyse):
-        """Test that all results are analysed."""
+        """Test that empty results are analysed."""
         project = ProjectFactory()
         tasks = TaskFactory.create_batch(2, project=project, n_answers=1)
         for task in tasks:
