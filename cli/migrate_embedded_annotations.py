@@ -7,7 +7,6 @@ Usage:
 export SERVER_NAME='https://backend.libcrowds.com'
 export GITHUB_REPO='https://github.com/LibCrowds/libcrowds'
 export SPA_SERVER_NAME='https://www.libcrowds.com'
-export CONTAINER_IRI='https://annotations.libcrowds.com/my-container/'
 
 python cli/migrate_embedded_annotations.py
 """
