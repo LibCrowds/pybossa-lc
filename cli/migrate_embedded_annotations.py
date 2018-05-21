@@ -67,8 +67,10 @@ def get_projects(category_id):
 def run():
     with app.app_context():
         container_iri = click.prompt('Please enter a container IRI', type=str)
+        start = click.prompt('Start at result ID:', type=int, default=0)
         category_id = get_category_id()
-        projects = get_projects()
+        projects = get_projects(category_id)
+        
         i = 0
         for project in projects:
 
@@ -77,8 +79,10 @@ def run():
                         WHERE (result.info->>'annotations') IS NOT NULL
                         AND result.project_id=:project_id
                         AND result.task_id=task.id
+                        AND result.id > :start
                         ''')
-            db_results = db.engine.execute(query).fetchall()
+            kwargs = dict(project_id=project.id, start=start)
+            db_results = db.engine.execute(query, **kwargs).fetchall()
             for row in db_results:
                 annotations = json.loads(row.annotations)
                 for anno in annotations:
@@ -93,7 +97,15 @@ def run():
                 }
                 res = requests.post(container_iri, json=anno, headers=headers)
                 out = res.json()
-                new_iri = out['id']
+                
+                try:
+                    new_iri = out['id']
+                except Exception as err:
+                    print 'Current result ID:' row.id
+                    print 'Status code:', res.status_code
+                    print 'Request data:', anno
+                    print 'Response data:', out.data
+                    raise err
 
                 query = text(
                     '''
