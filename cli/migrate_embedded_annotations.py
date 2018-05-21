@@ -74,13 +74,16 @@ def run():
         i = 0
         for project in projects:
 
-            query = text('''SELECT id, info->>'annotations' AS annotations
-                        FROM result, task
-                        WHERE (result.info->>'annotations') IS NOT NULL
-                        AND result.project_id=:project_id
-                        AND result.task_id=task.id
-                        AND result.id > :start
-                        ''')
+            query = text(
+                '''
+                SELECT result.id, result.info->>'annotations' AS annotations
+                FROM result, task
+                WHERE (result.info->>'annotations') IS NOT NULL
+                AND result.project_id=:project_id
+                AND result.task_id=task.id
+                AND result.id > :start
+                '''
+            )
             kwargs = dict(project_id=project.id, start=start)
             db_results = db.engine.execute(query, **kwargs).fetchall()
             for row in db_results:
