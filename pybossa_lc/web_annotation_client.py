@@ -30,14 +30,14 @@ class WebAnnotationClient(object):
 
     def create_annotation(self, iri, annotation):
         """Add an Annotation."""
-        response = requests.post(iri, data=json.dumps(annotation))
+        response = requests.post(iri, data=annotation)
         response.raise_for_status()
         return response.json()
 
     def delete_batch(self, annotations):
         """Delete a batch of Annotations."""
         endpoint = self.base_url.rstrip('/') + '/batch/'
-        response = requests.delete(endpoint, data=json.dumps(annotations))
+        response = requests.delete(endpoint, data=annotations)
         response.raise_for_status()
 
     def _get_prefer_headers(self, minimal=False, iris=False):
