@@ -101,7 +101,7 @@ def run():
                 try:
                     new_iri = out['id']
                 except Exception as err:
-                    print 'Current result ID:' row.id
+                    print 'Current result ID:', row.id
                     print 'Status code:', res.status_code
                     print 'Request data:', anno
                     print 'Response data:', out.data
