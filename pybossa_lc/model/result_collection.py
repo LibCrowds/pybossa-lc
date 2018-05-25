@@ -12,24 +12,26 @@ class ResultCollection(Base):
     def __init__(self, iri):
         super(ResultCollection, self).__init__(iri)
 
-    def add_comment(self, result, target, value, user=None):
+    def add_comment(self, result, task, target, value, user=None):
         """Add a commenting Annotation."""
         self._validate_required_values(target=target, value=value)
-        anno = self._get_commenting_annotation(result, target, value, user)
+        anno = self._get_commenting_annotation(result, task, target, value,
+                                               user)
         anno = self._create_annotation(anno)
         return anno
 
-    def add_transcription(self, result, target, value, tag):
+    def add_transcription(self, result, task, target, value, tag):
         """Add a describing Annotation."""
         self._validate_required_values(target=target, value=value, tag=tag)
-        anno = self._get_describing_annotation(result, target, value, tag)
+        anno = self._get_describing_annotation(result, task, target, value,
+                                               tag)
         anno = self._create_annotation(anno)
         return anno
 
-    def add_tag(self, result, target, value, rect=None):
+    def add_tag(self, result, task, target, value, rect=None):
         """Add a tagging Annotation."""
         self._validate_required_values(target=target, value=value)
-        anno = self._get_tagging_annotation(result, target, value, rect)
+        anno = self._get_tagging_annotation(result, task, target, value, rect)
         anno = self._create_annotation(anno)
         return anno
 
@@ -56,9 +58,20 @@ class ResultCollection(Base):
                 err_msg = '"{}" is a required value'.format(k)
                 raise ValueError(err_msg)
 
-    def _get_commenting_annotation(self, result, target, value, user):
+    def _get_annotation_base(self, result, task, motivation):
+        """Return the base for a new Web Annotation."""
+        base =  {
+            "type": "Annotation",
+            "motivation": motivation,
+            "generator": self._get_generator(result)
+        }
+        if task.info and task.info.get('manifest'):
+          base['partOf'] = task.info['manifest']
+        return base
+
+    def _get_commenting_annotation(self, result, task, target, value, user):
         """Return a commenting Annotation."""
-        anno = self._get_annotation_base(result, 'commenting')
+        anno = self._get_annotation_base(result, task, 'commenting')
         anno['target'] = target
         anno['body'] = {
             "type": "TextualBody",
@@ -70,9 +83,9 @@ class ResultCollection(Base):
             anno['creator'] = self._get_creator(user)
         return anno
 
-    def _get_describing_annotation(self, result, target, value, tag):
+    def _get_describing_annotation(self, result, task, target, value, tag):
         """Return a describing Annotation."""
-        anno = self._get_annotation_base(result, 'describing')
+        anno = self._get_annotation_base(result, task, 'describing')
         anno['target'] = target
         anno['body'] = [
             {
@@ -89,9 +102,9 @@ class ResultCollection(Base):
         ]
         return anno
 
-    def _get_tagging_annotation(self, result, target, value, rect):
+    def _get_tagging_annotation(self, result, task, target, value, rect):
         """Return a tagging Annotation."""
-        anno = self._get_annotation_base(result, 'tagging')
+        anno = self._get_annotation_base(result, task, 'tagging')
         if rect:
             target = self._get_fragment_selector(target, rect)
         anno['target'] = target

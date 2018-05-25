@@ -6,7 +6,7 @@ from nose.tools import *
 from mock import patch
 from default import Test, with_context, flask_app
 from requests.exceptions import HTTPError
-from factories import UserFactory
+from factories import UserFactory, TaskFactory
 from pybossa.model.result import Result
 from flask import url_for, current_app
 
@@ -29,11 +29,11 @@ class TestResultCollection(Test):
         target = 'foo'
         value = 'bar'
         user = UserFactory.create()
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         fake_anno = dict(foo='bar')
         mock_client.create_annotation.return_value = fake_anno
-        anno = rc.add_comment(result, target, value, user)
+        anno = rc.add_comment(result, task, target, value, user)
         assert_equal(anno, fake_anno)
         mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'commenting',
@@ -72,11 +72,11 @@ class TestResultCollection(Test):
         rc = ResultCollection(iri)
         target = 'foo'
         value = 'bar'
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         fake_anno = dict(foo='bar')
         mock_client.create_annotation.return_value = fake_anno
-        anno = rc.add_tag(result, target, value)
+        anno = rc.add_tag(result, task, target, value)
         assert_equal(anno, fake_anno)
         mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'tagging',
@@ -108,12 +108,12 @@ class TestResultCollection(Test):
         rc = ResultCollection(iri)
         target = 'foo'
         value = 'bar'
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         rect = dict(x=100, y=100, w=50, h=50)
         fake_anno = dict(foo='bar')
         mock_client.create_annotation.return_value = fake_anno
-        anno = rc.add_tag(result, target, value, rect)
+        anno = rc.add_tag(result, task, target, value, rect)
         assert_equal(anno, fake_anno)
         mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'tagging',
@@ -156,12 +156,11 @@ class TestResultCollection(Test):
         target = 'foo'
         value = 'bar'
         tag = 'baz'
-        spa_server_name = current_app.config.get('SPA_SERVER_NAME')
-        result = Result(project_id=1, task_run_ids=[])
-        rect = dict(x=100, y=100, w=50, h=50)
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         fake_anno = dict(foo='bar')
         mock_client.create_annotation.return_value = fake_anno
-        anno = rc.add_transcription(result, target, value, tag)
+        anno = rc.add_transcription(result, task, target, value, tag)
         assert_equal(anno, fake_anno)
         mock_client.create_annotation.assert_called_once_with(iri, {
             'motivation': 'describing',
@@ -194,11 +193,13 @@ class TestResultCollection(Test):
             'target': target
         })
 
+    @with_context
     def test_error_when_invalid_comment_values(self, mock_client):
         """Test ValueError raised when invalid comment values."""
         iri = 'example.com'
         rc = ResultCollection(iri)
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         required = ['target', 'value']
         invalid = ['', None]
         for key in required:
@@ -206,15 +207,17 @@ class TestResultCollection(Test):
                 values = {k: 'foo' for k in required}
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
-                    rc.add_comment(result, **values)
+                    rc.add_comment(result, task, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
+    @with_context
     def test_error_when_invalid_tag_values(self, mock_client):
         """Test ValueError raised when invalid tag values."""
         iri = 'example.com'
         rc = ResultCollection(iri)
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         required = ['target', 'value']
         invalid = ['', None]
         for key in required:
@@ -222,15 +225,17 @@ class TestResultCollection(Test):
                 values = {k: 'foo' for k in required}
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
-                    rc.add_tag(result, **values)
+                    rc.add_tag(result, task, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
+    @with_context
     def test_error_when_invalid_transcription_values(self, mock_client):
         """Test ValueError raised when invalid transcription values."""
         iri = 'example.com'
         rc = ResultCollection(iri)
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         required = ['target', 'value', 'tag']
         invalid = ['', None]
         for key in required:
@@ -238,7 +243,7 @@ class TestResultCollection(Test):
                 values = {k: 'foo' for k in required}
                 values[key] = bad_value
                 with assert_raises(ValueError) as exc:
-                    rc.add_transcription(result, **values)
+                    rc.add_transcription(result, task, **values)
                 err_msg = exc.exception.message
                 assert_equal(err_msg, '"{}" is a required value'.format(key))
 
@@ -280,32 +285,89 @@ class TestResultCollection(Test):
     def test_transcription_values_validated(self, mock_client):
         """Test validation for required transcription values."""
         rc = ResultCollection(None)
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         # Check it doesn't raise exception for valid values
-        rc.add_transcription(result, 'example.com', u'\xa3', 42)
+        rc.add_transcription(result, task, 'example.com', u'\xa3', 42)
         # Then check empty string and None for each required value
         for comb in itertools.combinations(['foo', 'bar', '', None], 3):
-            assert_raises(ValueError, rc.add_transcription, result, comb[0],
-                          comb[1], comb[2])
+            assert_raises(ValueError, rc.add_transcription, result, task,
+                          comb[0], comb[1], comb[2])
 
     @with_context
     def test_tagging_values_validated(self, mock_client):
         """Test validation for required tagging values."""
         rc = ResultCollection(None)
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         # Check it doesn't raise exception for valid values
-        rc.add_tag(result, 'example.com', u'\xa3')
+        rc.add_tag(result, task, 'example.com', u'\xa3')
         # Then check empty string and None for each required value
         for comb in itertools.combinations(['foo', '', None], 2):
-            assert_raises(ValueError, rc.add_tag, result, comb[0], comb[1])
+            assert_raises(ValueError, rc.add_tag, result, task, comb[0],
+                          comb[1])
 
     @with_context
     def test_comment_values_validated(self, mock_client):
         """Test validation for required comment values."""
         rc = ResultCollection(None)
-        result = Result(project_id=1, task_run_ids=[])
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
         # Check it doesn't raise exception for valid values
-        rc.add_comment(result, 'example.com', u'\xa3')
+        rc.add_comment(result, task, 'example.com', u'\xa3')
         # Then check empty string and None for each required value
         for comb in itertools.combinations(['foo', '', None], 2):
-            assert_raises(ValueError, rc.add_comment, result, comb[0], comb[1])
+            assert_raises(ValueError, rc.add_comment, result, task, comb[0],
+                          comb[1])
+
+    @with_context
+    def test_get_annotation_base(self, mock_client):
+        """Test get Annotation base."""
+        rc = ResultCollection(None)
+        task = TaskFactory()
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
+        motivation = 'foo'
+        base = rc._get_annotation_base(result, task, motivation)
+        assert_equal(base, {
+            'type': 'Annotation',
+            'motivation': motivation,
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ]
+        })
+
+    @with_context
+    def test_get_annotation_base_with_manifest(self, mock_client):
+        """Test get Annotation base with a manifest."""
+        rc = ResultCollection(None)
+        manifest = 'example.com'
+        task = TaskFactory(info=dict(manifest=manifest))
+        result = Result(project_id=1, task_id=task.id, task_run_ids=[])
+        motivation = 'foo'
+        base = rc._get_annotation_base(result, task, motivation)
+        assert_equal(base, {
+            'type': 'Annotation',
+            'motivation': motivation,
+            'generator': [
+                {
+                    "id": flask_app.config.get('GITHUB_REPO'),
+                    "type": "Software",
+                    "name": "LibCrowds",
+                    "homepage": flask_app.config.get('SPA_SERVER_NAME')
+                },
+                {
+                    "id": url_for('api.api_result', oid=result.id),
+                    "type": "Software"
+                }
+            ],
+            'partOf': manifest
+        })

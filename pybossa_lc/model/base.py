@@ -24,14 +24,6 @@ class Base(object):
         """
         wa_client.get_collection(self.iri, minimal=True)
 
-    def _get_annotation_base(self, result, motivation):
-        """Return the base for a new Web Annotation."""
-        return {
-            "type": "Annotation",
-            "motivation": motivation,
-            "generator": self._get_generator(result)
-        }
-
     def _get_generator(self, result):
         """Return a reference to the LibCrowds software."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
