@@ -21,7 +21,6 @@ class IIIFAnnotationAnalyst(BaseAnalyst):
 
         if not all(type(v) == list for v in task_run_df['info'].tolist()):
             msg = "Invalid task runs: info must be a list"
-            print all(type(v) == list for v in task_run_df['info'].tolist())
             raise AnalysisException(msg)
 
     def get_comments(self, task_run_df):

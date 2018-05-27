@@ -497,3 +497,24 @@ class TestZ3950Analyst(Test):
         mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
         assert_equal(mock_client.delete_batch.called, False)
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_annotation_collection_iri_added_to_result_info(self, mock_client):
+        """Test Z3950 result info updated with AnnotationCollection IRI."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'annotations.example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    anno_collection=anno_collection)
+        TaskRunFactory.create_batch(n_answers, task=task, info={
+            'reference': 'foo',
+            'control_number': 'bar',
+            'comments': ''
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
+        self.z3950_analyst.analyse(result.id)
+        assert_equal(result.info, anno_collection)

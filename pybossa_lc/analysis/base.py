@@ -80,6 +80,8 @@ class BaseAnalyst():
         self._handle_comments(rc, task, tr_df, target, silent)
         self._handle_tags(rc, task, tr_df, target)
         self._handle_transcriptions(rc, task, tr_df, target, tmpl)
+        result.info = rc.iri
+        result_repo.update(result)
 
     def analyse_all(self, project_id):
         """Analyse all results for a project."""
