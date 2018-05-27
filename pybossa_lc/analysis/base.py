@@ -98,7 +98,6 @@ class BaseAnalyst():
 
     def _can_update_result(self, result, annotations, analyse_full):
         """Check if a result can be updated."""
-        print annotations, analyse_full
         if annotations and not analyse_full:
             return False
         for anno in annotations:
