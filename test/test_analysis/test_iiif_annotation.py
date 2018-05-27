@@ -213,7 +213,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -275,7 +275,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -334,7 +334,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -395,7 +395,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -616,7 +616,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -685,7 +685,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -758,7 +758,7 @@ class TestIIIFAnnotationAnalyst(Test):
                     "homepage": flask_app.config.get('SPA_SERVER_NAME')
                 },
                 {
-                    "id": url_for('api.api_result', oid=result.id),
+                    "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
                 }
             ],
@@ -828,7 +828,7 @@ class TestIIIFAnnotationAnalyst(Test):
                         "homepage": flask_app.config.get('SPA_SERVER_NAME')
                     },
                     {
-                        "id": url_for('api.api_result', oid=result.id),
+                        "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
                     }
                 ],
@@ -860,7 +860,7 @@ class TestIIIFAnnotationAnalyst(Test):
                         "homepage": flask_app.config.get('SPA_SERVER_NAME')
                     },
                     {
-                        "id": url_for('api.api_result', oid=result.id),
+                        "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
                     }
                 ],
@@ -892,7 +892,7 @@ class TestIIIFAnnotationAnalyst(Test):
                         "homepage": flask_app.config.get('SPA_SERVER_NAME')
                     },
                     {
-                        "id": url_for('api.api_result', oid=result.id),
+                        "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
                     }
                 ],

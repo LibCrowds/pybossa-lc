@@ -7,7 +7,7 @@ from default import Test, with_context, flask_app
 from requests.exceptions import HTTPError
 from factories import UserFactory
 from flask import url_for
-from pybossa.model.result import Result
+from pybossa.model.task import Task
 
 from pybossa_lc.model.base import Base
 
@@ -51,8 +51,8 @@ class TestBaseModel(Test):
     def test_get_generator(self, mock_client):
         """Test that the correct Annotation generator is returned."""
         base = Base(None)
-        result = Result(project_id=1, task_run_ids=[])
-        generator = base._get_generator(result)
+        task = Task(project_id=1)
+        generator = base._get_generator(task)
         assert_equal(generator, [
             {
                 "id": flask_app.config.get('GITHUB_REPO'),
@@ -61,7 +61,7 @@ class TestBaseModel(Test):
                 "homepage": flask_app.config.get('SPA_SERVER_NAME')
             },
             {
-                "id": url_for('api.api_result', oid=result.id),
+                "id": url_for('api.api_task', oid=task.id),
                 "type": "Software"
             }
         ])

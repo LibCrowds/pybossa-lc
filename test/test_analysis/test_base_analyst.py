@@ -500,8 +500,8 @@ class TestBaseAnalyst(Test):
 
     @with_context
     @patch('pybossa_lc.model.base.wa_client')
-    def test_modified_results_not_updated(self, mock_client):
-        """Test results are not updated if an Annotation has been modified."""
+    def test_parent_results_not_updated(self, mock_client):
+        """Test results are not updated if an Annotation has children."""
         task = self.ctx.create_task(1)
         TaskRunFactory(task=task)
         result = self.result_repo.get_by(task_id=task.id)

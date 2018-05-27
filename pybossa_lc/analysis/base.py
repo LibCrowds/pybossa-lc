@@ -59,7 +59,7 @@ class BaseAnalyst():
         project = project_repo.get(result.project_id)
         category = project_repo.get_category(project.category_id)
         rc = self._get_rc(category)
-        annotations = rc.get_by_result(result)
+        annotations = rc.get_by_task(task)
 
         can_update = self._can_update_result(result, annotations, analyse_full)
         if not can_update:
@@ -77,9 +77,9 @@ class BaseAnalyst():
         if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
             target = self.strip_fragment_selector(target)
 
-        self._handle_comments(rc, result, task, tr_df, target, silent)
-        self._handle_tags(rc, result, task, tr_df, target)
-        self._handle_transcriptions(rc, result, task, tr_df, target, tmpl)
+        self._handle_comments(rc, task, tr_df, target, silent)
+        self._handle_tags(rc, task, tr_df, target)
+        self._handle_transcriptions(rc, task, tr_df, target, tmpl)
 
     def analyse_all(self, project_id):
         """Analyse all results for a project."""
@@ -108,8 +108,8 @@ class BaseAnalyst():
             return False
         return True
 
-    def _handle_comments(self, result_collection, result, task, task_run_df,
-                         target, silent):
+    def _handle_comments(self, result_collection, task, task_run_df, target,
+                         silent):
         """Handle creation of any comment Annotations."""
         from pybossa.core import user_repo
         comments = self.get_comments(task_run_df)
@@ -120,13 +120,11 @@ class BaseAnalyst():
                 user = user_repo.get(user_id) if user_id else None
                 if not val:
                     continue
-                anno = result_collection.add_comment(result, task, target,
-                                                     val, user)
+                anno = result_collection.add_comment(task, target, val, user)
                 if not silent:
                     self.email_comment_anno(task, anno)
 
-    def _handle_tags(self, result_collection, result, task, task_run_df,
-                     target):
+    def _handle_tags(self, result_collection, task, task_run_df, target):
         """Handle creation of any tagging Annotations."""
         tags = self.get_tags(task_run_df)
         annotations = []
@@ -134,13 +132,13 @@ class BaseAnalyst():
             for tag, rects in tags.items():
                 clusters = self.cluster_rects(rects)
                 for cluster in clusters:
-                    anno = result_collection.add_tag(result, task, target, tag,
+                    anno = result_collection.add_tag(task, target, tag,
                                                      cluster)
                     annotations.append(anno)
         return annotations
 
-    def _handle_transcriptions(self, result_collection, result, task,
-                               task_run_df, target, tmpl):
+    def _handle_transcriptions(self, result_collection, task, task_run_df,
+                               target, tmpl):
         """Handle creation of any transcription Annotations."""
         df = self.get_transcriptions_df(task_run_df)
         df = self.drop_empty_rows(df)
@@ -152,8 +150,7 @@ class BaseAnalyst():
         if has_matches:
             for column in df:
                 value = df[column].value_counts().idxmax()
-                anno = result_collection.add_transcription(result, task,
-                                                           target, value,
+                anno = result_collection.add_transcription(task, target, value,
                                                            column)
                 annotations.append(anno)
         elif not df.empty:
