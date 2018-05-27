@@ -327,16 +327,21 @@ class BaseAnalyst():
         task_repo.update(task)
 
     def replace_df_keys(self, df, **kwargs):
-        """Replace a set of keys in a dataframe."""
+        """Replace a set of keys in a dataframe.
+
+        We need to copye any values for the old column into the new column,
+        if the new column doesn't already exist and contain non-null values.
+        I'm sure there are cleaner ways to do this but it works.
+        """
         if not kwargs:
             return df
-        df = df.rename(columns=kwargs)
-
-        def sjoin(x):
-            return ';'.join(x[x.notnull()].astype(str))
-
-        return df.groupby(level=0, axis=1).apply(lambda x: x.apply(sjoin,
-                                                                   axis=1))
+        for old_key, new_key in kwargs.items():
+            if new_key not in df.columns:
+                df[new_key] = None
+            if old_key in df.columns:
+                df[new_key].fillna(df[old_key], inplace=True)
+            df.drop(old_key, axis=1, inplace=True)
+        return df
 
     def get_task_target(self, task):
         """Get the target for different types of task."""

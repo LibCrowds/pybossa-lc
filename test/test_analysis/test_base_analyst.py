@@ -423,18 +423,18 @@ class TestBaseAnalyst(Test):
         """Test that dataframe keys are replaced and columns merged."""
         data = [
             {
-                'foo': 'bar',
+                'foo': '你好',
                 'baz': 'qux'
             },
             {
-                'foo': 'bar',
+                'foo': 1,
                 'quux': 'qux'
             }
         ]
         old_df = pandas.DataFrame(data, range(len(data)))
         new_df = self.base_analyst.replace_df_keys(old_df, quux='baz')
         assert_dict_equal(new_df.to_dict(), {
-            'foo': {0: 'bar', 1: 'bar'},
+            'foo': {0: '你好', 1: 1},
             'baz': {0: 'qux', 1: 'qux'}
         })
 
