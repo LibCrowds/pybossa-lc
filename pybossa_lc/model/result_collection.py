@@ -58,13 +58,13 @@ class ResultCollection(Base):
 
     def _get_annotation_base(self, task, motivation):
         """Return the base for a new Web Annotation."""
-        base =  {
+        base = {
             "type": "Annotation",
             "motivation": motivation,
             "generator": self._get_generator(task)
         }
         if task.info and task.info.get('manifest'):
-          base['partOf'] = task.info['manifest']
+            base['partOf'] = task.info['manifest']
         return base
 
     def _get_commenting_annotation(self, task, target, value, user):
