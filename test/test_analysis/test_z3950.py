@@ -517,4 +517,6 @@ class TestZ3950Analyst(Test):
         fake_search.return_value = []
         mock_client.search_annotations = fake_search
         self.z3950_analyst.analyse(result.id)
-        assert_equal(result.info, anno_collection)
+        assert_dict_equal(result.info, {
+            'annotations': anno_collection
+        })
