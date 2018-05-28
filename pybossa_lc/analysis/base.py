@@ -340,7 +340,7 @@ class BaseAnalyst():
                 df[new_key] = None
             if old_key in df.columns:
                 df[new_key].fillna(df[old_key], inplace=True)
-            df.drop(old_key, axis=1, inplace=True)
+                df.drop(old_key, axis=1, inplace=True)
         return df
 
     def get_task_target(self, task):
