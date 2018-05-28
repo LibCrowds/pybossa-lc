@@ -66,7 +66,7 @@ def analyse_empty_results(category_id):
 @login_required
 @admin_required
 @BLUEPRINT.route('/templates', methods=['GET'])
-def  get_template_framework():
+def get_template_framework():
     """Return the fields required for different parts of a template.
 
     A simple way to ensure we have the fields needed for the rest of this
