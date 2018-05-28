@@ -80,8 +80,7 @@ class TestWAClient(Test):
 
     def test_search_annotations(self, mock_requests):
         """Test search Annotations."""
-        collection_id = 'foo'
-        iri = 'example.com/{}'.format(collection_id)
+        iri = 'example.com/foo'
         ns = [
             'http://www.w3.org/ns/oa#PreferContainedDescriptions',
             'http://www.w3.org/ns/ldp#PreferMinimalContainer'
@@ -91,10 +90,6 @@ class TestWAClient(Test):
             'Prefer': base_prefer.format(' '.join(ns))
         }
         contains = {'bar': 'baz'}
-        params = {
-            'collection.id': collection_id,
-            'contains': contains
-        }
         fake_collection = {
             'total': 0
         }
@@ -102,20 +97,19 @@ class TestWAClient(Test):
         mock_requests.get.return_value = fake_resp
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
         endpoint = base_url + '/search/'
-        expected_params = {
-            'collection.id': collection_id,
-            'contains': json.dumps(contains)
+        expected_data = {
+            'collection': iri,
+            'contains': contains
         }
 
         result = wa_client.search_annotations(iri, contains)
         mock_requests.get.assert_called_once_with(endpoint, headers=headers,
-                                                  params=expected_params)
+                                                  json=expected_data)
         assert_equal(result, [])
 
     def test_search_annotations_with_pages(self, mock_requests):
         """Test search Annotations with multiple pages."""
-        collection_id = 'foo'
-        iri = 'example.com/{}'.format(collection_id)
+        iri = 'example.com/foo'
         ns = [
             'http://www.w3.org/ns/oa#PreferContainedDescriptions',
             'http://www.w3.org/ns/ldp#PreferMinimalContainer'
@@ -125,10 +119,6 @@ class TestWAClient(Test):
             'Prefer': base_prefer.format(' '.join(ns))
         }
         contains = {'bar': 'baz'}
-        params = {
-            'collection.id': collection_id,
-            'contains': contains
-        }
         fake_collection = {
             'total': 10,
             'first': 'http://annotations.example.com/page1'
@@ -149,14 +139,14 @@ class TestWAClient(Test):
         ]
         base_url = flask_app.config.get('WEB_ANNOTATION_BASE_URL')
         endpoint = base_url + '/search/'
-        expected_params = {
-            'collection.id': collection_id,
-            'contains': json.dumps(contains)
+        expected_data = {
+            'collection': iri,
+            'contains': contains
         }
 
         result = wa_client.search_annotations(iri, contains)
         assert_equal(mock_requests.get.call_args_list, [
-            call(endpoint, headers=headers, params=expected_params),
+            call(endpoint, headers=headers, json=expected_data),
             call(fake_collection['first']),
             call(fake_page1['next'])
         ])
