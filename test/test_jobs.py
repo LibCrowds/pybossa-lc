@@ -3,7 +3,7 @@
 
 from mock import patch
 from nose.tools import *
-from default import Test with_context, flask_app
+from default import Test, with_context, flask_app
 
 from pybossa_lc import jobs
 
