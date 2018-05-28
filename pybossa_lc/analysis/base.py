@@ -327,12 +327,7 @@ class BaseAnalyst():
         task_repo.update(task)
 
     def replace_df_keys(self, df, **kwargs):
-        """Replace a set of keys in a dataframe.
-
-        We need to copye any values for the old column into the new column,
-        if the new column doesn't already exist and contain non-null values.
-        I'm sure there are cleaner ways to do this but it works.
-        """
+        """Replace a set of keys in a dataframe."""
         if not kwargs:
             return df
         for old_key, new_key in kwargs.items():
