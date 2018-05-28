@@ -2,13 +2,13 @@
 """API analysis module for pybossa-lc."""
 
 import json
-from flask import Blueprint, request, current_app, abort, make_response
+from flask import Blueprint, request, abort, make_response
 from pybossa.core import csrf
-from pybossa.core import project_repo, result_repo
+from pybossa.core import project_repo
 from pybossa.auth import ensure_authorized_to
-from pybossa.jobs import enqueue_job
 
 from ..jobs import analyse_all, analyse_empty, analyse_single
+
 
 BLUEPRINT = Blueprint('lc_analysis', __name__)
 

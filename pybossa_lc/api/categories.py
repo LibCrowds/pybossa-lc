@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 """API category module for pybossa-lc."""
 
-import json
 import time
 import uuid
 from flask import Blueprint, flash, request, abort, current_app, url_for
@@ -10,7 +9,6 @@ from pybossa.util import handle_content_type, get_avatar_url
 from pybossa.util import redirect_content_type
 from pybossa.core import project_repo
 from pybossa.core import uploader, importer
-from pybossa.core import csrf
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
