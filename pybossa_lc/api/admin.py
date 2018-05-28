@@ -1,7 +1,8 @@
 # -*- coding: utf8 -*-
 """API admin module for pybossa-lc."""
 
-from flask import Blueprint, abort, flash, request, current_app
+import json
+from flask import Blueprint, abort, flash, request, current_app, Response
 from flask.ext.login import login_required
 from flask_wtf.csrf import generate_csrf
 from pybossa.util import handle_content_type, admin_required
@@ -61,6 +62,7 @@ def analyse_empty_results(category_id):
     response = dict(csrf=csrf)
     return handle_content_type(response)
 
+
 @login_required
 @admin_required
 @BLUEPRINT.route('/templates', methods=['GET'])
@@ -77,9 +79,7 @@ def  get_template_framework():
         'parent_template_id': None,
         'min_answers': 3,
         'max_answers': 3,
-        'tutorial': '',
-        'rules': {},
-        'task': {}
+        'tutorial': ''
     }
 
     task = {
@@ -109,4 +109,4 @@ def  get_template_framework():
     z3950_databases = current_app.config.get('Z3950_DATABASES', {}).keys()
     response = dict(base=base, rules=rules, task=task,
                     z3950_databases=z3950_databases)
-    return handle_content_type(response)
+    return Response(json.dumps(response), mimetype='application/json')
