@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 """API admin module for pybossa-lc."""
 
-from flask import Blueprint, abort, flash, request
+from flask import Blueprint, abort, flash, request, current_app
 from flask.ext.login import login_required
 from flask_wtf.csrf import generate_csrf
 from pybossa.util import handle_content_type, admin_required
