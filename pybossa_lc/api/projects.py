@@ -1,12 +1,7 @@
 # -*- coding: utf8 -*-
 """API projects module for pybossa-lc."""
 
-import re
-import json
-import copy
-import requests
-from flask import Response, Blueprint, flash, request, abort, current_app
-from flask import jsonify, make_response
+from flask import Blueprint, flash, request, abort, current_app
 from flask.ext.login import login_required, current_user
 from pybossa.core import project_repo
 from pybossa.model.project import Project
@@ -15,13 +10,10 @@ from pybossa.core import importer
 from pybossa.core import auditlog_repo, task_repo, result_repo
 from pybossa.importers import BulkImportException
 from pybossa.util import handle_content_type, redirect_content_type, url_for
-from pybossa.default_settings import TIMEOUT
 from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
-from wtforms import TextField
 from pybossa.jobs import enqueue_job
 
-from .. import project_tmpl_repo
 from ..forms import *
 
 
@@ -57,8 +49,7 @@ def new(category_short_name):
         abort(404)
 
     ensure_authorized_to('create', Project)
-
-    enhanced_tmpls = get_enhanced_templates(category)
+    templates = category.info.get('templates', [])
     volumes = category.info.get('volumes', [])
 
     # Check for a valid task presenter
@@ -69,23 +60,21 @@ def new(category_short_name):
         return redirect_content_type(url_for('home.home'))
 
     form = ProjectForm(request.body)
-
     volume_choices = [(v['id'], v['name']) for v in volumes]
     form.volume_id.choices = volume_choices
-
-    template_choices = [(tmpl['id'], tmpl['name']) for tmpl in enhanced_tmpls]
+    template_choices = [(tmpl['id'], tmpl['name']) for tmpl in templates]
     form.template_id.choices = template_choices
-
     if request.method == 'POST':
         if form.validate():
-            tmpl = project_tmpl_repo.get(form.template_id.data)
+            tmpl = [t for t in templates
+                    if t['id'] ==  form.template_id.data][0]
             volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
             handle_valid_project_form(form, tmpl, volume, category)
 
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    response = dict(form=form, templates=enhanced_tmpls, volumes=volumes)
+    response = dict(form=form, templates=templates, volumes=volumes)
     return handle_content_type(response)
 
 
@@ -99,13 +88,13 @@ def handle_valid_project_form(form, template, volume, category):
         import_data['type'] = 'iiif-enhanced'
 
     # Check for parent
-    if template.parent_template_id:
+    if template['parent_template_id']:
         if volume.get('importer') != 'iiif':
             msg = 'Only IIIF projects can be built from parents.'
             flash(msg, 'error')
             return
 
-        parent = get_parent(template.parent_template_id, volume['id'],
+        parent = get_parent(template['parent_template_id'], volume['id'],
                             category)
         if not parent:
             msg = 'There is no valid parent for this template and volume.'
@@ -118,12 +107,12 @@ def handle_valid_project_form(form, template, volume, category):
     webhook = '{0}lc/analysis'.format(request.url_root)
     project = Project(name=form.name.data,
                       short_name=form.short_name.data,
-                      description=template.description,
+                      description=template['description'],
                       long_description='',
                       owner_id=current_user.id,
                       info={
                           'volume_id': volume['id'],
-                          'template_id': template.id
+                          'template_id': template['id']
                       },
                       webhook=webhook,
                       published=True,
@@ -158,40 +147,8 @@ def handle_valid_project_form(form, template, volume, category):
 
     if success:
         auditlogger.add_log_entry(None, project, current_user)
-        task_repo.update_tasks_redundancy(project, template.min_answers)
+        task_repo.update_tasks_redundancy(project, template['min_answers'])
         return redirect_content_type(url_for('home.home'))
-
-
-def get_enhanced_templates(category):
-    """Get templates with details of available volumes and parents for each."""
-    templates = project_tmpl_repo.get_by_category_id(category.id)
-    volumes = category.info.get('volumes', [])
-    projects = project_repo.filter_by(category_id=category.id)
-
-    # Remove incomplete templates
-    tmpl_dicts = [tmpl.to_dict() for tmpl in templates if tmpl.task]
-
-    for tmpl in tmpl_dicts:
-        available_vols = [vol['id'] for vol in volumes[:]]
-
-        # Check built projects
-        for project in projects:
-            tmpl_id = project.info.get('template_id')
-            if tmpl_id != tmpl['id']:
-                continue
-
-            vol_id = project.info.get('volume_id')
-            available_vols = filter(lambda x: x != vol_id, available_vols)
-
-        # Check for valid parents
-        p_tmpl_id = tmpl.get('parent_template_id')
-        if p_tmpl_id:
-            available_vols = [vol_id for vol_id in available_vols
-                              if get_parent(p_tmpl_id, vol_id, category)]
-
-        tmpl['available_volumes'] = available_vols
-
-    return tmpl_dicts
 
 
 def get_parent(parent_template_id, volume_id, category):

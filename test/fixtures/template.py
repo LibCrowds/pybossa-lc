@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 """Template fixtures."""
 
-from pybossa_lc.model.project_template import ProjectTemplate
+from pybossa.model import make_uuid
 
 
 class TemplateFixtures(object):
@@ -29,15 +29,13 @@ class TemplateFixtures(object):
     def create(self, task_tmpl=None, rules_tmpl=None):
         task = task_tmpl or {}
         rules = task_tmpl or {}
-        return ProjectTemplate(name='My Project Type',
-                               tutorial='Do stuff',
-                               description='This project is amazing',
-                               category_id=self.category.id,
-                               parent_template_id=None,
-                               importer=None,
-                               min_answers=3,
-                               max_answers=3,
-                               pending=True,
-                               owner_id=1,
-                               task=task,
-                               rules=rules)
+        return dict(id=make_uuid(),
+                    name='My Project Type',
+                    tutorial='Do stuff',
+                    description='This project is amazing',
+                    parent_template_id=None,
+                    importer=None,
+                    min_answers=3,
+                    max_answers=3,
+                    task=task,
+                    rules=rules)

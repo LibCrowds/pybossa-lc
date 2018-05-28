@@ -9,12 +9,9 @@ The plugin is designed to work in conjunction with the
 [LibCrowds frontend](https://github.com/LibCrowds/libcrowds) and contains
 functions for generating LibCrowds projects and analysing their results.
 
-Key features:
-
-- Analyses task run data and stores final results as Web Annotations
-- Defines a templating system for configuring and generating projects
-- Enables the creation of projects with parent-child relationships
-- Replaces default PYBOSSA emails with custom templates
+It analyses task run data and sends the final results to a Web Annotation
+server. It also defines a templating system for configuring and generating
+projects.
 
 For details of how project creation and results analysis works in LibCrowds,
 see the [**LibCrowds Documentation**](https://docs.libcrowds.com).

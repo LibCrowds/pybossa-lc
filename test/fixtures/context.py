@@ -15,12 +15,13 @@ class ContextFixtures(object):
         category = CategoryFactory()
         tmpl_fixtures = TemplateFixtures(category)
         tmpl = tmpl_fixtures.create()
-        tmpl.min_answers = n_answers
-        tmpl.max_answers = max_answers or n_answers
+        tmpl['min_answers'] = n_answers
+        tmpl['max_answers'] = max_answers or n_answers
+        print(tmpl)
         if rules:
-            tmpl.rules = rules
-        project_info = dict(template_id=tmpl.id)
-        category.info['templates'] = [tmpl.to_dict()]
+            tmpl['rules'] = rules
+        project_info = dict(template_id=tmpl['id'])
+        category.info['templates'] = [tmpl]
         if anno_collection:
             category.info['annotations'] = dict(results=anno_collection)
         project_repo.update_category(category)

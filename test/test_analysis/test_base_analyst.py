@@ -390,16 +390,13 @@ class TestBaseAnalyst(Test):
         tmpl_fixtures = TemplateFixtures(category)
         tmpl1 = tmpl_fixtures.create()
         tmpl2 = tmpl_fixtures.create()
-        fake_templates = [
-            tmpl1.to_dict(),
-            tmpl2.to_dict()
-        ]
-        cat_info = dict(templates=fake_templates)
-        CategoryFactory.create(info=cat_info)
-        project_info = dict(template_id=tmpl1.id)
-        project = ProjectFactory(info=project_info)
-        returned_tmpl = self.base_analyst.get_project_template(project)
-        assert_equal(returned_tmpl.to_dict(), tmpl1.to_dict())
+        fake_templates = [tmpl1, tmpl2]
+        category.info = dict(templates=fake_templates)
+        self.project_repo.update_category(category)
+        project_info = dict(template_id=tmpl1['id'])
+        project = ProjectFactory(category=category, info=project_info)
+        ret_tmpl = self.base_analyst.get_project_template(project)
+        assert_equal(ret_tmpl, tmpl1)
 
     @with_context
     @raises(ValueError)

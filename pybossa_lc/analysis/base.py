@@ -8,15 +8,12 @@ One subclass should be provided for each type of task presenter.
 """
 
 import six
-import math
 import json
-import uuid
 import numpy
 import string
 import pandas
 import dateutil
 import dateutil.parser
-from datetime import datetime
 from titlecase import titlecase
 from flask import current_app, render_template
 from rq import Queue
@@ -74,7 +71,7 @@ class BaseAnalyst():
 
         # Apply rule to strip fragment selectors
         rule = 'remove_fragment_selector'
-        if isinstance(tmpl.rules, dict) and tmpl.rules.get(rule):
+        if isinstance(tmpl['rules'], dict) and tmpl['rules'].get(rule):
             target = self.strip_fragment_selector(target)
 
         self._handle_comments(rc, task, tr_df, target, silent)
@@ -145,11 +142,12 @@ class BaseAnalyst():
         """Handle creation of any transcription Annotations."""
         df = self.get_transcriptions_df(task_run_df)
         df = self.drop_empty_rows(df)
-        df = df.applymap(lambda x: self.normalise_transcription(x, tmpl.rules))
+        rules = tmpl['rules']
+        df = df.applymap(lambda x: self.normalise_transcription(x, rules))
 
         annotations = []
         is_complete = True
-        has_matches = self.has_n_matches(tmpl.min_answers, df)
+        has_matches = self.has_n_matches(tmpl['min_answers'], df)
         if has_matches:
             for column in df:
                 value = df[column].value_counts().idxmax()
@@ -159,7 +157,7 @@ class BaseAnalyst():
         elif not df.empty:
             is_complete = False
 
-        self.update_n_answers_required(task, is_complete, tmpl.max_answers)
+        self.update_n_answers_required(task, is_complete, tmpl['max_answers'])
         return annotations
 
     def _get_rc(self, category):
@@ -229,17 +227,12 @@ class BaseAnalyst():
 
     def get_project_template(self, project):
         """Return the project's template."""
-        from .. import project_tmpl_repo
-        template_id = project.info.get('template_id')
-        if not template_id:
+        try:
+            tmpl = [t for t in project.category.info.get('templates', [])
+                    if t['id'] == project.info.get('template_id')][0]
+        except IndexError:
             msg = 'Invalid project template: Project {}'.format(project.id)
             raise ValueError(msg)
-
-        tmpl = project_tmpl_repo.get(template_id)
-        if not tmpl:  # pragma: no cover
-            msg = 'Invalid project template: Project {}'.format(project.id)
-            raise ValueError(msg)
-
         return tmpl
 
     def normalise_case(self, value, rules):

@@ -69,13 +69,13 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
-                             templates=[tmpl.to_dict()])
+                             templates=[tmpl])
         project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl.id,
+                         template_id=tmpl['id'],
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         project = project_repo.get(1)
@@ -85,10 +85,9 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.short_name, form_data['short_name'])
         assert_equal(project.webhook, 'http://localhost/lc/analysis')
         assert_equal(project.published, True)
-        assert_equal(project.description, tmpl.description)
-        assert_equal(project.category_id, tmpl.category_id)
+        assert_equal(project.description, tmpl['description'])
         assert_dict_equal(project.info, {
-            'template_id': tmpl.id,
+            'template_id': tmpl['id'],
             'volume_id': vol['id']
         })
 
@@ -106,15 +105,15 @@ class TestProjectsApi(web.Helper):
         tmpl_fixtures = TemplateFixtures(category)
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create(task_tmpl=select_task)
-        tmpl.min_answers = min_answers
+        tmpl['min_answers'] = min_answers
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
-                             templates=[tmpl.to_dict()])
+                             templates=[tmpl])
         project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl.id,
+                         template_id=tmpl['id'],
                          volume_id=vol['id'])
         self.app_post_json(endpoint, data=form_data)
         project = project_repo.get(1)
@@ -146,13 +145,13 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
-                             templates=[tmpl.to_dict()])
+                             templates=[tmpl])
         project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl.id,
+                         template_id=tmpl['id'],
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
@@ -179,13 +178,13 @@ class TestProjectsApi(web.Helper):
         z3950_task = tmpl_fixtures.z3950_tmpl
         tmpl = tmpl_fixtures.create(task_tmpl=z3950_task)
         category.info = dict(presenter='z3950', volumes=[vol],
-                             templates=[tmpl.to_dict()])
+                             templates=[tmpl])
         project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl.id,
+                         template_id=tmpl['id'],
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
@@ -211,13 +210,13 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         category.info = dict(presenter='iiif-annotation', volumes=[vol],
-                             templates=[tmpl.to_dict()])
+                             templates=[tmpl])
         project_repo.update_category(category)
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=tmpl.id,
+                         template_id=tmpl['id'],
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         project = project_repo.get(1)
@@ -226,54 +225,6 @@ class TestProjectsApi(web.Helper):
         assert_equal(project.info['container'], vol['container'])
         assert_equal(project.info['thumbnail'], vol['thumbnail'])
         assert_equal(project.info['thumbnail_url'], vol['thumbnail_url'])
-
-    @with_context
-    def test_unbuilt_volumes_returned_with_templates(self):
-        """Test that only available volumes are returned with templates."""
-        self.register()
-        self.signin()
-        user = user_repo.get(1)
-        vol1 = dict(id='123abc', name='My Volume')
-        vol2 = dict(id='456def', name='My Other Volume')
-        category = CategoryFactory()
-        tmpl_fixtures = TemplateFixtures(category)
-        select_task = tmpl_fixtures.iiif_select_tmpl
-        tmpl1 = tmpl_fixtures.create(task_tmpl=select_task)
-        tmpl2 = tmpl_fixtures.create(task_tmpl=select_task)
-
-        # Incomplete template to be ignored
-        tmpl3 = tmpl_fixtures.create()
-
-        category.info = dict(presenter='iiif-annotation',
-                             volumes=[vol1, vol2],
-                             templates=[
-                                 tmpl1.to_dict(),
-                                 tmpl2.to_dict(),
-                                 tmpl3.to_dict()
-                             ])
-        project_repo.update_category(category)
-
-        # Leave one volume available for tmpl1
-        ProjectFactory(owner=user, category=category,
-                       info=dict(template_id=tmpl1.id, volume_id=vol1['id']))
-
-        # Leave no volumes available for tmpl2
-        ProjectFactory(owner=user, category=category,
-                       info=dict(template_id=tmpl2.id, volume_id=vol1['id']))
-        ProjectFactory(owner=user, category=category,
-                       info=dict(template_id=tmpl2.id, volume_id=vol2['id']))
-
-        endpoint = '/lc/projects/{}/new'.format(category.short_name)
-        res = self.app_get_json(endpoint)
-        res_data = json.loads(res.data)
-        templates = res_data['templates']
-
-        res_tmpl1 = next((t for t in templates if t['id'] == tmpl1.id), None)
-        res_tmpl2 = next((t for t in templates if t['id'] == tmpl2.id), None)
-        assert_equal([res_tmpl1['id'], res_tmpl2['id']], [tmpl1.id, tmpl2.id])
-
-        assert_equal(res_tmpl1['available_volumes'], [vol2['id']])
-        assert_equal(res_tmpl2['available_volumes'], [])
 
     @with_context
     def test_child_projects_not_built_from_non_iiif_templates(self):
@@ -286,21 +237,20 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         parent_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         child_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
-        child_tmpl.parent_template_id = parent_tmpl.id
+        child_tmpl['parent_template_id'] = parent_tmpl['id']
 
         category.info = dict(presenter='iiif-annotation',
                              volumes=[vol],
-                             templates=[parent_tmpl.to_dict(),
-                                        child_tmpl.to_dict()])
+                             templates=[parent_tmpl, child_tmpl])
         project_repo.update_category(category)
         parent = ProjectFactory(owner=user, category=category,
-                                info=dict(template_id=parent_tmpl.id,
+                                info=dict(template_id=parent_tmpl['id'],
                                           volume_id=vol['id']))
 
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=child_tmpl.id,
+                         template_id=child_tmpl['id'],
                          volume_id=vol['id'])
         res = self.app_post_json(endpoint, data=form_data)
         res_data = json.loads(res.data)
@@ -318,16 +268,15 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         parent_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         child_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
-        child_tmpl.parent_template_id = parent_tmpl.id
+        child_tmpl['parent_template_id'] = parent_tmpl['id']
 
         category.info = dict(presenter='iiif-annotation',
                              volumes=[vol],
-                             templates=[parent_tmpl.to_dict(),
-                                        child_tmpl.to_dict()])
+                             templates=[parent_tmpl, child_tmpl])
         project_repo.update_category(category)
 
         parent = ProjectFactory(owner=user, category=category,
-                                info=dict(template_id=parent_tmpl.id,
+                                info=dict(template_id=parent_tmpl['id'],
                                           volume_id=vol['id']))
 
         n_tasks = 3
@@ -336,7 +285,7 @@ class TestProjectsApi(web.Helper):
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=child_tmpl.id,
+                         template_id=child_tmpl['id'],
                          volume_id=vol['id'])
 
         # Check parent with incomplete tasks and results
@@ -368,16 +317,15 @@ class TestProjectsApi(web.Helper):
         select_task = tmpl_fixtures.iiif_select_tmpl
         parent_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
         child_tmpl = tmpl_fixtures.create(task_tmpl=select_task)
-        child_tmpl.parent_template_id = parent_tmpl.id
+        child_tmpl['parent_template_id'] = parent_tmpl['id']
 
         category.info = dict(presenter='iiif-annotation',
                              volumes=[vol],
-                             templates=[parent_tmpl.to_dict(),
-                                        child_tmpl.to_dict()])
+                             templates=[parent_tmpl, child_tmpl])
         project_repo.update_category(category)
 
         parent = ProjectFactory(id=42, owner=user, category=category,
-                                info=dict(template_id=parent_tmpl.id,
+                                info=dict(template_id=parent_tmpl['id'],
                                           volume_id=vol['id']))
 
         n_tasks = 3
@@ -392,7 +340,7 @@ class TestProjectsApi(web.Helper):
         endpoint = '/lc/projects/{}/new'.format(category.short_name)
         form_data = dict(name='foo',
                          short_name='bar',
-                         template_id=child_tmpl.id,
+                         template_id=child_tmpl['id'],
                          volume_id=vol['id'])
 
         self.app_post_json(endpoint, data=form_data)

@@ -10,7 +10,6 @@ from pybossa.extensions import importer
 from . import default_settings
 from .importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
 from .extensions import *
-from .jobs import enqueue_periodic_jobs
 
 
 __plugin__ = "PyBossaLC"
@@ -27,7 +26,6 @@ class PyBossaLC(Plugin):
         self.setup_blueprints()
         self.setup_enhanced_iiif_importer()
         wa_client.init_app(app)
-        enqueue_periodic_jobs()
 
     def configure(self):
         """Load configuration settings."""
@@ -42,15 +40,11 @@ class PyBossaLC(Plugin):
         from .api.analysis import BLUEPRINT as analysis
         from .api.projects import BLUEPRINT as projects
         from .api.categories import BLUEPRINT as categories
-        from .api.templates import BLUEPRINT as templates
         from .api.admin import BLUEPRINT as admin
-        from .api.users import BLUEPRINT as users
         app.register_blueprint(analysis, url_prefix='/lc/analysis')
         app.register_blueprint(projects, url_prefix='/lc/projects')
         app.register_blueprint(categories, url_prefix='/lc/categories')
-        app.register_blueprint(templates, url_prefix='/lc/templates')
         app.register_blueprint(admin, url_prefix='/lc/admin')
-        app.register_blueprint(users, url_prefix='/lc/users')
 
     def setup_enhanced_iiif_importer(self):
         """Setup the enhanced IIIF manifest importer."""
