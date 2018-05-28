@@ -78,21 +78,27 @@ def  get_template_framework():
         'min_answers': 3,
         'max_answers': 3,
         'tutorial': '',
-        'task': {},
-        'rules': {}
+        'rules': {},
+        'task': {}
+    }
+
+    task = {
+        'z3950': {
+            'database': '', # a key in z3950_databases
+            'institutions': []
+        },
+        'iiif-annotation': {
+            'mode': '', # select or transcribe
+            'tag': '',
+            'objective': '',
+            'guidance': '',
+            'fields_schema': {}  # Populated with vue-multiselect fields
+        }
     }
 
     rules = {
-        'whitespace': [
-            'normalise',
-            'underscore',
-            'full_stop'
-        ],
-        'case': [
-            'title',
-            'lower',
-            'upper'
-        ],
+        'whitespace': '',  # normalise, underscore or full_stop (if any)
+        'case': '',  # title, lower or upper (if any)
         'trim_punctuation': False,
         'date_format': False,
         'dayfirst': False,
@@ -100,21 +106,7 @@ def  get_template_framework():
         'remove_fragment_selector': False
     }
 
-    task = {
-        'z3950': [
-            'database',
-            'institutions'
-        ],
-        'iiif-annotation': [
-            'tag',
-            'objective',
-            'guidance',
-            'fields_schema'
-        ]
-    }
-
-    iiif_modes = ['select', 'transcribe']
     z3950_databases = current_app.config.get('Z3950_DATABASES', {}).keys()
     response = dict(base=base, rules=rules, task=task,
-                    iiif_modes=iiif_modes, z3950_databases=z3950_databases)
+                    z3950_databases=z3950_databases)
     return handle_content_type(response)
