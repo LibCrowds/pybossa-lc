@@ -192,14 +192,15 @@ def get_built_projects(category):
                    LEFT JOIN result ON project.id = result.project_id
                    GROUP BY project.id
                )
-               SELECT project.info->>'template_id' AS template_id,
+               SELECT project.id,
+               project.info->>'template_id' AS template_id,
                project.info->>'volume_id' AS volume_id,
                empty_results.count
                FROM project, empty_results, category
                WHERE empty_results.project_id = project.id
                AND category.id = :category_id
                AND category.id = project.category_id
-               GROUP BY project.info, empty_results.count;
+               GROUP BY project.id, project.info, empty_results.count;
                """)
     session = db.slave_session
     results = session.execute(sql, dict(category_id=category.id))
