@@ -3,16 +3,16 @@
 
 from flask import Blueprint, flash, request, abort, current_app
 from flask.ext.login import login_required, current_user
-from pybossa.core import project_repo
 from pybossa.model.project import Project
 from pybossa.auth import ensure_authorized_to
-from pybossa.core import importer
-from pybossa.core import auditlog_repo, task_repo, result_repo
+from pybossa.core import importer, db
+from pybossa.core import auditlog_repo, task_repo, result_repo, project_repo
 from pybossa.importers import BulkImportException
 from pybossa.util import handle_content_type, redirect_content_type, url_for
 from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
 from pybossa.jobs import enqueue_job
+from sqlalchemy import text
 
 from ..forms import *
 
@@ -74,7 +74,8 @@ def new(category_short_name):
         else:  # pragma: no cover
             flash('Please correct the errors', 'error')
 
-    response = dict(form=form, templates=templates, volumes=volumes)
+    built_projects = get_built_projects(category)
+    response = dict(form=form, built_projects=built_projects)
     return handle_content_type(response)
 
 
@@ -90,8 +91,7 @@ def handle_valid_project_form(form, template, volume, category):
     # Check for parent
     if template['parent_template_id']:
         if volume.get('importer') != 'iiif':
-            msg = 'Only IIIF projects can be built from parents.'
-            flash(msg, 'error')
+            flash('Only IIIF projects can be built from parents.', 'error')
             return
 
         parent = get_parent(template['parent_template_id'], volume['id'],
@@ -172,3 +172,20 @@ def validate_parent(project):
         return False
 
     return True
+
+
+def get_built_projects(category):
+    """Get template and volume for all built projects in a category.
+
+    Needed to check which combinations of templates and volumes are still
+    available.
+    """
+    sql = text("""SELECT info->>'template_id' AS template_id,
+               info->>'volume_id' AS volume_id
+               FROM project
+               WHERE category_id = :category_id;
+               """)
+    session = db.slave_session
+    results = session.execute(sql, dict(category_id=category.id))
+    return [{'template_id': row.template_id, 'volume_id': row.volume_id}
+            for row in results]
