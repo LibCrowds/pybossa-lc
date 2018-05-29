@@ -12,6 +12,7 @@ from pybossa.util import handle_content_type, redirect_content_type, url_for
 from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
 from pybossa.jobs import enqueue_job
+from pybossa.cache.projects import overall_progress
 from sqlalchemy import text
 
 from ..forms import *
@@ -180,12 +181,16 @@ def get_built_projects(category):
     Needed to check which combinations of templates and volumes are still
     available.
     """
-    sql = text("""SELECT info->>'template_id' AS template_id,
+    sql = text("""SELECT id,
+               info->>'template_id' AS template_id,
                info->>'volume_id' AS volume_id
                FROM project
                WHERE category_id = :category_id;
                """)
     session = db.slave_session
     results = session.execute(sql, dict(category_id=category.id))
-    return [{'template_id': row.template_id, 'volume_id': row.volume_id}
-            for row in results]
+    return [{
+        'template_id': row.template_id,
+        'volume_id': row.volume_id,
+        'overall_progress': overall_progress(row.id)
+    } for row in results]
