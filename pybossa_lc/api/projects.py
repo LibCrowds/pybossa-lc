@@ -180,17 +180,32 @@ def get_built_projects(category):
 
     Needed to check which combinations of templates and volumes are still
     available.
+
+    Should refactor some of the above to use this query, which is really the
+    core of the additional options for building projects.
     """
-    sql = text("""SELECT id,
-               info->>'template_id' AS template_id,
-               info->>'volume_id' AS volume_id
-               FROM project
-               WHERE category_id = :category_id;
+    sql = text("""
+               WITH empty_results AS (
+                   SELECT project.id AS project_id,
+                   COUNT(CASE WHEN result.info IS NULL THEN 1 END)
+                   FROM project
+                   LEFT JOIN result ON project.id = result.project_id
+                   GROUP BY project.id
+               )
+               SELECT project.info->>'template_id' AS template_id,
+               project.info->>'volume_id' AS volume_id,
+               empty_results.count
+               FROM project, empty_results, category
+               WHERE empty_results.project_id = project.id
+               AND category.id = :category_id
+               AND category.id = project.category_id
+               GROUP BY project.info, empty_results.count;
                """)
     session = db.slave_session
     results = session.execute(sql, dict(category_id=category.id))
     return [{
         'template_id': row.template_id,
         'volume_id': row.volume_id,
-        'overall_progress': overall_progress(row.id)
+        'overall_progress': overall_progress(row.id),
+        'empty_results': row.empty_results
     } for row in results]
