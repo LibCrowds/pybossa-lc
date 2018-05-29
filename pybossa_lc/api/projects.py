@@ -195,7 +195,7 @@ def get_built_projects(category):
                SELECT project.id,
                project.info->>'template_id' AS template_id,
                project.info->>'volume_id' AS volume_id,
-               empty_results.count
+               empty_results.count AS n_empty_results
                FROM project, empty_results, category
                WHERE empty_results.project_id = project.id
                AND category.id = :category_id
@@ -208,5 +208,5 @@ def get_built_projects(category):
         'template_id': row.template_id,
         'volume_id': row.volume_id,
         'overall_progress': overall_progress(row.id),
-        'empty_results': row.empty_results
+        'empty_results': row.n_empty_results
     } for row in results]
