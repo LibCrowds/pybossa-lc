@@ -205,6 +205,7 @@ def get_built_projects(category):
     session = db.slave_session
     results = session.execute(sql, dict(category_id=category.id))
     return [{
+        'project_id': row.id,
         'template_id': row.template_id,
         'volume_id': row.volume_id,
         'overall_progress': overall_progress(row.id),
