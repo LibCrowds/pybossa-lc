@@ -14,7 +14,7 @@ from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
 
 from ..utils import *
-from ..forms import VolumeForm, IIIFSettingsForm
+from ..forms import VolumeForm
 
 
 BLUEPRINT = Blueprint('lc_categories', __name__)
@@ -98,8 +98,6 @@ def update_volume(short_name, volume_id):
     import_form = GenericBulkTaskImportForm()(volume['importer'],
                                               **volume.get('data', {}))
 
-    iiif_form = IIIFSettingsForm(**volume.get('iiif_settings', {}))
-
     def update():
         """Helper function to update the current volume."""
         try:
@@ -136,22 +134,6 @@ def update_volume(short_name, volume_id):
                     except BulkImportException as err:
                         flash(err.message, 'error')
 
-            else:
-                flash('Please correct the errors', 'error')
-
-        elif (request.form.get('btn') == 'IIIF' or
-                request.body.get('btn') == 'IIIF'):
-            iiif_form = IIIFSettingsForm(request.body)
-
-            if iiif_form.validate():
-                iiif_settings = {
-                    'image_api_uri': iiif_form.image_api_uri.data,
-                    'image_api_version': str(iiif_form.image_api_version.data),
-                    'image_api_compliance': iiif_form.image_api_compliance.data
-                }
-                volume['iiif_settings'] = iiif_settings
-                update()
-                flash('Volume updated', 'success')
             else:
                 flash('Please correct the errors', 'error')
 
@@ -207,8 +189,7 @@ def update_volume(short_name, volume_id):
 
     response = dict(form=form, all_importers=all_importers,
                     upload_form=upload_form, import_form=import_form,
-                    iiif_form=iiif_form, volume=volume,
-                    has_projects=has_projects)
+                    volume=volume, has_projects=has_projects)
     return handle_content_type(response)
 
 

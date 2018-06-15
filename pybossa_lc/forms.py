@@ -65,16 +65,3 @@ class VolumeForm(Form):
                                           pb_validator.NotAllowedChars(),
                                           UniqueVolumeField('short_name')])
     importer = SelectField('Importer')
-
-
-class IIIFSettingsForm(Form):
-    """A form for IIIF settings."""
-    image_api_uri = TextField('API URI',
-                              [validators.Required(), validators.URL()])
-    image_api_version = DecimalField('Version', [validators.Required()],
-                                     places=1, default=2.0)
-    compliance_validators = [
-        validators.NumberRange(min=0, max=2)
-    ]
-    image_api_compliance = IntegerField('Compliance Level',
-                                        compliance_validators, default=0)
