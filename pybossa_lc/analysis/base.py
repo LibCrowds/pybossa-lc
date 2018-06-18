@@ -74,10 +74,15 @@ class BaseAnalyst():
         if isinstance(tmpl['rules'], dict) and tmpl['rules'].get(rule):
             target = self.strip_fragment_selector(target)
 
-        self._handle_comments(rc, task, tr_df, target, silent)
-        self._handle_tags(rc, task, tr_df, target)
-        self._handle_transcriptions(rc, task, tr_df, target, tmpl)
         new_info = result.info.copy() if result.info else {}
+        rejected = self._get_rejected_reason(tr_df, tmpl['min_answers'])
+        if rejected:
+            new_info['rejected'] = rejected
+        else:
+            self._handle_comments(rc, task, tr_df, target, silent)
+            self._handle_tags(rc, task, tr_df, target)
+            self._handle_transcriptions(rc, task, tr_df, target, tmpl)
+
         new_info['annotations'] = rc.iri
         result.info = new_info
         result_repo.update(result)
@@ -107,6 +112,15 @@ class BaseAnalyst():
         if isinstance(result.info, dict) and result.info.get('has_children'):
             return False
         return True
+
+    def _get_rejected_reason(self, task_run_df, n_answers):
+        """Handle and rejection ."""
+        try:
+            reasons = task_run_df['reject'].tolist()
+            if len(reasons) >= n_answers:
+                return max(reasons)
+        except KeyError:
+            return None
 
     def _handle_comments(self, result_collection, task, task_run_df, target,
                          silent):

@@ -520,3 +520,28 @@ class TestZ3950Analyst(Test):
         assert_dict_equal(result.info, {
             'annotations': anno_collection
         })
+
+    @with_context
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_task_rejected(self, mock_client):
+        """Test Z3950 annotation not created when task rejected * n_answers."""
+        n_answers = 3
+        target = 'example.com'
+        anno_collection = 'annotations.example.com'
+        task = self.ctx.create_task(n_answers, target,
+                                    anno_collection=anno_collection)
+        user = UserFactory()
+        reason = 'invalid-task'
+        TaskRunFactory.create_batch(n_answers, user=user, task=task, info={
+            'reject': reason
+        })
+        result = self.result_repo.filter_by(project_id=task.project_id)[0]
+        fake_search = MagicMock()
+        fake_search.return_value = []
+        mock_client.search_annotations = fake_search
+        self.z3950_analyst.analyse(result.id)
+        assert not mock_client.create_annotation.called
+        assert_dict_equal(result.info, {
+            'annotations': anno_collection,
+            'rejected': reason
+        })

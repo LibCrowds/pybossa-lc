@@ -92,7 +92,7 @@ def get_template_framework():
             'tag': '',
             'objective': '',
             'guidance': '',
-            'rejection': [],
+            'reject': [],
             'fields_schema': []  # Populated with vue-multiselect fields
         }
     }
