@@ -84,11 +84,11 @@ def get_template_framework():
 
     task = {
         'z3950': {
-            'database': '', # a key in z3950_databases
+            'database': '',   # a key in z3950_databases
             'institutions': []
         },
         'iiif-annotation': {
-            'mode': '', # select or transcribe
+            'mode': '',  # select or transcribe
             'tag': '',
             'objective': '',
             'guidance': '',

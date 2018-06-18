@@ -68,7 +68,7 @@ def new(category_short_name):
     if request.method == 'POST':
         if form.validate():
             tmpl = [t for t in templates
-                    if t['id'] ==  form.template_id.data][0]
+                    if t['id'] == form.template_id.data][0]
             volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
             handle_valid_project_form(form, tmpl, volume, category)
 
