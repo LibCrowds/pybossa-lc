@@ -3,6 +3,7 @@
 
 import time
 import uuid
+import pandas
 from flask import Blueprint, flash, request, abort, current_app, url_for
 from flask.ext.login import login_required, current_user
 from pybossa.util import handle_content_type, get_avatar_url
@@ -213,17 +214,25 @@ def progress(short_name):
         except KeyError:
             continue
 
-    # Replace IDs with names
-    named_data = {}
+    # Replace IDs with names and flatten
+    flat_data = []
     for vol_id in data:
+        row = {'Volume': vol_index[vol_id]['name']}
         for tmpl_id in data[vol_id]:
             tmpl_name = tmpl_index[tmpl_id]['name']
-            named_data[vol_id] = named_data.get(vol_id, {})
-            named_data[vol_id][tmpl_name] = data[vol_id][tmpl_id]
-        vol_name = vol_index[vol_id]['name']
-        named_data[vol_name] = named_data.pop(vol_id)
+            if tmpl_name == 'Volume':
+                tmpl_name = '_Volume'
+            row[tmpl_name] = data[vol_id][tmpl_id]
+        flat_data.append(row)
 
-    response = dict(progress=named_data)
+    if request.args.get('csv'):
+        df = pandas.DataFrame(flat_data)
+        df.set_index('Volume', inplace=True)
+        csv = df.to_csv(encoding='utf8')
+        response = dict(progress=csv)
+        return handle_content_type(response)
+
+    response = dict(progress=flat_data)
     return handle_content_type(response)
 
 
