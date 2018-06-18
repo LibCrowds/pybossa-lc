@@ -12,6 +12,7 @@ from pybossa.core import uploader, importer
 from pybossa.auth import ensure_authorized_to
 from pybossa.forms.forms import AvatarUploadForm, GenericBulkTaskImportForm
 from pybossa.importers import BulkImportException
+from pybossa.cache import project_stats
 
 from ..utils import *
 from ..forms import VolumeForm
@@ -190,6 +191,39 @@ def update_volume(short_name, volume_id):
     response = dict(form=form, all_importers=all_importers,
                     upload_form=upload_form, import_form=import_form,
                     volume=volume, has_projects=has_projects)
+    return handle_content_type(response)
+
+
+@BLUEPRINT.route('/<short_name>/progress')
+def progress(short_name):
+    """Return progress for each volume and template."""
+    category = project_repo.get_category_by(short_name=short_name)
+    if not category:  # pragma: no cover
+        abort(404)
+
+    tmpl_index = {t['id']: t for t in category.info.get('templates', [])}
+    vol_index = {v['id']: v for v in category.info.get('volumes', [])}
+    data = {v_id: {t_id: 0 for t_id in tmpl_index} for v_id in vol_index}
+    projects = project_repo.filter_by(category_id=category.id)
+    for project in projects:
+        ps = project_stats.get_stats(project.id, full=True)
+        try:
+            row = data[project.info['volume_id']]
+            row[project.info['template_id']] = ps.overall_progress
+        except KeyError:
+            continue
+
+    # Replace IDs with names
+    named_data = {}
+    for vol_id in data:
+        for tmpl_id in data[vol_id]:
+            tmpl_name = tmpl_index[tmpl_id]['name']
+            named_data[vol_id] = named_data.get(vol_id, {})
+            named_data[vol_id][tmpl_name] = data[vol_id][tmpl_id]
+        vol_name = vol_index[vol_id]['name']
+        named_data[vol_name] = named_data.pop(vol_id)
+
+    response = dict(progress=named_data)
     return handle_content_type(response)
 
 
