@@ -236,10 +236,8 @@ def progress(short_name):
     return handle_content_type(response)
 
 
-@BLUEPRINT.route('/<short_name>/tags')
-@BLUEPRINT.route('/<short_name>/project-tags')
 @BLUEPRINT.route('/<short_name>/project-filters')
-def project_tags(short_name):
+def project_filters(short_name):
     """Return all filters currently associated with the category's projects."""
     category = project_repo.get_category_by(short_name=short_name)
     if not category:  # pragma: no cover

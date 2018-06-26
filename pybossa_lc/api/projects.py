@@ -61,19 +61,16 @@ def new(category_short_name):
         return redirect_content_type(url_for('home.home'))
 
     form = ProjectForm(request.body)
-    volume_choices = [(v['id'], v['name']) for v in volumes]
-    form.volume_id.choices = volume_choices
-    template_choices = [(tmpl['id'], tmpl['name']) for tmpl in templates]
-    form.template_id.choices = template_choices
-    if request.method == 'POST':
-        if form.validate():
-            tmpl = [t for t in templates
-                    if t['id'] == form.template_id.data][0]
-            volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
-            handle_valid_project_form(form, tmpl, volume, category)
+    form.volume_id.choices = [(v['id'], v['name']) for v in volumes]
+    form.template_id.choices = [(t['id'], t['name']) for t in templates]
+    if request.method == 'POST' and form.validate():
+        tmpl = [t for t in templates
+                if t['id'] == form.template_id.data][0]
+        volume = [v for v in volumes if v['id'] == form.volume_id.data][0]
+        handle_valid_project_form(form, tmpl, volume, category)
 
-        else:  # pragma: no cover
-            flash('Please correct the errors', 'error')
+    else:  # pragma: no cover
+        flash('Please correct the errors', 'error')
 
     built_projects = get_built_projects(category)
     response = dict(form=form, built_projects=built_projects)
