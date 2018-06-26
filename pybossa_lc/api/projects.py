@@ -120,24 +120,28 @@ def handle_valid_project_form(form, template, volume, category):
                       category_id=category.id,
                       owners_ids=[current_user.id])
 
-    # Add avatar
+    add_avatar_to_project_info(project, volume)
+    project_repo.save(project)
+    return generate_tasks(project, import_data, template)
+
+
+def add_avatar_to_project_info(project, volume):
+    """Add avatar to project info."""
     if volume.get('container') and volume.get('thumbnail'):
         project.info['container'] = volume['container']
         project.info['thumbnail'] = volume['thumbnail']
         project.info['thumbnail_url'] = volume.get('thumbnail_url')
 
-    project_repo.save(project)
 
-    # Attempt to generate the tasks
-    success = True
+def generate_tasks(project, import_data, template):
+    """Generate the tasks."""
     try:
         msg = _import_tasks(project, **import_data)
         flash(msg, 'success')
     except BulkImportException as err:   # pragma: no cover
-        success = False
         project_repo.delete(project)
         flash(err.message, 'error')
-
+        return redirect_content_type(url_for('home.home'))
     except Exception as inst:  # pragma: no cover
         success = False
         current_app.logger.error(inst)
@@ -145,11 +149,11 @@ def handle_valid_project_form(form, template, volume, category):
         project_repo.delete(project)
         msg = 'Uh oh, an error was encountered while generating the tasks'
         flash(msg, 'error')
-
-    if success:
-        auditlogger.add_log_entry(None, project, current_user)
-        task_repo.update_tasks_redundancy(project, template['min_answers'])
         return redirect_content_type(url_for('home.home'))
+
+    auditlogger.add_log_entry(None, project, current_user)
+    task_repo.update_tasks_redundancy(project, template['min_answers'])
+    return redirect_content_type(url_for('home.home'))
 
 
 def get_parent(parent_template_id, volume_id, category):
