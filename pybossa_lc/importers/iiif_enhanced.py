@@ -10,9 +10,10 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
 
     importer_id = "iiif-enhanced"
 
-    def __init__(self, manifest_uri, parent_id=None):
+    def __init__(self, manifest_uri, version='2.1', parent_id=None):
         """Init method."""
-        super(BulkTaskIIIFEnhancedImporter, self).__init__(manifest_uri)
+        super(BulkTaskIIIFEnhancedImporter, self).__init__(manifest_uri,
+                                                           version)
         self.parent_id = parent_id
 
     def _generate_tasks(self):
