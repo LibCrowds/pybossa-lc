@@ -41,10 +41,12 @@ class PyBossaLC(Plugin):
         from .api.projects import BLUEPRINT as projects
         from .api.categories import BLUEPRINT as categories
         from .api.admin import BLUEPRINT as admin
+        from .api.tasks import BLUEPRINT as tasks
         app.register_blueprint(analysis, url_prefix='/lc/analysis')
         app.register_blueprint(projects, url_prefix='/lc/projects')
         app.register_blueprint(categories, url_prefix='/lc/categories')
         app.register_blueprint(admin, url_prefix='/lc/admin')
+        app.register_blueprint(tasks, url_prefix='/lc/tasks')
 
     def setup_enhanced_iiif_importer(self):
         """Setup the enhanced IIIF manifest importer."""
