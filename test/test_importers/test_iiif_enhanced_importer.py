@@ -25,9 +25,13 @@ class TestBulkTaskIIIFEnhancedImport(Test):
 
     def create_manifest(self, canvases=1, images=1):
         manifest = {
+            '@context': 'http://iiif.io/api/presentation/2/context.json',
             '@id': self.manifest_uri,
+            '@type': 'sc:Manifest',
+            'label': 'Foo',
             'sequences': [
                 {
+                    '@type': 'sc:Sequence',
                     'canvases': []
                 }
             ]
@@ -35,15 +39,24 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         for i in range(canvases):
             canvas = {
                 '@id': self.canvas_id_base.format(i),
+                '@type': 'sc:Canvas',
+                'label': 'Bar',
+                'height': 100,
+                'width': 100,
                 'images': []
             }
             for j in range(images):
                 image = {
+                    '@type': 'oa:Annotation',
+                    'motivation': 'sc:painting',
                     'resource': {
+                        '@id': 'http://example.org/image{}.jpg'.format(j),
+                        '@type': 'dctypes:Image',
                         'service': {
                             '@id': self.img_id_base.format(i, j)
                         }
-                    }
+                    },
+                    'on': 'http://example.org/{}'.format(i)
                 }
                 canvas['images'].append(image)
             manifest['sequences'][0]['canvases'].append(canvas)
@@ -53,15 +66,10 @@ class TestBulkTaskIIIFEnhancedImport(Test):
     def test_bl_tasks_created_with_bl_link(self, requests):
         """Test that non-BL tasks are created with a non-BL link."""
         manifest = self.create_manifest()
-        wrapper = {
-            'okay': 1,
-            'received': json.dumps(manifest)
-        }
         headers = {'Content-Type': 'application/json'}
-        valid_manifest = FakeResponse(text=json.dumps(wrapper),
-                                      status_code=200, headers=headers,
-                                      encoding='utf-8')
-        requests.get.return_value = valid_manifest
+        response = FakeResponse(text=json.dumps(manifest), status_code=200,
+                                headers=headers, encoding='utf-8')
+        requests.get.return_value = response
 
         importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri)
         tasks = importer.tasks()
@@ -77,15 +85,10 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         manifest = self.create_manifest()
         bl_manifest_id = 'https://api.bl.uk/metadata/iiif/id/manifest.json'
         manifest['@id'] = bl_manifest_id
-        wrapper = {
-            'okay': 1,
-            'received': json.dumps(manifest)
-        }
         headers = {'Content-Type': 'application/json'}
-        valid_manifest = FakeResponse(text=json.dumps(wrapper),
-                                      status_code=200, headers=headers,
-                                      encoding='utf-8')
-        requests.get.return_value = valid_manifest
+        response = FakeResponse(text=json.dumps(manifest), status_code=200,
+                                headers=headers, encoding='utf-8')
+        requests.get.return_value = response
 
         importer = BulkTaskIIIFEnhancedImporter(manifest_uri=bl_manifest_id)
         tasks = importer.tasks()
@@ -100,15 +103,10 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         n_canvases = 3
         n_images = 1
         manifest = self.create_manifest(canvases=n_canvases, images=n_images)
-        wrapper = {
-            'okay': 1,
-            'received': json.dumps(manifest)
-        }
         headers = {'Content-Type': 'application/json'}
-        valid_manifest = FakeResponse(text=json.dumps(wrapper),
-                                      status_code=200, headers=headers,
-                                      encoding='utf-8')
-        requests.get.return_value = valid_manifest
+        response = FakeResponse(text=json.dumps(manifest), status_code=200,
+                                headers=headers, encoding='utf-8')
+        requests.get.return_value = response
 
         # Create a task for each canvas
         anno_fixtures = AnnotationFixtures()
@@ -163,15 +161,10 @@ class TestBulkTaskIIIFEnhancedImport(Test):
     def test_has_child_key_added_to_parent_results(self, requests):
         """Test that the has_children key is added to parent results."""
         manifest = self.create_manifest()
-        wrapper = {
-            'okay': 1,
-            'received': json.dumps(manifest)
-        }
         headers = {'Content-Type': 'application/json'}
-        valid_manifest = FakeResponse(text=json.dumps(wrapper),
-                                      status_code=200, headers=headers,
-                                      encoding='utf-8')
-        requests.get.return_value = valid_manifest
+        response = FakeResponse(text=json.dumps(manifest), status_code=200,
+                                headers=headers, encoding='utf-8')
+        requests.get.return_value = response
 
         # Create a task for each canvas
         n_tasks = 3
