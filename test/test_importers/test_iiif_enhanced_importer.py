@@ -5,6 +5,7 @@ import json
 from mock import patch
 from nose.tools import *
 from default import Test, FakeResponse, with_context, db
+from flask import url_for
 from pybossa.importers import BulkImportException
 from pybossa.repositories import ResultRepository
 from factories import TaskFactory, TaskRunFactory, ProjectFactory
@@ -207,3 +208,22 @@ class TestBulkTaskIIIFEnhancedImport(Test):
             'has_children': True
         }] * n_tasks
         assert_equal(result_info, expected)
+
+    @with_context
+    @patch('pybossa_lc.importers.iiif_enhanced.wa_client')
+    def test_get_annotations_for_result_query(self, mock_wa_client, requests):
+        """Test the query to get all annotations for a result."""
+        iri = 'example.org/annotations'
+        task = TaskFactory(n_answers=1)
+        TaskRunFactory.create(task=task)
+        result = self.result_repo.get_by(task_id=task.id)
+        result.info = dict(annotations=iri)
+        self.result_repo.update(result)
+        importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri)
+        importer._get_annotations_for_result(result)
+        mock_wa_client.search_annotations.assert_called_once_with(iri, {
+            "generator": [{
+                "id": url_for('api.api_task', oid=task.id, _external=True),
+                "type": "Software"
+            }]
+        })

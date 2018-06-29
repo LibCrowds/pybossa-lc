@@ -81,7 +81,8 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
         annotations = wa_client.search_annotations(iri, {
             "generator": [
                 {
-                    "id": url_for('api.api_task', oid=result.task_id),
+                    "id": url_for('api.api_task', oid=result.task_id,
+                                  _external=True),
                     "type": "Software"
                 }
             ]
