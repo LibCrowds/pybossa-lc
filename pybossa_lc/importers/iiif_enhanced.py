@@ -1,8 +1,11 @@
 # -*- coding: utf8 -*-
 """Enhanced IIIF importer module for pybossa-lc"""
 
+from flask import url_for
 from pybossa.importers import BulkImportException
 from pybossa.importers.iiif import BulkTaskIIIFImporter
+
+from .. import wa_client
 
 
 class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
@@ -34,40 +37,56 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
         child_task_data = []
         results = result_repo.filter_by(project_id=parent_id)
         for result in results:
-            # Check that parent result is valid
-            err_msg = 'A result from the parent project has not been analysed'
-            if not isinstance(result.info, dict):
-                raise BulkImportException(err_msg)
-            elif 'annotations' not in result.info:
-                raise BulkImportException(err_msg)
-
-            parent_annotations = [anno for anno in result.info['annotations']
-                                  if anno['motivation'] != 'commenting']
-
-            # Update related task for each parent annotation
+            self._validate_parent_result(result)
+            parent_annotations = self._get_annotations_for_result(result)
             for anno in parent_annotations:
-                source = anno['target']
-                if isinstance(anno['target'], dict):
-                    source = anno['target']['source']
-
+                source = self._get_source(anno)
                 data = indexed_task_data.get(source)
                 if not data:
                     err_msg = 'A parent annotation has an invalid target'
                     raise BulkImportException(err_msg)
                 data_copy = data.copy()
-
                 data_copy['target'] = anno['target']
                 data_copy['parent_task_id'] = result.task_id
                 child_task_data.append(data_copy)
 
-            # Add has_children key to parent result
-            new_result_info = result.info.copy()
-            new_result_info['has_children'] = True
-            result.info = new_result_info
-            result_repo.update(result)
-
-        # Return sorted by target
+            self._set_result_has_children(result)
         return sorted(child_task_data, key=lambda x: x['target'])
+
+    def _get_source(self, annotation):
+        """Return the annotation source."""
+        if isinstance(annotation['target'], dict):
+            return annotation['target']['source']
+        return annotation['target']
+
+    def _validate_parent_result(self, result):
+        """Validate a parent result."""
+        err_msg = 'A result from the parent project has not been analysed'
+        if not isinstance(result.info, dict):
+            raise BulkImportException(err_msg)
+        elif 'annotations' not in result.info:
+            raise BulkImportException(err_msg)
+
+    def _set_result_has_children(self, result):
+        """Add has_children key to a result."""
+        from pybossa.core import result_repo
+        new_info = result.info.copy()
+        new_info['has_children'] = True
+        result.info = new_info
+        result_repo.update(result)
+
+    def _get_annotations_for_result(self, result):
+        """Return annotations associated with a result."""
+        iri = result.info.get('annotations')
+        annotations = wa_client.search_annotations(iri, {
+            "generator": [
+                {
+                    "id": url_for('api.api_task', oid=result.task_id),
+                    "type": "Software"
+                }
+            ]
+        })
+        return [a for a in annotations if a['motivation'] != 'commenting']
 
     def _get_link(self, manifest_uri, canvas_index):
         """Overwrite to return BL viewer link for BL items."""

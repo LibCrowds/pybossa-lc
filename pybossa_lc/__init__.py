@@ -8,8 +8,8 @@ from flask.ext.plugins import Plugin
 from pybossa.extensions import importer
 
 from . import default_settings
-from .importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
 from .extensions import *
+from .importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
 
 
 __plugin__ = "PyBossaLC"
