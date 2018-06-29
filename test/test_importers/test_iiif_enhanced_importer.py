@@ -101,7 +101,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
 
     @with_context
     def test_exeption_if_no_collection_iri_for_parent(self, requests):
-        """Test that child tasks are generated."""
+        """Test exception if no collection iri when child tasks generated."""
         manifest = self.create_manifest()
         headers = {'Content-Type': 'application/json'}
         response = FakeResponse(text=json.dumps(manifest), status_code=200,
@@ -115,8 +115,8 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         assert_raises(BulkImportException, importer.tasks)
 
     @with_context
-    @patch('pybossa_lc.importers.iiif_enhanced.ResultCollection')
-    def test_child_tasks_generated(self, mock_rc, requests):
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_child_tasks_generated(self, mock_wa_client, requests):
         """Test that child tasks are generated."""
         n_canvases = 3
         n_images = 1
@@ -174,7 +174,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
                         'parent_task_id': task.id
                     })
 
-        mock_rc.get_by_task_id.side_effect = return_values
+        mock_wa_client.search_annotations.side_effect = return_values
         importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri,
                                                 parent_id=parent.id)
         tasks = importer.tasks()
@@ -183,8 +183,8 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         assert_equal(task_info, expected)
 
     @with_context
-    @patch('pybossa_lc.importers.iiif_enhanced.ResultCollection')
-    def test_has_child_added_to_parent_results(self, mock_rc, requests):
+    @patch('pybossa_lc.model.base.wa_client')
+    def test_has_child_added_to_parent_results(self, mock_wa_client, requests):
         """Test that the has_children key is added to parent results."""
         manifest = self.create_manifest()
         headers = {'Content-Type': 'application/json'}
@@ -210,7 +210,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
 
         importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri,
                                                 parent_id=parent.id)
-        mock_rc.get_by_task_id.return_value = []
+        mock_wa_client.search_annotations.return_value = []
         tasks = importer.tasks()
 
         results = self.result_repo.filter_by(project_id=parent.id)
