@@ -28,6 +28,7 @@ class Base(object):
         """Return a reference to the LibCrowds software."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         github_repo = current_app.config.get('GITHUB_REPO')
+        task_url_base = url_for('api.api_task', _external=True).rstrip('/')
         return [
             {
                 "id": github_repo,
@@ -36,16 +37,16 @@ class Base(object):
                 "homepage": spa_server_name
             },
             {
-                "id": url_for('api.api_task', oid=task_id),
+                "id": "{}/{}".format(task_url_base, task_id),
                 "type": "Software"
             }
         ]
 
     def _get_creator(self, user):
         """Return a reference to a LibCrowds user."""
-        url = url_for('api.api_user', oid=user.id)
+        user_url_base = url_for('api.api_user', _external=True).rstrip('/')
         return {
-            "id": url,
+            "id": "{}/{}".format(user_url_base, user.id),
             "type": "Person",
             "name": user.fullname,
             "nickname": user.name
