@@ -20,11 +20,11 @@ def get_manifest(task_id):
     """
     task = task_repo.get_task(task_id)
     if not task:
-      abort(404)
+        abort(404)
 
     manifest_uri = task.info.get('manifest')
     if not manifest_uri:
-      abort(404)
+        abort(404)
 
     manifest = requests.get(manifest_uri).json()
     return handle_content_type(manifest)
