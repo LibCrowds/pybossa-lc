@@ -9,6 +9,7 @@ from flask import url_for
 from pybossa.importers import BulkImportException
 from pybossa.repositories import ResultRepository
 from factories import TaskFactory, TaskRunFactory, ProjectFactory
+from factories import CategoryFactory
 
 from pybossa_lc.importers.iiif_enhanced import BulkTaskIIIFEnhancedImporter
 from ..fixtures.annotation import AnnotationFixtures
@@ -114,8 +115,8 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         assert_raises(BulkImportException, importer.tasks)
 
     @with_context
-    @patch('pybossa_lc.importers.iiif_enhanced.wa_client')
-    def test_child_tasks_generated(self, mock_wa_client, requests):
+    @patch('pybossa_lc.importers.iiif_enhanced.ResultCollection')
+    def test_child_tasks_generated(self, mock_rc, requests):
         """Test that child tasks are generated."""
         n_canvases = 3
         n_images = 1
@@ -125,7 +126,13 @@ class TestBulkTaskIIIFEnhancedImport(Test):
                                 headers=headers, encoding='utf-8')
         requests.get.return_value = response
         anno_fixtures = AnnotationFixtures()
-        parent = ProjectFactory()
+        anno_collection_iri = 'example.org/annotations'
+        category = CategoryFactory(info={
+            'annotations': {
+                'results': anno_collection_iri
+            }
+        })
+        parent = ProjectFactory(category=category)
         tasks = TaskFactory.create_batch(n_canvases, project=parent,
                                          n_answers=1)
 
@@ -148,7 +155,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
                 ]
 
                 result = self.result_repo.get_by(task_id=task.id)
-                result.info = dict(annotations='example.org/annotations')
+                result.info = dict(annotations=anno_collection_iri)
                 self.result_repo.update(result)
                 return_values.append(annotations)
 
@@ -167,7 +174,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
                         'parent_task_id': task.id
                     })
 
-        mock_wa_client.search_annotations.side_effect = return_values
+        mock_rc.get_by_task_id.side_effect = return_values
         importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri,
                                                 parent_id=parent.id)
         tasks = importer.tasks()
@@ -176,8 +183,8 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         assert_equal(task_info, expected)
 
     @with_context
-    @patch('pybossa_lc.importers.iiif_enhanced.wa_client')
-    def test_has_child_added_to_parent_results(self, mock_wa_client, requests):
+    @patch('pybossa_lc.importers.iiif_enhanced.ResultCollection')
+    def test_has_child_added_to_parent_results(self, mock_rc, requests):
         """Test that the has_children key is added to parent results."""
         manifest = self.create_manifest()
         headers = {'Content-Type': 'application/json'}
@@ -188,7 +195,12 @@ class TestBulkTaskIIIFEnhancedImport(Test):
 
         # Create a task for each canvas
         n_tasks = 3
-        parent = ProjectFactory()
+        category = CategoryFactory(info={
+            'annotations': {
+                'results': anno_collection_iri
+            }
+        })
+        parent = ProjectFactory(category=category)
         tasks = TaskFactory.create_batch(n_tasks, project=parent, n_answers=1)
         for task in tasks:
             TaskRunFactory.create(task=task)
@@ -198,7 +210,7 @@ class TestBulkTaskIIIFEnhancedImport(Test):
 
         importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri,
                                                 parent_id=parent.id)
-        mock_wa_client.search_annotations.return_value = []
+        mock_rc.get_by_task_id.return_value = []
         tasks = importer.tasks()
 
         results = self.result_repo.filter_by(project_id=parent.id)
@@ -208,22 +220,3 @@ class TestBulkTaskIIIFEnhancedImport(Test):
             'has_children': True
         }] * n_tasks
         assert_equal(result_info, expected)
-
-    @with_context
-    @patch('pybossa_lc.importers.iiif_enhanced.wa_client')
-    def test_get_annotations_for_result_query(self, mock_wa_client, requests):
-        """Test the query to get all annotations for a result."""
-        iri = 'example.org/annotations'
-        task = TaskFactory(n_answers=1)
-        TaskRunFactory.create(task=task)
-        result = self.result_repo.get_by(task_id=task.id)
-        result.info = dict(annotations=iri)
-        self.result_repo.update(result)
-        importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri)
-        importer._get_annotations_for_result(result)
-        mock_wa_client.search_annotations.assert_called_once_with(iri, {
-            "generator": [{
-                "id": url_for('api.api_task', oid=task.id, _external=True),
-                "type": "Software"
-            }]
-        })

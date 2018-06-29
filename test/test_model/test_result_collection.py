@@ -246,7 +246,7 @@ class TestResultCollection(Test):
         iri = 'example.com'
         rc = ResultCollection(iri)
         task = Task(project_id=1)
-        rc.get_by_task(task)
+        rc.get_by_task_id(task.id)
         contains = {
             'generator': [
                 {
