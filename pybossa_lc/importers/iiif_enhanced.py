@@ -5,7 +5,7 @@ from flask import url_for
 from pybossa.importers import BulkImportException
 from pybossa.importers.iiif import BulkTaskIIIFImporter
 
-from .. import wa_client
+from ..model.result_collection import ResultCollection
 
 
 class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
@@ -33,12 +33,13 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
         from pybossa.core import result_repo
         indexed_task_data = {row['info']['target']: row['info']
                              for row in task_data}
-
+        rc = self._get_result_collection(parent_id)
         child_task_data = []
         results = result_repo.filter_by(project_id=parent_id)
         for result in results:
             self._validate_parent_result(result)
-            parent_annotations = self._get_annotations_for_result(result)
+            parent_annotations = [a for a in rc.get_by_task_id(result.task_id)
+                                  if a['motivation'] != 'commenting']
             for anno in parent_annotations:
                 source = self._get_source(anno)
                 data = indexed_task_data.get(source)
@@ -59,6 +60,18 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
             return annotation['target']['source']
         return annotation['target']
 
+    def _get_result_collection(self, project_id):
+        """Return a ResultCollection for the category."""
+        from pybossa.core import project_repo
+        project = project_repo.get(project_id)
+        category = project_repo.get_category(project.category_id)
+        try:
+            iri = category.info.get('annotations', {})['results']
+        except (TypeError, KeyError):
+            err_msg = 'AnnotationCollection not setup for the category'
+            raise BulkImportException(err_msg)
+        return ResultCollection(iri)
+
     def _validate_parent_result(self, result):
         """Validate a parent result."""
         err_msg = 'A result from the parent project has not been analysed'
@@ -74,20 +87,6 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
         new_info['has_children'] = True
         result.info = new_info
         result_repo.update(result)
-
-    def _get_annotations_for_result(self, result):
-        """Return annotations associated with a result."""
-        iri = result.info['annotations']
-        annotations = wa_client.search_annotations(iri, {
-            "generator": [
-                {
-                    "id": url_for('api.api_task', oid=result.task_id,
-                                  _external=True),
-                    "type": "Software"
-                }
-            ]
-        })
-        return [a for a in annotations if a['motivation'] != 'commenting']
 
     def _get_link(self, manifest_uri, canvas_index):
         """Overwrite to return BL viewer link for BL items."""
