@@ -144,8 +144,7 @@ def generate_tasks(project, import_data, template):
         current_app.logger.error(inst)
         print inst
         project_repo.delete(project)
-        msg = 'Uh oh, an error was encountered while generating the tasks'
-        flash(msg, 'error')
+        flash(str(inst), 'error')
         return redirect_content_type(url_for('home.home'))
 
     auditlogger.add_log_entry(None, project, current_user)
