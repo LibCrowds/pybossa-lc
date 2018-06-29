@@ -77,7 +77,7 @@ class BulkTaskIIIFEnhancedImporter(BulkTaskIIIFImporter):
 
     def _get_annotations_for_result(self, result):
         """Return annotations associated with a result."""
-        iri = result.info.get('annotations')
+        iri = result.info['annotations']
         annotations = wa_client.search_annotations(iri, {
             "generator": [
                 {
