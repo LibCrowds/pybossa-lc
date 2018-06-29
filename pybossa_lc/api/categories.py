@@ -204,7 +204,7 @@ def progress(short_name):
 
     tmpl_index = {t['id']: t for t in category.info.get('templates', [])}
     vol_index = {v['id']: v for v in category.info.get('volumes', [])}
-    data = {v_id: {t_id: 0 for t_id in tmpl_index} for v_id in vol_index}
+    data = {v_id: {t_id: None for t_id in tmpl_index} for v_id in vol_index}
     projects = project_repo.filter_by(category_id=category.id)
     for project in projects:
         ps = project_stats.get_stats(project.id, full=True)
