@@ -174,30 +174,36 @@ class TestBulkTaskIIIFEnhancedImport(Test):
         expected = sorted(expected, key=lambda x: x['target'])
         assert_equal(task_info, expected)
 
-    # @with_context
-    # def test_has_child_key_added_to_parent_results(self, requests):
-    #     """Test that the has_children key is added to parent results."""
-    #     manifest = self.create_manifest()
-    #     headers = {'Content-Type': 'application/json'}
-    #     response = FakeResponse(text=json.dumps(manifest), status_code=200,
-    #                             headers=headers, encoding='utf-8')
-    #     requests.get.return_value = response
+    @with_context
+    @patch('pybossa_lc.importers.iiif_enhanced.wa_client')
+    def test_has_child_added_to_parent_results(self, mock_wa_client, requests):
+        """Test that the has_children key is added to parent results."""
+        manifest = self.create_manifest()
+        headers = {'Content-Type': 'application/json'}
+        response = FakeResponse(text=json.dumps(manifest), status_code=200,
+                                headers=headers, encoding='utf-8')
+        requests.get.return_value = response
+        anno_collection_iri = 'example.org/annotations'
 
-    #     # Create a task for each canvas
-    #     n_tasks = 3
-    #     parent = ProjectFactory()
-    #     tasks = TaskFactory.create_batch(n_tasks, project=parent, n_answers=1)
-    #     for task in tasks:
-    #         TaskRunFactory.create(task=task)
-    #         result = self.result_repo.get_by(task_id=task.id)
-    #         result.info = dict(annotations=[])
-    #         self.result_repo.update(result)
+        # Create a task for each canvas
+        n_tasks = 3
+        parent = ProjectFactory()
+        tasks = TaskFactory.create_batch(n_tasks, project=parent, n_answers=1)
+        for task in tasks:
+            TaskRunFactory.create(task=task)
+            result = self.result_repo.get_by(task_id=task.id)
+            result.info = dict(annotations=anno_collection_iri)
+            self.result_repo.update(result)
 
-    #     importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri,
-    #                                             parent_id=parent.id)
-    #     tasks = importer.tasks()
+        importer = BulkTaskIIIFEnhancedImporter(manifest_uri=self.manifest_uri,
+                                                parent_id=parent.id)
+        mock_wa_client.search_annotations.return_value = []
+        tasks = importer.tasks()
 
-    #     results = self.result_repo.filter_by(project_id=parent.id)
-    #     result_info = [result.info for result in results]
-    #     expected = [{'annotations': [], 'has_children': True}] * n_tasks
-    #     assert_equal(result_info, expected)
+        results = self.result_repo.filter_by(project_id=parent.id)
+        result_info = [result.info for result in results]
+        expected = [{
+            'annotations': anno_collection_iri,
+            'has_children': True
+        }] * n_tasks
+        assert_equal(result_info, expected)
