@@ -56,7 +56,7 @@ class BaseAnalyst():
         project = project_repo.get(result.project_id)
         category = project_repo.get_category(project.category_id)
         rc = self._get_rc(category)
-        annotations = rc.get_by_task(task)
+        annotations = rc.get_by_task_id(task.id)
 
         can_update = self._can_update_result(result, annotations, analyse_full)
         if not can_update:
