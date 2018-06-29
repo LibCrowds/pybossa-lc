@@ -170,10 +170,6 @@ class TestZ3950Analyst(Test):
                 {
                     "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
-                    "type": "Software"
                 }
             ],
             'body': {
@@ -223,10 +219,6 @@ class TestZ3950Analyst(Test):
                     {
                         "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
-                        "type": "Software"
                     }
                 ],
                 'body': [
@@ -256,10 +248,6 @@ class TestZ3950Analyst(Test):
                     },
                     {
                         "id": url_for('api.api_task', oid=task.id),
-                        "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
                         "type": "Software"
                     }
                 ],
@@ -316,10 +304,6 @@ class TestZ3950Analyst(Test):
                     {
                         "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
-                        "type": "Software"
                     }
                 ],
                 'body': [
@@ -349,10 +333,6 @@ class TestZ3950Analyst(Test):
                     },
                     {
                         "id": url_for('api.api_task', oid=task.id),
-                        "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
                         "type": "Software"
                     }
                 ],

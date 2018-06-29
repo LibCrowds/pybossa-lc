@@ -215,10 +215,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 {
                     "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
-                    "type": "Software"
                 }
             ],
             'body': [
@@ -281,10 +277,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 {
                     "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
-                    "type": "Software"
                 }
             ],
             'body': {
@@ -343,10 +335,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 },
                 {
                     "id": url_for('api.api_task', oid=task.id),
-                    "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
                     "type": "Software"
                 }
             ],
@@ -408,10 +396,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 },
                 {
                     "id": url_for('api.api_task', oid=task.id),
-                    "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
                     "type": "Software"
                 }
             ],
@@ -634,10 +618,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 {
                     "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
-                    "type": "Software"
                 }
             ],
             'body': {
@@ -706,10 +686,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 },
                 {
                     "id": url_for('api.api_task', oid=task.id),
-                    "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
                     "type": "Software"
                 }
             ],
@@ -784,10 +760,6 @@ class TestIIIFAnnotationAnalyst(Test):
                 {
                     "id": url_for('api.api_task', oid=task.id),
                     "type": "Software"
-                },
-                {
-                    "id": url_for('api.api_project', oid=task.project_id),
-                    "type": "Software"
                 }
             ],
             'body': {
@@ -858,10 +830,6 @@ class TestIIIFAnnotationAnalyst(Test):
                     {
                         "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
-                        "type": "Software"
                     }
                 ],
                 'body': {
@@ -894,10 +862,6 @@ class TestIIIFAnnotationAnalyst(Test):
                     {
                         "id": url_for('api.api_task', oid=task.id),
                         "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
-                        "type": "Software"
                     }
                 ],
                 'body': {
@@ -929,10 +893,6 @@ class TestIIIFAnnotationAnalyst(Test):
                     },
                     {
                         "id": url_for('api.api_task', oid=task.id),
-                        "type": "Software"
-                    },
-                    {
-                        "id": url_for('api.api_project', oid=task.project_id),
                         "type": "Software"
                     }
                 ],
