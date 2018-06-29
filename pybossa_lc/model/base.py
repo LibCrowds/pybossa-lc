@@ -24,7 +24,7 @@ class Base(object):
         """
         wa_client.get_collection(self.iri, minimal=True)
 
-    def _get_generator(self, task):
+    def _get_generator(self, task_id):
         """Return a reference to the LibCrowds software."""
         spa_server_name = current_app.config.get('SPA_SERVER_NAME')
         github_repo = current_app.config.get('GITHUB_REPO')
@@ -36,7 +36,7 @@ class Base(object):
                 "homepage": spa_server_name
             },
             {
-                "id": url_for('api.api_task', oid=task.id),
+                "id": url_for('api.api_task', oid=task_id),
                 "type": "Software"
             }
         ]

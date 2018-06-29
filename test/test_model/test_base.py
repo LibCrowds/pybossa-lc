@@ -52,7 +52,7 @@ class TestBaseModel(Test):
         """Test that the correct Annotation generator is returned."""
         base = Base(None)
         task = Task(project_id=1)
-        generator = base._get_generator(task)
+        generator = base._get_generator(task.id)
         assert_equal(generator, [
             {
                 "id": flask_app.config.get('GITHUB_REPO'),

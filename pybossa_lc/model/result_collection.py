@@ -33,15 +33,10 @@ class ResultCollection(Base):
         anno = self._create_annotation(anno)
         return anno
 
-    def get_by_task(self, task):
+    def get_by_task_id(self, task_id):
         """Return current Annotations for a task."""
         contains = {
-            'generator': [
-                {
-                    'id': url_for('api.api_task', oid=task.id),
-                    'type': 'Software'
-                }
-            ]
+            'generator': self._get_generator(task_id)
         }
         return self._search_annotations(contains)
 
@@ -61,7 +56,7 @@ class ResultCollection(Base):
         base = {
             "type": "Annotation",
             "motivation": motivation,
-            "generator": self._get_generator(task)
+            "generator": self._get_generator(task.id)
         }
         if task.info and task.info.get('manifest'):
             base['partOf'] = task.info['manifest']
