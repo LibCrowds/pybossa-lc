@@ -20,7 +20,7 @@ from ..forms import *
 
 auditlogger = AuditLogger(auditlog_repo, caller='web')
 BLUEPRINT = Blueprint('lc_projects', __name__)
-MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 300
+MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 100
 
 
 def _import_tasks(project, **import_data):
