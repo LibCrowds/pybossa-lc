@@ -15,7 +15,7 @@ class WebAnnotationClient(object):
     def init_app(self, app):
         """Configure the extension."""
         self.app = app
-        self.base_url = app.config.get('WEB_ANNOTATION_BASE_URL')
+        self.base_url = app.config['WEB_ANNOTATION_BASE_URL']
         self.default_headers = app.config.get('WEB_ANNOTATION_HEADERS', {
             'Accept': ('application/ld+json; '
                        'profile="http://www.w3.org/ns/anno.jsonld"')
