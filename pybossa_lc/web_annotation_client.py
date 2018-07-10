@@ -52,14 +52,14 @@ class WebAnnotationClient(object):
     def search_annotations(self, collectionIri, contains):
         """Search for Annotations with the given content."""
         endpoint = self.base_url.rstrip('/') + '/search/'
-        json_data = {
+        params = {
             'collection': collectionIri,
-            'contains': contains
+            'contains': json.dumps(contains)
         }
         headers = {
             'Prefer': self._get_prefer_headers(minimal=True)
         }
-        response = requests.get(endpoint, json=json_data, headers=headers)
+        response = requests.get(endpoint, params=params, headers=headers)
         response.raise_for_status()
 
         data = response.json()
