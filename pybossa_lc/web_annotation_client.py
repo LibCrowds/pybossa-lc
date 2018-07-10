@@ -36,9 +36,9 @@ class WebAnnotationClient(object):
 
     def delete_batch(self, annotations):
         """Delete a batch of Annotations."""
-        endpoint = self.base_url.rstrip('/') + '/batch/'
-        response = requests.delete(endpoint, json=annotations)
-        response.raise_for_status()
+        for anno in annotations:
+            response = requests.delete(anno['id'])
+            response.raise_for_status()
 
     def _get_prefer_headers(self, minimal=False, iris=False):
         """Return the Prefer header for given container preferences."""
@@ -54,7 +54,7 @@ class WebAnnotationClient(object):
         endpoint = self.base_url.rstrip('/') + '/search/'
         params = {
             'collection': collectionIri,
-            'contains': json.dumps(contains)
+            'contains': json.dumps(contains).replace('127.0.0.1:5000', 'backend.libcrowds.com').replace('http://127.0.0.1:8080', 'https://www.libcrowds.com')
         }
         headers = {
             'Prefer': self._get_prefer_headers(minimal=True)
