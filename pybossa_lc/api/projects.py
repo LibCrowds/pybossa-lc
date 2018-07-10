@@ -20,25 +20,23 @@ from ..forms import *
 
 auditlogger = AuditLogger(auditlog_repo, caller='web')
 BLUEPRINT = Blueprint('lc_projects', __name__)
-MAX_NUM_SYNCHRONOUS_TASKS_IMPORT = 100
 
 
 def _import_tasks(project, **import_data):
-    """Import the tasks."""
-    n_tasks = importer.count_tasks_to_import(**import_data)
-    if n_tasks <= MAX_NUM_SYNCHRONOUS_TASKS_IMPORT:
-        importer.create_tasks(task_repo, project.id, **import_data)
-    else:
-        job = dict(name=import_tasks,
-                   args=[project.id],
-                   kwargs=import_data,
-                   timeout=current_app.config.get('TIMEOUT'),
-                   queue='medium')
-        enqueue_job(job)
-        return '''The project is being generated with a large amount of tasks.
-            You will recieve an email when the process is complete.'''
-    plural = 's' if n_tasks != 1 else ''
-    return 'The project was generated with {} task{}.'.format(n_tasks, plural)
+    """Import the tasks.
+
+    Always runs as a background task to avoid timing out when generating
+    parent-child IIIF projects, where even counting the tasks will take a long
+    time.
+    """
+    job = dict(name=import_tasks,
+                args=[project.id],
+                kwargs=import_data,
+                timeout=current_app.config.get('TIMEOUT'),
+                queue='medium')
+    enqueue_job(job)
+    return '''The project's tasks are being generated, you will recieve an
+           email when the process is complete.'''
 
 
 @login_required
