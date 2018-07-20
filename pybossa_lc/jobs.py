@@ -1,9 +1,11 @@
 # -*- coding: utf8 -*-
 """Jobs module for pybossa-lc."""
 
+import errno
 from flask import current_app
 from pybossa.jobs import enqueue_job, import_tasks
 from pybossa.core import task_repo, project_repo
+from socket import error as socket_error
 
 from .analysis.analyst import Analyst
 
@@ -57,8 +59,13 @@ def analyse_single(result_id, presenter):
     enqueue_job(job)
 
 
-def import_tasks_with_redundancy(project_id, min_answers, **import_data):
+def import_tasks_with_redundancy(project_id, n_answers, **import_data):
     """Import tasks then set redundancy."""
-    import_tasks(project_id, **import_data)
+    try:
+        import_tasks(project_id, **import_data)
+    except socket_error as serr:
+        # Because sending emails will fail during development
+        if serr.errno != errno.ECONNREFUSED:
+            raise serr
     project = project_repo.get(project_id)
-    task_repo.update_tasks_redundancy(project, min_answers)
+    task_repo.update_tasks_redundancy(project, int(n_answers))
