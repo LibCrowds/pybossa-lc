@@ -2,7 +2,8 @@
 """Jobs module for pybossa-lc."""
 
 from flask import current_app
-from pybossa.jobs import enqueue_job
+from pybossa.jobs import enqueue_job, import_tasks
+from pybossa.core import task_repo, project_repo
 
 from .analysis.analyst import Analyst
 
@@ -54,3 +55,10 @@ def analyse_single(result_id, presenter):
                timeout=current_app.config.get('TIMEOUT'),
                queue='high')
     enqueue_job(job)
+
+
+def import_tasks_with_redundancy(project_id, min_answers, **import_data):
+    """Import tasks then set redundancy."""
+    import_tasks(project_id, **import_data)
+    project = project_repo.get(project_id)
+    task_repo.update_tasks_redundancy(project, min_answers)

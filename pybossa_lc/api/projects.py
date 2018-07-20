@@ -9,12 +9,12 @@ from pybossa.core import importer, db
 from pybossa.core import auditlog_repo, task_repo, result_repo, project_repo
 from pybossa.importers import BulkImportException
 from pybossa.util import handle_content_type, redirect_content_type, url_for
-from pybossa.jobs import import_tasks
 from pybossa.auditlogger import AuditLogger
 from pybossa.jobs import enqueue_job
 from pybossa.cache.projects import overall_progress
 from sqlalchemy import text
 
+from ..jobs import import_tasks_with_redundancy
 from ..forms import *
 
 
@@ -22,18 +22,18 @@ auditlogger = AuditLogger(auditlog_repo, caller='web')
 BLUEPRINT = Blueprint('lc_projects', __name__)
 
 
-def _import_tasks(project, **import_data):
+def _import_tasks(project, template, **import_data):
     """Import the tasks.
 
     Always runs as a background task to avoid timing out when generating
     parent-child IIIF projects, where even counting the tasks will take a long
     time.
     """
-    job = dict(name=import_tasks,
-                args=[project.id],
-                kwargs=import_data,
-                timeout=current_app.config.get('TIMEOUT'),
-                queue='medium')
+    job = dict(name=import_tasks_with_redundancy,
+               args=[project.id, template['min_answers']],
+               kwargs=import_data,
+               timeout=current_app.config.get('TIMEOUT'),
+               queue='medium')
     enqueue_job(job)
     return '''The project's tasks are being generated, you will recieve an
            email when the process is complete.'''
@@ -131,7 +131,7 @@ def add_avatar_to_project_info(project, volume):
 def generate_tasks(project, import_data, template):
     """Generate the tasks."""
     try:
-        msg = _import_tasks(project, **import_data)
+        msg = _import_tasks(project, template, **import_data)
         flash(msg, 'success')
     except BulkImportException as err:   # pragma: no cover
         project_repo.delete(project)
